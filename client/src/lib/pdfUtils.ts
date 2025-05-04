@@ -9,10 +9,17 @@ import {
   InvestorReturn 
 } from './finance';
 
-// Add autotable to jsPDF type with proper types
+// Define AutoTableStatic interface first
+interface AutoTableStatic {
+  previous?: {
+    finalY: number;
+  };
+}
+
+// Declare module augmentation for jsPDF with autoTable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: AutoTableStatic & ((options: any) => jsPDF);
     internal: {
       pageSize: {
         width: number;
@@ -22,20 +29,6 @@ declare module 'jspdf' {
       };
       getNumberOfPages: () => number;
     };
-  }
-}
-
-// Define autoTable static properties
-interface AutoTableStatic {
-  previous?: {
-    finalY: number;
-  };
-}
-
-// Extend jsPDF with autoTable as static
-declare global {
-  interface jsPDF {
-    autoTable: AutoTableStatic & ((options: any) => jsPDF);
   }
 }
 
