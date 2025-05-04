@@ -23,8 +23,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate inputs
       const validatedLoan = insertLoanSchema.parse({
-        amount: loanParams.totalAmount,
-        interestRate: loanParams.interestRate,
+        amount: String(loanParams.totalAmount),
+        interestRate: String(loanParams.interestRate),
         termMonths: loanParams.termMonths,
         startDate: new Date(loanParams.startDate),
         paymentFrequency: loanParams.paymentFrequency,
@@ -41,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedInvestors = investors.map(investor => {
         return {
           name: investor.name,
-          investmentAmount: investor.investmentAmount,
+          investmentAmount: String(investor.investmentAmount),
         };
       });
       
