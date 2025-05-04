@@ -86,7 +86,10 @@ export default function SavedCalculations() {
     <div className="container mx-auto py-10 space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Saved Calculations</h1>
-        <Button onClick={() => setLocation("/")}>New Calculation</Button>
+        <div className="flex gap-3">
+          <Button onClick={() => setLocation("/")} variant="outline">Calculator</Button>
+          <Button onClick={() => setLocation("/")}>New Calculation</Button>
+        </div>
       </div>
 
       {calculations.length === 0 ? (

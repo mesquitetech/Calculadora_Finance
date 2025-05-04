@@ -144,11 +144,17 @@ export default function CalculationDetails() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => setLocation("/saved-calculations")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold">Loan #{data.loanId} Details</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => setLocation("/saved-calculations")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-3xl font-bold">Loan #{data.loanId} Details</h1>
+        </div>
+        <div className="flex gap-3">
+          <Button onClick={() => setLocation("/")} variant="outline">Calculator</Button>
+          <Button onClick={() => setLocation("/saved-calculations")}>View All Calculations</Button>
+        </div>
       </div>
 
       <Card>

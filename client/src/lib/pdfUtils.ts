@@ -28,6 +28,11 @@ declare module 'jspdf' {
         getHeight: () => number;
       };
       getNumberOfPages: () => number;
+      // Additional properties to match expected type
+      events?: any;
+      scaleFactor?: number;
+      pages?: any[];
+      getEncryptor?: (objectId: number) => (data: string) => string;
     };
   }
 }

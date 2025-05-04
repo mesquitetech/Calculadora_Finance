@@ -156,12 +156,20 @@ export default function Home() {
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Finance Calculator</h1>
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = "/saved-calculations"}
-          >
-            View Saved Calculations
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => window.location.href = "/"}
+            >
+              Calculator
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = "/saved-calculations"}
+            >
+              View Saved Calculations
+            </Button>
+          </div>
         </div>
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
