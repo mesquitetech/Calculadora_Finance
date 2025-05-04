@@ -12,7 +12,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 
-interface LoanParameters {
+// Export the type so it can be imported elsewhere
+export interface LoanParameters {
   totalAmount: number;
   interestRate: number;
   termMonths: number;

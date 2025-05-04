@@ -2,7 +2,8 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { FileText, Calculator, Calendar, PieChart, BarChart } from "lucide-react";
 
-type Tab = 'input' | 'schedule' | 'investors' | 'summary' | 'reports';
+// Export the Tab type to be reused in other components
+export type Tab = 'input' | 'schedule' | 'investors' | 'summary' | 'reports';
 
 interface TabNavigationProps {
   activeTab: Tab;

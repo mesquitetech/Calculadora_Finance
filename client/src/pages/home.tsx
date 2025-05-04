@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { CalculatorIcon } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
-import { TabNavigation } from "@/components/calculator/TabNavigation";
-import { LoanParametersCard } from "@/components/calculator/LoanParametersCard";
+import { TabNavigation, Tab } from "@/components/calculator/TabNavigation";
+import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
 import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
@@ -21,16 +21,16 @@ import {
 } from "@/lib/finance";
 
 export default function Home() {
-  type TabType = 'input' | 'schedule' | 'investors' | 'summary' | 'reports';
-  const [activeTab, setActiveTab] = useState<TabType>('input');
+  // Use the Tab type imported from TabNavigation
+  const [activeTab, setActiveTab] = useState<Tab>('input');
 
   // State for loan parameters
-  const [loanParams, setLoanParams] = useState({
+  const [loanParams, setLoanParams] = useState<LoanParameters>({
     totalAmount: 100000,
     interestRate: 5.75,
     termMonths: 36,
     startDate: new Date('2023-08-01'),
-    paymentFrequency: 'monthly' as const
+    paymentFrequency: 'monthly'
   });
 
   // State for investors
