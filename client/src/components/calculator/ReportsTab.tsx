@@ -27,7 +27,7 @@ import {
   generateProjectSummaryReport,
   generateLoanContract,
   generateInvestorPromissoryNote
-} from "@/lib/pdfUtils";
+} from "@/lib/simplePdfUtils";
 import { toast } from "@/hooks/use-toast";
 
 interface ReportsTabProps {
@@ -169,9 +169,7 @@ export function ReportsTab({
         termMonths,
         startDate,
         endDate,
-        monthlyPayment,
-        totalInterest,
-        paymentSchedule
+        monthlyPayment
       );
       
       doc.save('financing_agreement.pdf');
