@@ -6,8 +6,14 @@ import {
   Investor, 
   InsertInvestor, 
   Payment, 
-  InsertPayment 
+  InsertPayment,
+  users,
+  loans,
+  investors,
+  payments 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -84,7 +90,8 @@ export class MemStorage implements IStorage {
     const loan: Loan = { 
       ...insertLoan, 
       id, 
-      createdAt: now
+      createdAt: now,
+      paymentFrequency: insertLoan.paymentFrequency || 'monthly'
     };
     this.loans.set(id, loan);
     return loan;
@@ -137,5 +144,84 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+  
+  // Loan methods
+  async getLoan(id: number): Promise<Loan | undefined> {
+    const [loan] = await db.select().from(loans).where(eq(loans.id, id));
+    return loan || undefined;
+  }
+  
+  async createLoan(insertLoan: InsertLoan): Promise<Loan> {
+    const [loan] = await db
+      .insert(loans)
+      .values(insertLoan)
+      .returning();
+    return loan;
+  }
+  
+  // Investor methods
+  async getInvestor(id: number): Promise<Investor | undefined> {
+    const [investor] = await db.select().from(investors).where(eq(investors.id, id));
+    return investor || undefined;
+  }
+  
+  async getInvestorsByLoanId(loanId: number): Promise<Investor[]> {
+    return await db
+      .select()
+      .from(investors)
+      .where(eq(investors.loanId, loanId));
+  }
+  
+  async createInvestor(insertInvestor: InsertInvestor): Promise<Investor> {
+    const [investor] = await db
+      .insert(investors)
+      .values(insertInvestor)
+      .returning();
+    return investor;
+  }
+  
+  // Payment methods
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment || undefined;
+  }
+  
+  async getPaymentsByLoanId(loanId: number): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.loanId, loanId))
+      .orderBy(payments.paymentNumber);
+  }
+  
+  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(insertPayment)
+      .returning();
+    return payment;
+  }
+}
+
 // Create and export storage instance
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

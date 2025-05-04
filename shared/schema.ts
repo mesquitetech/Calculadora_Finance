@@ -1,5 +1,6 @@
-import { pgTable, text, serial, numeric, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, integer, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Define the users table
@@ -70,6 +71,26 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
   interest: true,
   balance: true,
 });
+
+// Define Relations
+export const loansRelations = relations(loans, ({ many }) => ({
+  investors: many(investors),
+  payments: many(payments),
+}));
+
+export const investorsRelations = relations(investors, ({ one }) => ({
+  loan: one(loans, {
+    fields: [investors.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  loan: one(loans, {
+    fields: [payments.loanId],
+    references: [loans.id],
+  }),
+}));
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
