@@ -27,7 +27,7 @@ import {
   generateProjectSummaryReport,
   generateLoanContract,
   generateInvestorPromissoryNote
-} from "@/lib/fixedPdfUtils";
+} from "@/lib/improvedPdfUtils";
 import { toast } from "@/hooks/use-toast";
 
 interface ReportsTabProps {
@@ -80,9 +80,15 @@ export function ReportsTab({
       });
     } catch (error) {
       console.error("Error generating payment report:", error);
+      let errorMessage = "An error occurred while generating the payment report";
+      
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error generating report",
-        description: "An error occurred while generating the payment report",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -114,9 +120,15 @@ export function ReportsTab({
       });
     } catch (error) {
       console.error("Error generating investor report:", error);
+      let errorMessage = "An error occurred while generating the investor report";
+      
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error generating report",
-        description: "An error occurred while generating the investor report",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -148,9 +160,15 @@ export function ReportsTab({
       });
     } catch (error) {
       console.error("Error generating project report:", error);
+      let errorMessage = "An error occurred while generating the project report";
+      
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error generating report",
-        description: "An error occurred while generating the project report",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -180,9 +198,15 @@ export function ReportsTab({
       });
     } catch (error) {
       console.error("Error generating loan contract:", error);
+      let errorMessage = "An error occurred while generating the loan contract";
+      
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error generating contract",
-        description: "An error occurred while generating the loan contract",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -212,9 +236,15 @@ export function ReportsTab({
       });
     } catch (error) {
       console.error("Error generating promissory note:", error);
+      let errorMessage = "An error occurred while generating the promissory note";
+      
+      if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error generating note",
-        description: "An error occurred while generating the promissory note",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -389,6 +419,7 @@ export function ReportsTab({
                 <li>Payment schedule with dates</li>
                 <li>Principal/interest breakdown</li>
                 <li>Amortization details</li>
+                <li>Quarterly business projections</li>
               </ul>
             </div>
             <div>
@@ -398,6 +429,7 @@ export function ReportsTab({
                 <li>Expected monthly returns</li>
                 <li>Cumulative returns chart</li>
                 <li>ROI and performance metrics</li>
+                <li>Quarterly performance projections</li>
               </ul>
             </div>
             <div>
@@ -407,6 +439,7 @@ export function ReportsTab({
                 <li>All investors summary</li>
                 <li>Comparative performance</li>
                 <li>Interest distribution</li>
+                <li>Business cash flow projections</li>
               </ul>
             </div>
           </div>
