@@ -5,12 +5,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import SavedCalculations from "@/pages/saved-calculations";
+import CalculationDetails from "@/pages/calculation-details";
 import { ThemeProvider } from "./components/calculator/ThemeProvider";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/saved-calculations" component={SavedCalculations} />
+      <Route path="/calculation/:id" component={CalculationDetails} />
       <Route component={NotFound} />
     </Switch>
   );

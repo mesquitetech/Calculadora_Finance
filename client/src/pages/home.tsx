@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CalculatorIcon } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
+import { Link, useLocation } from "wouter";
 import { TabNavigation, Tab } from "@/components/calculator/TabNavigation";
 import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
 import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
@@ -74,54 +75,32 @@ export default function Home() {
   // Calculation mutation using TanStack Query
   const calculateMutation = useMutation({
     mutationFn: async () => {
-      // Simulate API calculation by calling our calculation functions
-      // In a real app, this would be an API request to the server
-      const monthlyPayment = calculateMonthlyPayment(
-        loanParams.totalAmount,
-        loanParams.interestRate,
-        loanParams.termMonths
-      );
+      // Send calculation request to server
+      const response = await apiRequest("POST", "/api/calculate", {
+        loanParams,
+        investors
+      });
       
-      const paymentSchedule = generatePaymentSchedule(
-        loanParams.totalAmount,
-        loanParams.interestRate,
-        loanParams.termMonths,
-        loanParams.startDate,
-        loanParams.paymentFrequency
-      );
+      const data = await response.json();
       
-      const totalInterest = paymentSchedule.reduce(
-        (sum, payment) => sum + payment.interest,
-        0
-      );
-      
-      const investorObjects = investors.map(inv => ({
-        id: inv.id,
-        name: inv.name,
-        investmentAmount: inv.investmentAmount
+      // Process the response from server
+      const paymentSchedule = data.paymentSchedule.map(payment => ({
+        ...payment,
+        date: new Date(payment.date),
+        payment: Number(payment.amount),
+        principal: Number(payment.principal),
+        interest: Number(payment.interest),
+        balance: Number(payment.balance)
       }));
       
-      const investorReturns = calculateInvestorReturns(
-        investorObjects,
-        paymentSchedule
-      );
-      
-      // Get the end date (date of the last payment)
-      const endDate = paymentSchedule[paymentSchedule.length - 1].date;
-      
-      // Server-side calculation would go here
-      // const response = await apiRequest("POST", "/api/calculate", {
-      //   loanParams,
-      //   investors
-      // });
-      // const data = await response.json();
-      
+      // Return the processed data
       return {
-        monthlyPayment,
-        totalInterest,
-        paymentSchedule,
-        investorReturns,
-        endDate
+        loanId: data.loanId,
+        monthlyPayment: data.monthlyPayment,
+        totalInterest: data.totalInterest,
+        paymentSchedule: paymentSchedule,
+        investorReturns: data.investorReturns,
+        endDate: new Date(data.endDate)
       };
     },
     onSuccess: (data) => {
@@ -175,6 +154,15 @@ export default function Home() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Finance Calculator</h1>
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = "/saved-calculations"}
+          >
+            View Saved Calculations
+          </Button>
+        </div>
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <div className="tab-content">
