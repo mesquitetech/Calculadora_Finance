@@ -17,29 +17,29 @@ interface AutoTableStatic {
 }
 
 // Helper function to safely get final Y position
-function getLastTableEndY(doc: jsPDF): number {
+function getLastTableEndY(doc: ExtendedJsPDF): number {
   return doc.autoTable.previous?.finalY || 60;
 }
 
-// Declare module augmentation for jsPDF with autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: AutoTableStatic & ((options: any) => jsPDF);
-    internal: {
-      pageSize: {
-        width: number;
-        height: number;
-        getWidth: () => number;
-        getHeight: () => number;
-      };
-      getNumberOfPages: () => number;
-      // Additional properties to match expected type
-      events?: any;
-      scaleFactor?: number;
-      pages?: any[];
-      getEncryptor?: ((objectId: number) => (data: string) => string);
-    };
-  }
+// Define jsPDF type with proper structure
+interface JsPDFInternal {
+  pageSize: {
+    width: number;
+    height: number;
+    getWidth: () => number;
+    getHeight: () => number;
+  };
+  getNumberOfPages: () => number;
+  events: any;
+  scaleFactor: number;
+  pages: any[];
+  getEncryptor: (objectId: number) => (data: string) => string;
+}
+
+// Use type definition instead of module augmentation to prevent conflicts
+type ExtendedJsPDF = jsPDF & {
+  autoTable: AutoTableStatic & ((options: any) => jsPDF);
+  internal: JsPDFInternal;
 }
 
 // Function to generate loan holder payment report
@@ -55,7 +55,7 @@ export const generatePaymentReport = (
 ): jsPDF => {
   try {
     // Create new PDF document
-    const doc = new jsPDF();
+    const doc = new jsPDF() as ExtendedJsPDF;
     
     // Add header
     doc.setFontSize(20);
