@@ -1,14 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { 
   insertLoanSchema, 
   insertInvestorSchema, 
-  insertPaymentSchema 
+  insertPaymentSchema,
+  loans,
+  investors,
+  payments
 } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Calculate investment returns
@@ -81,10 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             loanId: loan.id,
             paymentNumber: payment.paymentNumber,
             date: payment.date,
-            amount: payment.payment,
-            principal: payment.principal,
-            interest: payment.interest,
-            balance: payment.balance,
+            amount: payment.payment.toString(),
+            principal: payment.principal.toString(),
+            interest: payment.interest.toString(),
+            balance: payment.balance.toString(),
           })
         )
       );
@@ -209,6 +214,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
     });
   }
+
+  // Get all loans (calculations)
+  app.get("/api/calculations", async (req, res) => {
+    try {
+      // For a real app, we'd want pagination here
+      const allLoans = await db.select().from(loans).orderBy(desc(loans.createdAt));
+      
+      // Map loans to a simpler response format
+      const calculations = allLoans.map((loan) => ({
+        id: loan.id,
+        amount: Number(loan.amount),
+        interestRate: Number(loan.interestRate),
+        termMonths: loan.termMonths,
+        startDate: loan.startDate,
+        paymentFrequency: loan.paymentFrequency,
+        createdAt: loan.createdAt
+      }));
+      
+      res.status(200).json(calculations);
+    } catch (error) {
+      console.error("Error fetching calculations:", error);
+      res.status(500).json({ message: "Failed to fetch calculations" });
+    }
+  });
+
+  // Get a specific calculation by ID
+  app.get("/api/calculations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // Get the loan
+      const loan = await storage.getLoan(id);
+      if (!loan) {
+        return res.status(404).json({ message: "Calculation not found" });
+      }
+      
+      // Get the investors
+      const investors = await storage.getInvestorsByLoanId(id);
+      
+      // Get the payment schedule
+      const paymentSchedule = await storage.getPaymentsByLoanId(id);
+      
+      // Map payment schedule to the expected format for calculateInvestorReturns
+      const mappedPaymentSchedule = paymentSchedule.map(payment => ({
+        payment: Number(payment.amount),
+        principal: Number(payment.principal),
+        interest: Number(payment.interest)
+      }));
+      
+      // Calculate investor returns
+      const investorReturns = calculateInvestorReturns(
+        investors,
+        mappedPaymentSchedule
+      );
+      
+      // Calculate total interest
+      const totalInterest = paymentSchedule.reduce(
+        (sum, payment) => sum + Number(payment.interest), 
+        0
+      );
+      
+      // Get monthly payment from first payment
+      const monthlyPayment = paymentSchedule.length > 0 
+        ? Number(paymentSchedule[0].amount) 
+        : 0;
+      
+      // Get end date from last payment
+      const endDate = paymentSchedule.length > 0 
+        ? paymentSchedule[paymentSchedule.length - 1].date 
+        : new Date();
+      
+      res.status(200).json({
+        loanId: loan.id,
+        amount: Number(loan.amount),
+        interestRate: Number(loan.interestRate),
+        termMonths: loan.termMonths,
+        startDate: loan.startDate,
+        paymentFrequency: loan.paymentFrequency,
+        monthlyPayment,
+        totalInterest,
+        paymentSchedule,
+        investorReturns,
+        endDate,
+      });
+    } catch (error) {
+      console.error("Error fetching calculation details:", error);
+      res.status(500).json({ message: "Failed to fetch calculation details" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
