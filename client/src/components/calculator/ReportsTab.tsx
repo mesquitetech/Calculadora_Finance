@@ -27,7 +27,7 @@ import {
   generateProjectSummaryReport,
   generateLoanContract,
   generateInvestorPromissoryNote
-} from "@/lib/simplePdfUtils";
+} from "@/lib/fixedPdfUtils";
 import { toast } from "@/hooks/use-toast";
 
 interface ReportsTabProps {
