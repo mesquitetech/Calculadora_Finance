@@ -9,6 +9,7 @@ import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
+import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,7 +21,7 @@ import {
 } from "@/lib/finance";
 
 export default function Home() {
-  type TabType = 'input' | 'schedule' | 'investors' | 'summary';
+  type TabType = 'input' | 'schedule' | 'investors' | 'summary' | 'reports';
   const [activeTab, setActiveTab] = useState<TabType>('input');
 
   // State for loan parameters
@@ -238,6 +239,21 @@ export default function Home() {
               investors={calculationResults.investorReturns}
               paymentSchedule={calculationResults.paymentSchedule}
               onExport={handleExportSummary}
+            />
+          )}
+
+          {/* Reports & Documents Tab */}
+          {activeTab === 'reports' && calculationResults && (
+            <ReportsTab
+              loanAmount={loanParams.totalAmount}
+              interestRate={loanParams.interestRate}
+              termMonths={loanParams.termMonths}
+              monthlyPayment={calculationResults.monthlyPayment}
+              totalInterest={calculationResults.totalInterest}
+              startDate={loanParams.startDate}
+              endDate={calculationResults.endDate}
+              investors={calculationResults.investorReturns}
+              paymentSchedule={calculationResults.paymentSchedule}
             />
           )}
         </div>
