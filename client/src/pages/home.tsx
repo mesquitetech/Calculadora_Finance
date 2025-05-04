@@ -158,6 +158,14 @@ export default function Home() {
           <h1 className="text-3xl font-bold">Finance Calculator</h1>
           <div className="flex gap-3">
             <Button
+              onClick={handleCalculate}
+              disabled={!inputsValid || calculateMutation.isPending}
+              className="px-6"
+            >
+              <CalculatorIcon className="h-5 w-5 mr-2" />
+              Calculate Investment Returns
+            </Button>
+            <Button
               variant="secondary"
               onClick={() => window.location.href = "/"}
             >
@@ -191,16 +199,7 @@ export default function Home() {
                 />
               </div>
               
-              <div className="mt-6 flex justify-end">
-                <Button 
-                  onClick={handleCalculate}
-                  disabled={!inputsValid || calculateMutation.isPending}
-                  className="px-6 py-3"
-                >
-                  <CalculatorIcon className="h-5 w-5 mr-2" />
-                  Calculate Investment Returns
-                </Button>
-              </div>
+              {/* Removed duplicate Calculate button since we moved it to the top */}
             </div>
           )}
 
