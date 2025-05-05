@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CalculatorIcon, Wand2 } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
+import { AboutFooter } from "@/components/calculator/AboutFooter";
 import { Link, useLocation } from "wouter";
 import { TabNavigation, Tab } from "@/components/calculator/TabNavigation";
 import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
@@ -313,6 +314,9 @@ export default function Home() {
       </main>
 
       <Footer />
+      
+      {/* About Footer with company information */}
+      <AboutFooter />
       
       {/* Setup Wizard */}
       <SetupWizard

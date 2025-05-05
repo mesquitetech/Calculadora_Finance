@@ -522,8 +522,14 @@ export function ProjectionsTab({
                       <YAxis />
                       <Tooltip 
                         formatter={(value) => {
-                          const numValue = typeof value === 'string' ? parseFloat(value) : value;
-                          return `${numValue.toFixed(2)}%`;
+                          if (typeof value === 'string') {
+                            return `${parseFloat(value).toFixed(2)}%`;
+                          } else if (Array.isArray(value)) {
+                            return `${parseFloat(String(value[0])).toFixed(2)}%`;
+                          } else if (typeof value === 'number') {
+                            return `${value.toFixed(2)}%`;
+                          }
+                          return `${value}%`;
                         }} 
                       />
                       <Bar dataKey="value" fill={chartColors.revenue} />
