@@ -2,6 +2,21 @@ import jsPDF from 'jspdf';
 import { PaymentScheduleEntry, InvestorReturn, formatCurrency, formatDate, formatPercentage } from './finance';
 
 /**
+ * Add company header to all PDF documents
+ */
+function addCompanyHeader(doc: jsPDF): void {
+  // Add company header
+  doc.setFontSize(16);
+  doc.setTextColor(26, 86, 219); // Blue color
+  doc.setFont("helvetica", "bold");
+  doc.text('MESQUITE FINANCIAL', 105, 15, { align: 'center' });
+  doc.setFontSize(12);
+  doc.setTextColor(100, 100, 100); // Gray color
+  doc.setFont("helvetica", "normal");
+  doc.text('Leasing and Financial Unit', 105, 22, { align: 'center' });
+}
+
+/**
  * Generate a payment schedule report PDF with business projections
  */
 export function generatePaymentReport(
@@ -18,33 +33,37 @@ export function generatePaymentReport(
     console.log("Starting payment report generation");
     const doc = new jsPDF();
     
-    // Add header
+    // Add company header
+    addCompanyHeader(doc);
+    
+    // Add report title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Payment Schedule Report', 105, 15, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+    doc.text('Payment Schedule Report', 105, 35, { align: 'center' });
     
     // Add report date
     doc.setFontSize(10);
-    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 22, { align: 'center' });
+    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 42, { align: 'center' });
     
     // Add loan details section
     doc.setFontSize(14);
-    doc.text('Loan Details', 14, 30);
+    doc.text('Loan Details', 14, 55);
     
     // Create loan details section
     doc.setFontSize(10);
-    doc.text(`Loan Amount: ${formatCurrency(loanAmount)}`, 14, 38);
-    doc.text(`Interest Rate: ${interestRate.toFixed(2)}%`, 14, 46);
-    doc.text(`Term Length: ${termMonths} months`, 14, 54);
-    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 62);
-    doc.text(`Total Interest: ${formatCurrency(totalInterest)}`, 14, 70);
-    doc.text(`Total Payments: ${formatCurrency(loanAmount + totalInterest)}`, 14, 78);
-    doc.text(`Start Date: ${formatDate(startDate)}`, 14, 86);
-    doc.text(`Maturity Date: ${formatDate(endDate)}`, 14, 94);
+    doc.text(`Loan Amount: ${formatCurrency(loanAmount)}`, 14, 65);
+    doc.text(`Interest Rate: ${interestRate.toFixed(2)}%`, 14, 72);
+    doc.text(`Term Length: ${termMonths} months`, 14, 79);
+    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 86);
+    doc.text(`Total Interest: ${formatCurrency(totalInterest)}`, 14, 93);
+    doc.text(`Total Payments: ${formatCurrency(loanAmount + totalInterest)}`, 14, 100);
+    doc.text(`Start Date: ${formatDate(startDate)}`, 14, 107);
+    doc.text(`Maturity Date: ${formatDate(endDate)}`, 14, 114);
     
     // Add business projections section
     doc.setFontSize(14);
-    doc.text('Business Performance Projections', 105, 110, { align: 'center' });
+    doc.text('Business Performance Projections', 105, 130, { align: 'center' });
     
     // Calculate some projection metrics
     const totalPayments = monthlyPayment * termMonths;
@@ -52,28 +71,28 @@ export function generatePaymentReport(
     const annualizedReturn = roi / (termMonths / 12);
     
     doc.setFontSize(10);
-    doc.text(`Annual Return Rate: ${annualizedReturn.toFixed(2)}%`, 14, 120);
-    doc.text(`Return on Investment: ${roi.toFixed(2)}%`, 14, 128);
-    doc.text(`Total Payments Over Term: ${formatCurrency(totalPayments)}`, 14, 136);
+    doc.text(`Annual Return Rate: ${annualizedReturn.toFixed(2)}%`, 14, 140);
+    doc.text(`Return on Investment: ${roi.toFixed(2)}%`, 14, 147);
+    doc.text(`Total Payments Over Term: ${formatCurrency(totalPayments)}`, 14, 154);
     
     // Add quarterly projection section
     doc.setFontSize(12);
-    doc.text('Quarterly Projections', 14, 150);
+    doc.text('Quarterly Projections', 14, 170);
     
     // Headers for the table
     doc.setFontSize(8);
-    doc.text('Quarter', 20, 158);
-    doc.text('Principal Paid', 60, 158);
-    doc.text('Interest Paid', 100, 158);
-    doc.text('Remaining Balance', 140, 158);
+    doc.text('Quarter', 20, 178);
+    doc.text('Principal Paid', 60, 178);
+    doc.text('Interest Paid', 100, 178);
+    doc.text('Remaining Balance', 140, 178);
     
     // Draw a line under the headers
     doc.setDrawColor(0);
-    doc.line(20, 160, 190, 160);
+    doc.line(20, 180, 190, 180);
     
     // Calculate and display quarterly data
     const quarters = Math.min(Math.ceil(termMonths / 3), 4); // Limit to 4 quarters for space
-    let yPosition = 168;
+    let yPosition = 188;
     
     for (let i = 0; i < quarters; i++) {
       const quarterNumber = i + 1;
@@ -106,13 +125,15 @@ export function generatePaymentReport(
     
     // Create emergency fallback PDF
     const errorDoc = new jsPDF();
+    addCompanyHeader(errorDoc);
     errorDoc.setFontSize(18);
-    errorDoc.text('Error Generating Payment Report', 105, 20, { align: 'center' });
+    errorDoc.setTextColor(0, 0, 0);
+    errorDoc.text('Error Generating Payment Report', 105, 35, { align: 'center' });
     errorDoc.setFontSize(10);
-    errorDoc.text('An error occurred while generating the report.', 14, 35);
-    errorDoc.text('Please check the console for detailed error information.', 14, 45);
+    errorDoc.text('An error occurred while generating the report.', 14, 50);
+    errorDoc.text('Please check the console for detailed error information.', 14, 60);
     if (error instanceof Error) {
-      errorDoc.text(`Error: ${error.message}`, 14, 55);
+      errorDoc.text(`Error: ${error.message}`, 14, 70);
     }
     return errorDoc;
   }
@@ -135,47 +156,52 @@ export function generateInvestorReport(
     console.log("Starting investor report generation");
     const doc = new jsPDF();
     
-    // Add header
+    // Add company header
+    addCompanyHeader(doc);
+    
+    // Add report title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Investor Return Report', 105, 15, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+    doc.text('Investor Return Report', 105, 35, { align: 'center' });
     
     // Add report date and investor name
-    doc.setFontSize(12);
-    doc.text(`Investor: ${investor.name}`, 14, 25);
     doc.setFontSize(10);
-    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 22, { align: 'center' });
+    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 42, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text(`Investor: ${investor.name}`, 14, 55);
     
     // Add investment details section
     doc.setFontSize(14);
-    doc.text('Investment Details', 14, 35);
+    doc.text('Investment Details', 14, 70);
     
     // Create investment details section
     doc.setFontSize(10);
-    doc.text(`Investment Amount: ${formatCurrency(investor.investmentAmount)}`, 14, 45);
-    doc.text(`Investment Share: ${formatPercentage(investor.share * 100)}`, 14, 53);
-    doc.text(`Total Return: ${formatCurrency(investor.totalReturn)}`, 14, 61);
-    doc.text(`Total Interest Earned: ${formatCurrency(investor.totalInterest)}`, 14, 69);
-    doc.text(`Return on Investment: ${investor.roi.toFixed(2)}%`, 14, 77);
+    doc.text(`Investment Amount: ${formatCurrency(investor.investmentAmount)}`, 14, 80);
+    doc.text(`Investment Share: ${formatPercentage(investor.share * 100)}`, 14, 87);
+    doc.text(`Total Return: ${formatCurrency(investor.totalReturn)}`, 14, 94);
+    doc.text(`Total Interest Earned: ${formatCurrency(investor.totalInterest)}`, 14, 101);
+    doc.text(`Return on Investment: ${investor.roi.toFixed(2)}%`, 14, 108);
     
     // Add investor performance projections section
     doc.setFontSize(14);
-    doc.text('Investor Performance Projections', 105, 95, { align: 'center' });
+    doc.text('Investor Performance Projections', 105, 125, { align: 'center' });
     
     // Headers for the table
     doc.setFontSize(8);
-    doc.text('Quarter', 20, 105);
-    doc.text('Return', 60, 105);
-    doc.text('Cumulative', 100, 105);
-    doc.text('Quarterly ROI', 140, 105);
+    doc.text('Quarter', 20, 135);
+    doc.text('Return', 60, 135);
+    doc.text('Cumulative', 100, 135);
+    doc.text('Quarterly ROI', 140, 135);
     
     // Draw a line under the headers
     doc.setDrawColor(0);
-    doc.line(20, 107, 190, 107);
+    doc.line(20, 137, 190, 137);
     
     // Calculate and display quarterly projection data
     const quarters = Math.min(Math.ceil(termMonths / 3), 4); // Limit to 4 quarters for space
-    let yPosition = 115;
+    let yPosition = 145;
     let cumulativeReturn = 0;
     
     for (let i = 0; i < quarters; i++) {
@@ -215,13 +241,15 @@ export function generateInvestorReport(
     
     // Create emergency fallback PDF
     const errorDoc = new jsPDF();
+    addCompanyHeader(errorDoc);
     errorDoc.setFontSize(18);
-    errorDoc.text('Error Generating Investor Report', 105, 20, { align: 'center' });
+    errorDoc.setTextColor(0, 0, 0);
+    errorDoc.text('Error Generating Investor Report', 105, 35, { align: 'center' });
     errorDoc.setFontSize(10);
-    errorDoc.text('An error occurred while generating the report.', 14, 35);
-    errorDoc.text('Please check the console for detailed error information.', 14, 45);
+    errorDoc.text('An error occurred while generating the report.', 14, 50);
+    errorDoc.text('Please check the console for detailed error information.', 14, 60);
     if (error instanceof Error) {
-      errorDoc.text(`Error: ${error.message}`, 14, 55);
+      errorDoc.text(`Error: ${error.message}`, 14, 70);
     }
     return errorDoc;
   }
@@ -244,50 +272,54 @@ export function generateProjectSummaryReport(
     console.log("Starting project summary report generation");
     const doc = new jsPDF();
     
-    // Add header
+    // Add company header
+    addCompanyHeader(doc);
+    
+    // Add report title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Project Summary Report', 105, 15, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+    doc.text('Project Summary Report', 105, 35, { align: 'center' });
     
     // Add report date
     doc.setFontSize(10);
-    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 22, { align: 'center' });
+    doc.text(`Report Generated: ${formatDate(new Date())}`, 105, 42, { align: 'center' });
     
     // Add project overview section
     doc.setFontSize(14);
-    doc.text('Project Overview', 14, 35);
+    doc.text('Project Overview', 14, 55);
     
     // Create project overview section
     doc.setFontSize(10);
-    doc.text(`Loan Amount: ${formatCurrency(loanAmount)}`, 14, 45);
-    doc.text(`Interest Rate: ${interestRate.toFixed(2)}%`, 14, 53);
-    doc.text(`Term Length: ${termMonths} months`, 14, 61);
-    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 69);
-    doc.text(`Total Interest: ${formatCurrency(totalInterest)}`, 14, 77);
-    doc.text(`Total Payments: ${formatCurrency(loanAmount + totalInterest)}`, 14, 85);
-    doc.text(`Start Date: ${formatDate(startDate)}`, 14, 93);
-    doc.text(`Maturity Date: ${formatDate(endDate)}`, 14, 101);
-    doc.text(`Number of Investors: ${investors.length}`, 14, 109);
+    doc.text(`Loan Amount: ${formatCurrency(loanAmount)}`, 14, 65);
+    doc.text(`Interest Rate: ${interestRate.toFixed(2)}%`, 14, 72);
+    doc.text(`Term Length: ${termMonths} months`, 14, 79);
+    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 86);
+    doc.text(`Total Interest: ${formatCurrency(totalInterest)}`, 14, 93);
+    doc.text(`Total Payments: ${formatCurrency(loanAmount + totalInterest)}`, 14, 100);
+    doc.text(`Start Date: ${formatDate(startDate)}`, 14, 107);
+    doc.text(`Maturity Date: ${formatDate(endDate)}`, 14, 114);
+    doc.text(`Number of Investors: ${investors.length}`, 14, 121);
     
     // Add investors summary section if there are investors
     if (investors.length > 0) {
       doc.setFontSize(14);
-      doc.text('Investors Summary', 14, 125);
+      doc.text('Investors Summary', 14, 135);
       
       // Header for investors table
       doc.setFontSize(8);
-      doc.text('Investor', 15, 135);
-      doc.text('Investment', 50, 135);
-      doc.text('Share', 85, 135);
-      doc.text('Return', 120, 135);
-      doc.text('ROI', 155, 135);
+      doc.text('Investor', 15, 145);
+      doc.text('Investment', 50, 145);
+      doc.text('Share', 85, 145);
+      doc.text('Return', 120, 145);
+      doc.text('ROI', 155, 145);
       
       // Draw a line under the headers
       doc.setDrawColor(0);
-      doc.line(15, 137, 180, 137);
+      doc.line(15, 147, 180, 147);
       
       // Display investors data
-      let yPosition = 145;
+      let yPosition = 155;
       
       for (const inv of investors) {
         doc.text(inv.name, 15, yPosition);
@@ -301,7 +333,8 @@ export function generateProjectSummaryReport(
         // Add a page break if needed
         if (yPosition > 270) {
           doc.addPage();
-          yPosition = 20;
+          addCompanyHeader(doc);
+          yPosition = 35;
         }
       }
       
@@ -374,13 +407,15 @@ export function generateProjectSummaryReport(
     
     // Create emergency fallback PDF
     const errorDoc = new jsPDF();
+    addCompanyHeader(errorDoc);
     errorDoc.setFontSize(18);
-    errorDoc.text('Error Generating Project Summary Report', 105, 20, { align: 'center' });
+    errorDoc.setTextColor(0, 0, 0);
+    errorDoc.text('Error Generating Project Summary Report', 105, 35, { align: 'center' });
     errorDoc.setFontSize(10);
-    errorDoc.text('An error occurred while generating the report.', 14, 35);
-    errorDoc.text('Please check the console for detailed error information.', 14, 45);
+    errorDoc.text('An error occurred while generating the report.', 14, 50);
+    errorDoc.text('Please check the console for detailed error information.', 14, 60);
     if (error instanceof Error) {
-      errorDoc.text(`Error: ${error.message}`, 14, 55);
+      errorDoc.text(`Error: ${error.message}`, 14, 70);
     }
     return errorDoc;
   }
@@ -401,44 +436,48 @@ export function generateLoanContract(
     console.log("Starting loan contract generation");
     const doc = new jsPDF();
     
-    // Basic content
+    // Add company header
+    addCompanyHeader(doc);
+    
+    // Add contract title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Loan Agreement', 105, 15, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+    doc.text('Loan Agreement', 105, 35, { align: 'center' });
     
     // Generate a contract number
     const contractNumber = `LOAN-${Date.now().toString().substring(4)}`;
     doc.setFontSize(10);
-    doc.text(`Contract #: ${contractNumber}`, 105, 22, { align: 'center' });
-    doc.text(`Date: ${formatDate(new Date())}`, 105, 28, { align: 'center' });
+    doc.text(`Contract #: ${contractNumber}`, 105, 42, { align: 'center' });
+    doc.text(`Date: ${formatDate(new Date())}`, 105, 48, { align: 'center' });
     
     // Add contract content
     doc.setFontSize(12);
-    doc.text('Loan Terms and Conditions', 14, 40);
+    doc.text('Loan Terms and Conditions', 14, 60);
     doc.setFontSize(10);
-    doc.text(`Principal Amount: ${formatCurrency(loanAmount)}`, 14, 50);
-    doc.text(`Interest Rate: ${interestRate.toFixed(2)}% per annum`, 14, 57);
-    doc.text(`Loan Term: ${termMonths} months from ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 64);
-    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 71);
+    doc.text(`Principal Amount: ${formatCurrency(loanAmount)}`, 14, 70);
+    doc.text(`Interest Rate: ${interestRate.toFixed(2)}% per annum`, 14, 77);
+    doc.text(`Loan Term: ${termMonths} months from ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 84);
+    doc.text(`Monthly Payment: ${formatCurrency(monthlyPayment)}`, 14, 91);
     
     // Add agreement clauses
     doc.setFontSize(12);
-    doc.text('Agreement Clauses', 14, 90);
+    doc.text('Agreement Clauses', 14, 110);
     
     doc.setFontSize(10);
-    doc.text('1. Parties:', 14, 100);
-    doc.text('This agreement is made between the Lender and the Borrower as specified above.', 25, 107);
+    doc.text('1. Parties:', 14, 120);
+    doc.text('This agreement is made between the Lender and the Borrower as specified above.', 25, 127);
     
-    doc.text('2. Repayment:', 14, 120);
-    doc.text('The Borrower agrees to repay the Principal Amount plus Interest in monthly installments', 25, 127);
-    doc.text('as specified above, with the first payment due one month from the loan date.', 25, 134);
+    doc.text('2. Repayment:', 14, 140);
+    doc.text('The Borrower agrees to repay the Principal Amount plus Interest in monthly installments', 25, 147);
+    doc.text('as specified above, with the first payment due one month from the loan date.', 25, 154);
     
-    doc.text('3. Prepayment:', 14, 147);
-    doc.text('The Borrower may prepay the loan in whole or in part without penalty.', 25, 154);
+    doc.text('3. Prepayment:', 14, 167);
+    doc.text('The Borrower may prepay the loan in whole or in part without penalty.', 25, 174);
     
-    doc.text('4. Default:', 14, 167);
-    doc.text('If the Borrower fails to make any payment within 10 days of the due date, the loan will be', 25, 174);
-    doc.text('considered in default, and the entire unpaid balance may become immediately due.', 25, 181);
+    doc.text('4. Default:', 14, 187);
+    doc.text('If the Borrower fails to make any payment within 10 days of the due date, the loan will be', 25, 194);
+    doc.text('considered in default, and the entire unpaid balance may become immediately due.', 25, 201);
     
     // Signature lines
     doc.setFontSize(10);
@@ -456,13 +495,15 @@ export function generateLoanContract(
     
     // Create emergency fallback PDF
     const errorDoc = new jsPDF();
+    addCompanyHeader(errorDoc);
     errorDoc.setFontSize(18);
-    errorDoc.text('Error Generating Loan Contract', 105, 20, { align: 'center' });
+    errorDoc.setTextColor(0, 0, 0);
+    errorDoc.text('Error Generating Loan Contract', 105, 35, { align: 'center' });
     errorDoc.setFontSize(10);
-    errorDoc.text('An error occurred while generating the contract.', 14, 35);
-    errorDoc.text('Please check the console for detailed error information.', 14, 45);
+    errorDoc.text('An error occurred while generating the contract.', 14, 50);
+    errorDoc.text('Please check the console for detailed error information.', 14, 60);
     if (error instanceof Error) {
-      errorDoc.text(`Error: ${error.message}`, 14, 55);
+      errorDoc.text(`Error: ${error.message}`, 14, 70);
     }
     return errorDoc;
   }
@@ -483,52 +524,56 @@ export function generateInvestorPromissoryNote(
     console.log("Starting promissory note generation");
     const doc = new jsPDF();
     
-    // Basic content
+    // Add company header
+    addCompanyHeader(doc);
+    
+    // Add note title
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 0);
-    doc.text('Promissory Note', 105, 15, { align: 'center' });
+    doc.setFont("helvetica", "normal");
+    doc.text('Promissory Note', 105, 35, { align: 'center' });
     
     // Generate a note number
     const noteNumber = `NOTE-${Date.now().toString().substring(4)}-${investor.investorId}`;
     doc.setFontSize(10);
-    doc.text(`Note #: ${noteNumber}`, 105, 22, { align: 'center' });
-    doc.text(`Date: ${formatDate(new Date())}`, 105, 28, { align: 'center' });
+    doc.text(`Note #: ${noteNumber}`, 105, 42, { align: 'center' });
+    doc.text(`Date: ${formatDate(new Date())}`, 105, 48, { align: 'center' });
     
     // Add investor details
     doc.setFontSize(12);
-    doc.text('Investment Terms', 14, 40);
+    doc.text('Investment Terms', 14, 60);
     doc.setFontSize(10);
-    doc.text(`Investor: ${investor.name}`, 14, 50);
-    doc.text(`Investment Amount: ${formatCurrency(investor.investmentAmount)}`, 14, 57);
-    doc.text(`Investment Share: ${formatPercentage(investor.share * 100)}`, 14, 64);
-    doc.text(`Expected Return: ${formatCurrency(investor.totalReturn)}`, 14, 71);
-    doc.text(`Expected ROI: ${investor.roi.toFixed(2)}%`, 14, 78);
-    doc.text(`Investment Term: ${termMonths} months from ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 85);
+    doc.text(`Investor: ${investor.name}`, 14, 70);
+    doc.text(`Investment Amount: ${formatCurrency(investor.investmentAmount)}`, 14, 77);
+    doc.text(`Investment Share: ${formatPercentage(investor.share * 100)}`, 14, 84);
+    doc.text(`Expected Return: ${formatCurrency(investor.totalReturn)}`, 14, 91);
+    doc.text(`Expected ROI: ${investor.roi.toFixed(2)}%`, 14, 98);
+    doc.text(`Investment Term: ${termMonths} months from ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 105);
     
     // Add promissory note clauses
     doc.setFontSize(12);
-    doc.text('Promissory Note Terms', 14, 105);
+    doc.text('Promissory Note Terms', 14, 125);
     
     doc.setFontSize(10);
-    doc.text('1. Parties:', 14, 115);
-    doc.text(`This promissory note is issued to ${investor.name} (the "Investor") for the benefit of the`, 25, 122);
-    doc.text('investment in the financing project described herein.', 25, 129);
+    doc.text('1. Parties:', 14, 135);
+    doc.text(`This promissory note is issued to ${investor.name} (the "Investor") for the benefit of the`, 25, 142);
+    doc.text('investment in the financing project described herein.', 25, 149);
     
-    doc.text('2. Payment:', 14, 142);
-    doc.text('The Issuer agrees to pay the Investor the returns on investment as calculated based on', 25, 149);
-    doc.text('the payment schedule of the borrower and the investment share percentage.', 25, 156);
+    doc.text('2. Payment:', 14, 162);
+    doc.text('The Issuer agrees to pay the Investor the returns on investment as calculated based on', 25, 169);
+    doc.text('the payment schedule of the borrower and the investment share percentage.', 25, 176);
     
-    doc.text('3. Risk Acknowledgment:', 14, 169);
-    doc.text('The Investor acknowledges that this investment carries risk, and returns are dependent', 25, 176);
-    doc.text('on the borrower making timely payments on the underlying loan.', 25, 183);
+    doc.text('3. Risk Acknowledgment:', 14, 189);
+    doc.text('The Investor acknowledges that this investment carries risk, and returns are dependent', 25, 196);
+    doc.text('on the borrower making timely payments on the underlying loan.', 25, 203);
     
-    doc.text('4. Assignment:', 14, 196);
-    doc.text('This promissory note may not be assigned or transferred without written consent.', 25, 203);
+    doc.text('4. Assignment:', 14, 216);
+    doc.text('This promissory note may not be assigned or transferred without written consent.', 25, 223);
     
     // Signature lines
     doc.setFontSize(10);
-    doc.text('Issuer Signature: ________________________', 14, 230);
-    doc.text('Investor Signature: ________________________', 14, 250);
+    doc.text('Issuer Signature: ________________________', 14, 240);
+    doc.text('Investor Signature: ________________________', 14, 260);
     
     // Add a note at the bottom
     doc.setFontSize(9);
@@ -541,13 +586,15 @@ export function generateInvestorPromissoryNote(
     
     // Create emergency fallback PDF
     const errorDoc = new jsPDF();
+    addCompanyHeader(errorDoc);
     errorDoc.setFontSize(18);
-    errorDoc.text('Error Generating Promissory Note', 105, 20, { align: 'center' });
+    errorDoc.setTextColor(0, 0, 0);
+    errorDoc.text('Error Generating Promissory Note', 105, 35, { align: 'center' });
     errorDoc.setFontSize(10);
-    errorDoc.text('An error occurred while generating the note.', 14, 35);
-    errorDoc.text('Please check the console for detailed error information.', 14, 45);
+    errorDoc.text('An error occurred while generating the note.', 14, 50);
+    errorDoc.text('Please check the console for detailed error information.', 14, 60);
     if (error instanceof Error) {
-      errorDoc.text(`Error: ${error.message}`, 14, 55);
+      errorDoc.text(`Error: ${error.message}`, 14, 70);
     }
     return errorDoc;
   }
