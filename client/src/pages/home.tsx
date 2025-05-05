@@ -12,6 +12,8 @@ import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { SetupWizard } from "@/components/calculator/SetupWizard";
+import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
+import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -268,6 +270,31 @@ export default function Home() {
             />
           )}
 
+          {/* Financial Projections Tab */}
+          {activeTab === 'projections' && calculationResults && (
+            <ProjectionsTab
+              loanAmount={loanParams.totalAmount}
+              interestRate={loanParams.interestRate}
+              termMonths={loanParams.termMonths}
+              monthlyPayment={calculationResults.monthlyPayment}
+              startDate={loanParams.startDate}
+            />
+          )}
+          
+          {/* Banking Reports Tab */}
+          {activeTab === 'banking' && calculationResults && (
+            <BankerReportsTab
+              loanAmount={loanParams.totalAmount}
+              interestRate={loanParams.interestRate}
+              termMonths={loanParams.termMonths}
+              monthlyPayment={calculationResults.monthlyPayment}
+              totalInterest={calculationResults.totalInterest}
+              startDate={loanParams.startDate}
+              endDate={calculationResults.endDate}
+              investors={calculationResults.investorReturns}
+            />
+          )}
+          
           {/* Reports & Documents Tab */}
           {activeTab === 'reports' && calculationResults && (
             <ReportsTab

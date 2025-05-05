@@ -520,7 +520,12 @@ export function ProjectionsTab({
                     ]}>
                       <XAxis dataKey="name" />
                       <YAxis />
-                      <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+                      <Tooltip 
+                        formatter={(value) => {
+                          const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                          return `${numValue.toFixed(2)}%`;
+                        }} 
+                      />
                       <Bar dataKey="value" fill={chartColors.revenue} />
                     </BarChart>
                   </ResponsiveContainer>
