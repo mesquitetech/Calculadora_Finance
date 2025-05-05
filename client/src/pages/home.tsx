@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { CalculatorIcon } from "lucide-react";
+import { CalculatorIcon, Wand2 } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { Link, useLocation } from "wouter";
@@ -11,6 +11,7 @@ import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
+import { SetupWizard } from "@/components/calculator/SetupWizard";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,6 +25,9 @@ import {
 export default function Home() {
   // Use the Tab type imported from TabNavigation
   const [activeTab, setActiveTab] = useState<Tab>('input');
+  
+  // State for wizard
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   // State for loan parameters
   const [loanParams, setLoanParams] = useState<LoanParameters>({
@@ -84,7 +88,7 @@ export default function Home() {
       const data = await response.json();
       
       // Process the response from server
-      const paymentSchedule = data.paymentSchedule.map(payment => ({
+      const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
         ...payment,
         date: new Date(payment.date),
         payment: Number(payment.amount),
@@ -148,6 +152,25 @@ export default function Home() {
       });
     }, 1500);
   };
+  
+  // Wizard functions
+  const openWizard = () => {
+    setWizardOpen(true);
+  };
+  
+  const closeWizard = () => {
+    setWizardOpen(false);
+  };
+  
+  const handleWizardSave = (newLoanParams: LoanParameters, newInvestors: Investor[]) => {
+    setLoanParams(newLoanParams);
+    setInvestors(newInvestors);
+    
+    toast({
+      title: "Setup Complete",
+      description: "Your financing plan has been created successfully.",
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-neutral-900 text-foreground">
@@ -164,6 +187,14 @@ export default function Home() {
             >
               <CalculatorIcon className="h-5 w-5 mr-2" />
               Calculate Investment Returns
+            </Button>
+            <Button
+              variant="outline"
+              onClick={openWizard}
+              className="px-6"
+            >
+              <Wand2 className="h-5 w-5 mr-2" />
+              Setup Wizard
             </Button>
             <Button
               variant="secondary"
@@ -255,6 +286,15 @@ export default function Home() {
       </main>
 
       <Footer />
+      
+      {/* Setup Wizard */}
+      <SetupWizard
+        isOpen={wizardOpen}
+        onClose={closeWizard}
+        onSave={handleWizardSave}
+        initialLoanParams={loanParams}
+        initialInvestors={investors}
+      />
     </div>
   );
 }
