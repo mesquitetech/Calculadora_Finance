@@ -1,9 +1,18 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { FileText, Calculator, Calendar, PieChart, BarChart } from "lucide-react";
+import { 
+  FileText, 
+  Calculator, 
+  Calendar, 
+  PieChart, 
+  BarChart, 
+  TrendingUp, 
+  Briefcase, 
+  LineChart 
+} from "lucide-react";
 
 // Export the Tab type to be reused in other components
-export type Tab = 'input' | 'schedule' | 'investors' | 'summary' | 'reports';
+export type Tab = 'input' | 'schedule' | 'investors' | 'summary' | 'projections' | 'banking' | 'reports';
 
 interface TabNavigationProps {
   activeTab: Tab;
@@ -16,6 +25,8 @@ export function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
     { id: 'schedule', label: 'Payment Schedule', icon: <Calendar className="h-4 w-4 mr-1" /> },
     { id: 'investors', label: 'Investor Returns', icon: <PieChart className="h-4 w-4 mr-1" /> },
     { id: 'summary', label: 'Summary', icon: <BarChart className="h-4 w-4 mr-1" /> },
+    { id: 'projections', label: 'Financial Projections', icon: <TrendingUp className="h-4 w-4 mr-1" /> },
+    { id: 'banking', label: 'Banking Reports', icon: <Briefcase className="h-4 w-4 mr-1" /> },
     { id: 'reports', label: 'Reports & Documents', icon: <FileText className="h-4 w-4 mr-1" /> },
   ];
 
