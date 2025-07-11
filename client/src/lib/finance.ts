@@ -2,22 +2,81 @@
  * Finance utility functions for the investment calculator
  */
 
-// Calculate monthly payment for a loan
+/**
+ * Get the number of payment periods per year based on frequency
+ */
+export function getPaymentPeriodsPerYear(frequency: string): number {
+  switch (frequency.toLowerCase()) {
+    case 'monthly':
+      return 12;
+    case 'quarterly':
+      return 4;
+    case 'semi-annual':
+      return 2;
+    case 'annual':
+      return 1;
+    default:
+      return 12; // Default to monthly
+  }
+}
+
+/**
+ * Calculate the next payment date based on frequency
+ */
+export function calculateNextPaymentDate(
+  startDate: Date,
+  paymentNumber: number,
+  frequency: string
+): Date {
+  const nextDate = new Date(startDate);
+
+  switch (frequency.toLowerCase()) {
+    case 'monthly':
+      nextDate.setMonth(nextDate.getMonth() + paymentNumber);
+      break;
+    case 'quarterly':
+      nextDate.setMonth(nextDate.getMonth() + (paymentNumber * 3));
+      break;
+    case 'semi-annual':
+      nextDate.setMonth(nextDate.getMonth() + (paymentNumber * 6));
+      break;
+    case 'annual':
+      nextDate.setFullYear(nextDate.getFullYear() + paymentNumber);
+      break;
+    default:
+      nextDate.setMonth(nextDate.getMonth() + paymentNumber);
+  }
+
+  return nextDate;
+}
+
+export function calculatePeriodicPayment(
+  principal: number,
+  annualRate: number,
+  termMonths: number,
+  frequency: string = 'monthly'
+): number {
+  const periodsPerYear = getPaymentPeriodsPerYear(frequency);
+  const totalPeriods = Math.ceil(termMonths / (12 / periodsPerYear));
+
+  if (annualRate === 0) {
+    return principal / totalPeriods;
+  }
+
+  const periodicRate = annualRate / 100 / periodsPerYear;
+  const numerator = periodicRate * Math.pow(1 + periodicRate, totalPeriods);
+  const denominator = Math.pow(1 + periodicRate, totalPeriods) - 1;
+
+  return principal * (numerator / denominator);
+}
+
+// Keep the old function for backward compatibility
 export function calculateMonthlyPayment(
   principal: number,
-  annualInterestRate: number,
+  annualRate: number,
   termMonths: number
 ): number {
-  const monthlyRate = annualInterestRate / 100 / 12;
-  
-  // Handle edge cases
-  if (monthlyRate === 0) return principal / termMonths;
-  if (termMonths === 0) return principal;
-  
-  return (
-    (principal * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) /
-    (Math.pow(1 + monthlyRate, termMonths) - 1)
-  );
+  return calculatePeriodicPayment(principal, annualRate, termMonths, 'monthly');
 }
 
 export interface PaymentScheduleEntry {
@@ -29,73 +88,64 @@ export interface PaymentScheduleEntry {
   balance: number;
 }
 
-// Generate complete payment schedule
+export interface PaymentScheduleItem {
+  paymentNumber: number;
+  paymentDate: Date;
+  principalPayment: number;
+  interestPayment: number;
+  totalPayment: number;
+  remainingBalance: number;
+}
+
 export function generatePaymentSchedule(
   principal: number,
-  annualInterestRate: number,
+  annualRate: number,
   termMonths: number,
   startDate: Date,
-  paymentFrequency: 'monthly' | 'quarterly' | 'semi-annual' | 'annual' = 'monthly'
-): PaymentScheduleEntry[] {
-  const schedule: PaymentScheduleEntry[] = [];
-  let balance = principal;
-  const monthlyRate = annualInterestRate / 100 / 12;
-  
-  // Handle different payment frequencies
-  let paymentInterval: number;
-  let numberOfPayments: number;
-  
-  switch (paymentFrequency) {
-    case 'quarterly':
-      paymentInterval = 3;
-      numberOfPayments = Math.ceil(termMonths / 3);
-      break;
-    case 'semi-annual':
-      paymentInterval = 6;
-      numberOfPayments = Math.ceil(termMonths / 6);
-      break;
-    case 'annual':
-      paymentInterval = 12;
-      numberOfPayments = Math.ceil(termMonths / 12);
-      break;
-    default: // monthly
-      paymentInterval = 1;
-      numberOfPayments = termMonths;
-      break;
-  }
-  
-  // Calculate payment amount based on frequency
-  const periodicRate = monthlyRate * paymentInterval;
-  const payment = calculateMonthlyPayment(principal, annualInterestRate, termMonths) * paymentInterval;
-  
-  for (let i = 0; i < numberOfPayments; i++) {
-    const date = new Date(startDate);
-    date.setMonth(startDate.getMonth() + i * paymentInterval);
-    
-    // Calculate interest for this period
-    const interest = balance * periodicRate;
-    
-    // Calculate principal for this period
-    const principalPayment = payment - interest;
-    
-    // Update balance
-    balance = Math.max(0, balance - principalPayment);
-    
-    schedule.push({
-      paymentNumber: i + 1,
-      date,
-      payment,
-      principal: principalPayment,
-      interest,
-      balance,
-    });
-    
-    // Handle final payment adjustments
-    if (balance <= 0) {
-      break;
+  frequency: string = 'monthly'
+): PaymentScheduleItem[] {
+  const periodsPerYear = getPaymentPeriodsPerYear(frequency);
+  const totalPeriods = Math.ceil(termMonths / (12 / periodsPerYear));
+  const periodicPayment = calculatePeriodicPayment(principal, annualRate, termMonths, frequency);
+  const periodicRate = annualRate / 100 / periodsPerYear;
+
+  let remainingBalance = principal;
+  const schedule: PaymentScheduleItem[] = [];
+
+  for (let period = 1; period <= totalPeriods; period++) {
+    const interestPayment = remainingBalance * periodicRate;
+    const principalPayment = periodicPayment - interestPayment;
+    remainingBalance -= principalPayment;
+
+    // Adjust for final payment
+    if (period === totalPeriods && remainingBalance > 0.01) {
+      const adjustedPrincipalPayment = principalPayment + remainingBalance;
+      remainingBalance = 0;
+
+      const paymentDate = calculateNextPaymentDate(startDate, period - 1, frequency);
+
+      schedule.push({
+        paymentNumber: period,
+        paymentDate,
+        principalPayment: adjustedPrincipalPayment,
+        interestPayment,
+        totalPayment: adjustedPrincipalPayment + interestPayment,
+        remainingBalance
+      });
+    } else {
+      const paymentDate = calculateNextPaymentDate(startDate, period - 1, frequency);
+
+      schedule.push({
+        paymentNumber: period,
+        paymentDate,
+        principalPayment,
+        interestPayment,
+        totalPayment: periodicPayment,
+        remainingBalance: Math.max(0, remainingBalance)
+      });
     }
   }
-  
+
   return schedule;
 }
 
@@ -110,38 +160,51 @@ export interface InvestorReturn {
   roi: number;
 }
 
-// Calculate returns for each investor
+interface MonthlyReturn {
+  month: number;
+  date: Date;
+  monthlyReturn: number;
+  cumulativeReturn: number;
+  principalBalance: number;
+}
+
 export function calculateInvestorReturns(
-  investors: Array<{id: number, name: string, investmentAmount: number}>,
-  paymentSchedule: PaymentScheduleEntry[]
-): InvestorReturn[] {
-  const totalInvestment = investors.reduce(
-    (sum, investor) => sum + investor.investmentAmount,
-    0
-  );
-  
-  return investors.map(investor => {
-    const share = investor.investmentAmount / totalInvestment;
-    const monthlyReturns = paymentSchedule.map(
-      entry => entry.payment * share
-    );
-    
-    const totalPrincipal = investor.investmentAmount;
-    const totalPayments = monthlyReturns.reduce((sum, payment) => sum + payment, 0);
-    const totalInterest = totalPayments - totalPrincipal;
-    const roi = (totalInterest / totalPrincipal) * 100;
-    
-    return {
-      investorId: investor.id,
-      name: investor.name,
-      investmentAmount: investor.investmentAmount,
-      share,
-      monthlyReturns,
-      totalReturn: totalPayments,
-      totalInterest,
-      roi,
-    };
+  investmentAmount: number,
+  totalInvestmentAmount: number,
+  paymentSchedule: PaymentScheduleItem[],
+  investorId: string,
+  name: string,
+  frequency: string = 'monthly'
+): InvestorReturn {
+  const investmentPercentage = investmentAmount / totalInvestmentAmount;
+  const monthlyReturns: MonthlyReturn[] = [];
+  let cumulativeReturn = 0;
+
+  paymentSchedule.forEach((payment) => {
+    const periodicReturn = payment.interestPayment * investmentPercentage;
+    cumulativeReturn += periodicReturn;
+
+    monthlyReturns.push({
+      month: payment.paymentNumber,
+      date: payment.paymentDate,
+      monthlyReturn: periodicReturn, // Keep field name for compatibility
+      cumulativeReturn,
+      principalBalance: payment.remainingBalance * investmentPercentage
+    });
   });
+
+  const totalReturn = cumulativeReturn;
+  const roi = totalReturn / investmentAmount;
+
+  return {
+    investorId,
+    name,
+    investmentAmount,
+    investmentPercentage,
+    monthlyReturns,
+    totalReturn,
+    roi
+  };
 }
 
 // Format currency for display
@@ -179,18 +242,18 @@ export function groupPaymentsByYear(schedule: PaymentScheduleEntry[]): {
   interest: number;
 }[] {
   const yearlyData: Record<string, { principal: number; interest: number }> = {};
-  
+
   schedule.forEach(payment => {
     const year = payment.date.getFullYear().toString();
-    
+
     if (!yearlyData[year]) {
       yearlyData[year] = { principal: 0, interest: 0 };
     }
-    
+
     yearlyData[year].principal += payment.principal;
     yearlyData[year].interest += payment.interest;
   });
-  
+
   return Object.entries(yearlyData).map(([year, data]) => ({
     year,
     principal: data.principal,

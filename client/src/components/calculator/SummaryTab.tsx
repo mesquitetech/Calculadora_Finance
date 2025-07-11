@@ -34,6 +34,8 @@ interface SummaryTabProps {
   investors: InvestorReturn[];
   paymentSchedule: PaymentScheduleEntry[];
   onExport: () => void;
+  paymentFrequency: string;
+  periodicPayment: number;
 }
 
 export function SummaryTab({
@@ -46,25 +48,27 @@ export function SummaryTab({
   endDate,
   investors,
   paymentSchedule,
-  onExport
+  onExport,
+  paymentFrequency,
+  periodicPayment
 }: SummaryTabProps) {
   // Prepare data for the investment distribution chart
   const investmentData = investors.map(investor => ({
     name: investor.name,
     value: investor.investmentAmount
   }));
-  
+
   // Colors for the charts
   const COLORS = ['#1a56db', '#0694a2', '#047857', '#9333ea', '#db2777', '#dc2626'];
-  
+
   // Prepare data for principal vs interest chart
   const yearlyData = groupPaymentsByYear(paymentSchedule);
-  
+
   // Calculate average investment
   const avgInvestment = investors.length > 0
     ? loanAmount / investors.length
     : 0;
-  
+
   // Format tooltip for the pie chart
   const renderCustomPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -81,7 +85,7 @@ export function SummaryTab({
     }
     return null;
   };
-  
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="shadow">
@@ -109,9 +113,9 @@ export function SummaryTab({
               </dd>
             </div>
             <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-muted-foreground">Monthly Payment</dt>
+              <dt className="text-sm font-medium text-muted-foreground">{paymentFrequency ? paymentFrequency.charAt(0).toUpperCase() + paymentFrequency.slice(1) + " Payment" : "Monthly Payment"}</dt>
               <dd className="mt-1 text-lg font-semibold text-green-600">
-                {formatCurrency(monthlyPayment)}
+                {formatCurrency(periodicPayment || monthlyPayment)}
               </dd>
             </div>
             <div className="sm:col-span-1">

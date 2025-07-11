@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calculate", async (req, res) => {
     try {
       const { loanParams, investors } = req.body;
-      
+
       // Validate inputs
       const validatedLoan = insertLoanSchema.parse({
         loanName: loanParams.loanName,
@@ -30,14 +30,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate: new Date(loanParams.startDate),
         paymentFrequency: loanParams.paymentFrequency,
       });
-      
+
       // Validate minimum 3 investors
       if (!Array.isArray(investors) || investors.length < 3) {
         return res.status(400).json({ 
           message: "At least 3 investors are required"
         });
       }
-      
+
       // Validate each investor
       const validatedInvestors = investors.map(investor => {
         return {
@@ -45,22 +45,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           investmentAmount: String(investor.investmentAmount),
         };
       });
-      
+
       // Check that investment amounts match the loan amount
       const totalInvestment = validatedInvestors.reduce(
         (sum, investor) => sum + Number(investor.investmentAmount),
         0
       );
-      
+
       if (Math.abs(totalInvestment - Number(validatedLoan.amount)) > 0.01) {
         return res.status(400).json({
           message: "Total investment must match the loan amount"
         });
       }
-      
+
       // Create the loan
       const loan = await storage.createLoan(validatedLoan);
-      
+
       // Create investors for the loan
       const createdInvestors = await Promise.all(
         validatedInvestors.map(investor => 
@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         )
       );
-      
+
       // Generate payment schedule
       const paymentSchedule = calculatePaymentSchedule(
         Number(loan.amount),
@@ -79,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loan.startDate,
         loan.paymentFrequency
       );
-      
+
       // Save payment schedule
       const savedPayments = await Promise.all(
         paymentSchedule.map(payment => 
@@ -94,13 +94,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         )
       );
-      
+
       // Calculate investor returns
       const investorReturns = calculateInvestorReturns(
         createdInvestors,
         paymentSchedule
       );
-      
+
       // Return calculation results
       res.status(200).json({
         loanId: loan.id,
@@ -112,14 +112,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Calculation error:", error);
-      
+
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
         return res.status(400).json({ 
           message: validationError.message 
         });
       }
-      
+
       res.status(500).json({ 
         message: "Failed to calculate investment returns" 
       });
@@ -137,24 +137,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const schedule = [];
     let balance = principal;
     const monthlyRate = annualInterestRate / 100 / 12;
-    
+
     // Calculate monthly payment using the formula: P = (Pv*r(1+r)^n)/((1+r)^n-1)
     const monthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) /
       (Math.pow(1 + monthlyRate, termMonths) - 1);
-    
+
     for (let i = 0; i < termMonths; i++) {
       const date = new Date(startDate);
       date.setMonth(startDate.getMonth() + i);
-      
+
       // Calculate interest for this month
       const interest = balance * monthlyRate;
-      
+
       // Calculate principal for this month
       const principalPayment = monthlyPayment - interest;
-      
+
       // Update balance
       balance = Math.max(0, balance - principalPayment);
-      
+
       schedule.push({
         paymentNumber: i + 1,
         date,
@@ -163,13 +163,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interest,
         balance,
       });
-      
+
       // Handle final payment adjustments
       if (balance <= 0) {
         break;
       }
     }
-    
+
     return schedule;
   }
 
@@ -186,23 +186,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (sum, investor) => sum + Number(investor.investmentAmount),
       0
     );
-    
+
     return investors.map(investor => {
       const investmentAmount = Number(investor.investmentAmount);
       const share = investmentAmount / totalInvestment;
-      
+
       // Calculate monthly returns
       const monthlyReturns = paymentSchedule.map(entry => entry.payment * share);
-      
+
       // Calculate total return
       const totalReturn = monthlyReturns.reduce((sum, payment) => sum + payment, 0);
-      
+
       // Calculate total interest
       const totalInterest = totalReturn - investmentAmount;
-      
+
       // Calculate ROI
       const roi = (totalInterest / investmentAmount) * 100;
-      
+
       return {
         investorId: investor.id,
         name: investor.name,
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // For a real app, we'd want pagination here
       const allLoans = await db.select().from(loans).orderBy(desc(loans.createdAt));
-      
+
       // Map loans to a simpler response format
       const calculations = allLoans.map((loan) => ({
         id: loan.id,
@@ -233,7 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentFrequency: loan.paymentFrequency,
         createdAt: loan.createdAt
       }));
-      
+
       res.status(200).json(calculations);
     } catch (error) {
       console.error("Error fetching calculations:", error);
@@ -265,48 +265,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid ID format" });
       }
-      
+
       // Get the loan
       const loan = await storage.getLoan(id);
       if (!loan) {
         return res.status(404).json({ message: "Calculation not found" });
       }
-      
+
       // Get the investors
       const investors = await storage.getInvestorsByLoanId(id);
-      
+
       // Get the payment schedule
       const paymentSchedule = await storage.getPaymentsByLoanId(id);
-      
+
       // Map payment schedule to the expected format for calculateInvestorReturns
       const mappedPaymentSchedule = paymentSchedule.map(payment => ({
         payment: Number(payment.amount),
         principal: Number(payment.principal),
         interest: Number(payment.interest)
       }));
-      
+
       // Calculate investor returns
       const investorReturns = calculateInvestorReturns(
         investors,
         mappedPaymentSchedule
       );
-      
+
       // Calculate total interest
       const totalInterest = paymentSchedule.reduce(
         (sum, payment) => sum + Number(payment.interest), 
         0
       );
-      
+
       // Get monthly payment from first payment
       const monthlyPayment = paymentSchedule.length > 0 
         ? Number(paymentSchedule[0].amount) 
         : 0;
-      
+
       // Get end date from last payment
       const endDate = paymentSchedule.length > 0 
         ? paymentSchedule[paymentSchedule.length - 1].date 
         : new Date();
-      
+
       res.status(200).json({
         loanId: loan.id,
         loanName: loan.loanName,

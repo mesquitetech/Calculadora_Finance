@@ -55,25 +55,31 @@ export function ReportsTab({
 }: ReportsTabProps) {
   // PDF Generation Functions
   const handleGeneratePaymentReport = () => {
-    try {
+    if (!calculationResults) {
       toast({
-        title: "Generating payment report",
-        description: "Please wait while the report is being generated...",
+        title: "No Data Available",
+        description: "Please calculate the investment returns first.",
+        variant: "destructive",
       });
-      
+      return;
+    }
+
+    try {
+      const periodicPayment = calculationResults.periodicPayment || calculationResults.monthlyPayment;
       const doc = generatePaymentReport(
-        loanAmount,
-        interestRate,
-        termMonths,
-        startDate,
-        endDate,
-        paymentSchedule,
-        monthlyPayment,
-        totalInterest
+        loanParams.totalAmount,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        loanParams.startDate,
+        calculationResults.endDate,
+        periodicPayment,
+        calculationResults.totalInterest,
+        calculationResults.paymentSchedule,
+        loanParams.paymentFrequency
       );
-      
+
       doc.save('payment_schedule_report.pdf');
-      
+
       toast({
         title: "Report generated successfully",
         description: "Payment schedule report has been downloaded",
@@ -81,11 +87,11 @@ export function ReportsTab({
     } catch (error) {
       console.error("Error generating payment report:", error);
       let errorMessage = "An error occurred while generating the payment report";
-      
+
       if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       toast({
         title: "Error generating report",
         description: errorMessage,
@@ -93,27 +99,32 @@ export function ReportsTab({
       });
     }
   };
-  
+
   const handleGenerateInvestorReport = (investor: InvestorReturn) => {
-    try {
+    if (!calculationResults) {
       toast({
-        title: "Generating investor report",
-        description: `Creating report for ${investor.name}...`,
+        title: "No Data Available",
+        description: "Please calculate the investment returns first.",
+        variant: "destructive",
       });
-      
+      return;
+    }
+
+    try {
+      const periodicPayment = calculationResults.periodicPayment || calculationResults.monthlyPayment;
       const doc = generateInvestorReport(
         investor,
-        loanAmount,
-        interestRate,
-        termMonths,
-        startDate,
-        endDate,
-        monthlyPayment,
-        totalInterest
+        loanParams.totalAmount,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        loanParams.startDate,
+        calculationResults.endDate,
+        periodicPayment,
+        loanParams.paymentFrequency
       );
-      
+
       doc.save(`investor_report_${investor.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
-      
+
       toast({
         title: "Report generated successfully",
         description: `Report for ${investor.name} has been downloaded`,
@@ -121,11 +132,11 @@ export function ReportsTab({
     } catch (error) {
       console.error("Error generating investor report:", error);
       let errorMessage = "An error occurred while generating the investor report";
-      
+
       if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       toast({
         title: "Error generating report",
         description: errorMessage,
@@ -133,14 +144,14 @@ export function ReportsTab({
       });
     }
   };
-  
+
   const handleGenerateProjectReport = () => {
     try {
       toast({
         title: "Generating project summary report",
         description: "Please wait while the report is being generated...",
       });
-      
+
       const doc = generateProjectSummaryReport(
         loanAmount,
         interestRate,
@@ -151,9 +162,9 @@ export function ReportsTab({
         totalInterest,
         investors
       );
-      
+
       doc.save('project_summary_report.pdf');
-      
+
       toast({
         title: "Report generated successfully",
         description: "Project summary report has been downloaded",
@@ -161,11 +172,11 @@ export function ReportsTab({
     } catch (error) {
       console.error("Error generating project report:", error);
       let errorMessage = "An error occurred while generating the project report";
-      
+
       if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       toast({
         title: "Error generating report",
         description: errorMessage,
@@ -173,14 +184,14 @@ export function ReportsTab({
       });
     }
   };
-  
+
   const handleGenerateLoanContract = () => {
     try {
       toast({
         title: "Generating loan contract",
         description: "Please wait while the contract is being generated...",
       });
-      
+
       const doc = generateLoanContract(
         loanAmount,
         interestRate,
@@ -189,9 +200,9 @@ export function ReportsTab({
         endDate,
         monthlyPayment
       );
-      
+
       doc.save('financing_agreement.pdf');
-      
+
       toast({
         title: "Contract generated successfully",
         description: "Financing agreement has been downloaded",
@@ -199,11 +210,11 @@ export function ReportsTab({
     } catch (error) {
       console.error("Error generating loan contract:", error);
       let errorMessage = "An error occurred while generating the loan contract";
-      
+
       if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       toast({
         title: "Error generating contract",
         description: errorMessage,
@@ -211,14 +222,14 @@ export function ReportsTab({
       });
     }
   };
-  
+
   const handleGeneratePromissoryNote = (investor: InvestorReturn) => {
     try {
       toast({
         title: "Generating promissory note",
         description: `Creating note for ${investor.name}...`,
       });
-      
+
       const doc = generateInvestorPromissoryNote(
         investor,
         loanAmount,
@@ -227,9 +238,9 @@ export function ReportsTab({
         startDate,
         endDate
       );
-      
+
       doc.save(`promissory_note_${investor.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
-      
+
       toast({
         title: "Promissory note generated successfully",
         description: `Note for ${investor.name} has been downloaded`,
@@ -237,11 +248,11 @@ export function ReportsTab({
     } catch (error) {
       console.error("Error generating promissory note:", error);
       let errorMessage = "An error occurred while generating the promissory note";
-      
+
       if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       toast({
         title: "Error generating note",
         description: errorMessage,
@@ -249,7 +260,7 @@ export function ReportsTab({
       });
     }
   };
-  
+
   return (
     <Tabs defaultValue="financial" className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-8">
@@ -262,7 +273,7 @@ export function ReportsTab({
           Legal Documents
         </TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="financial" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Payment Schedule Report */}
@@ -308,7 +319,7 @@ export function ReportsTab({
               </Button>
             </CardContent>
           </Card>
-          
+
           {/* Investor Report */}
           <Card className="shadow">
             <CardHeader className="pb-3">
@@ -343,7 +354,7 @@ export function ReportsTab({
                   <span className="text-sm">Return on investment metrics</span>
                 </li>
               </ul>
-              
+
               {investors.map((investor) => (
                 <Button
                   key={investor.investorId}
@@ -357,7 +368,7 @@ export function ReportsTab({
               ))}
             </CardContent>
           </Card>
-          
+
           {/* Project Summary Report */}
           <Card className="shadow">
             <CardHeader className="pb-3">
@@ -402,7 +413,7 @@ export function ReportsTab({
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="bg-muted p-4 rounded-md">
           <h3 className="font-medium mb-2 flex items-center">
             <ArrowDown className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -445,7 +456,7 @@ export function ReportsTab({
           </div>
         </div>
       </TabsContent>
-      
+
       <TabsContent value="legal" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Loan Contract */}
@@ -491,11 +502,11 @@ export function ReportsTab({
                   </li>
                 </ul>
               </div>
-              
+
               <div className="text-sm border-l-2 border-amber-300 pl-3 mb-4 italic text-muted-foreground">
                 Note: This document should be reviewed by qualified legal counsel before being finalized and signed by the parties.
               </div>
-              
+
               <Button
                 onClick={handleGenerateLoanContract}
                 className="w-full"
@@ -505,7 +516,7 @@ export function ReportsTab({
               </Button>
             </CardContent>
           </Card>
-          
+
           {/* Investor Promissory Notes */}
           <Card className="shadow">
             <CardHeader className="pb-3">
@@ -549,11 +560,11 @@ export function ReportsTab({
                   </li>
                 </ul>
               </div>
-              
+
               <div className="text-sm border-l-2 border-rose-300 pl-3 mb-4 italic text-muted-foreground">
                 Note: These promissory notes are customized for each investor and should be reviewed by legal counsel before execution.
               </div>
-              
+
               <div className="space-y-2">
                 {investors.map((investor) => (
                   <Button
@@ -570,7 +581,7 @@ export function ReportsTab({
             </CardContent>
           </Card>
         </div>
-        
+
         <Card className="shadow">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Legal Document Information</CardTitle>
@@ -584,9 +595,9 @@ export function ReportsTab({
                   They establish the legally binding terms and conditions that govern the loan and investment relationships.
                 </p>
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <h3 className="font-medium mb-2">Legal Disclaimer</h3>
                 <p className="text-sm text-muted-foreground">
@@ -594,9 +605,9 @@ export function ReportsTab({
                   The specific terms, conditions, and legal requirements may vary based on local laws and regulations.
                 </p>
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <h3 className="font-medium mb-2">Required Information</h3>
                 <p className="text-sm text-muted-foreground mb-2">

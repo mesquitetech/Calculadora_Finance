@@ -143,7 +143,7 @@ export function ProjectionsTab({
         ]),
          didDrawPage: (data) => {
             doc.setFontSize(14);
-            
+
         }
       });
 

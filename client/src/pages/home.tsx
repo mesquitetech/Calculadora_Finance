@@ -84,7 +84,8 @@ export default function Home() {
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/calculate", {
         loanParams,
-        investors
+        investors,
+        paymentFrequency: loanParams.paymentFrequency,
       });
       const data = await response.json();
       const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
