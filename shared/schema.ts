@@ -41,7 +41,8 @@ export const investors = pgTable("investors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   investmentAmount: numeric("investment_amount", { precision: 12, scale: 2 }).notNull(),
-  loanId: integer("loan_id").notNull(),
+  // CORREGIDO: Se añade la referencia a la tabla 'loans' con borrado en cascada.
+  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: 'cascade' }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -54,7 +55,8 @@ export const insertInvestorSchema = createInsertSchema(investors).pick({
 // Define the payments table
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
-  loanId: integer("loan_id").notNull(),
+  // CORREGIDO: Se añade la referencia a la tabla 'loans' con borrado en cascada.
+  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: 'cascade' }),
   paymentNumber: integer("payment_number").notNull(),
   date: timestamp("date").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
