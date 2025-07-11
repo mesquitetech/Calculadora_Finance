@@ -18,37 +18,41 @@ import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { 
-  calculateMonthlyPayment, 
+import {
+  calculateMonthlyPayment,
   generatePaymentSchedule,
   calculateInvestorReturns,
   PaymentScheduleEntry
 } from "@/lib/finance";
+// 1. Importar la función para generar el reporte PDF
+import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 
 export default function Home() {
-  // Use the Tab type imported from TabNavigation
   const [activeTab, setActiveTab] = useState<Tab>('input');
-  
-  // State for wizard
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  // State for loan parameters
+  const today = new Date();
+  const todayDate = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
   const [loanParams, setLoanParams] = useState<LoanParameters>({
+    loanName: "New Loan",
     totalAmount: 100000,
-    interestRate: 5.75,
+    interestRate: 10,
     termMonths: 36,
-    startDate: new Date('2023-08-01'),
+    startDate: todayDate,
     paymentFrequency: 'monthly'
   });
 
-  // State for investors
   const [investors, setInvestors] = useState<Investor[]>([
     { id: 1, name: "John Doe", investmentAmount: 40000 },
     { id: 2, name: "Jane Smith", investmentAmount: 35000 },
     { id: 3, name: "Robert Johnson", investmentAmount: 25000 }
   ]);
 
-  // State for calculation results
   const [calculationResults, setCalculationResults] = useState<{
     monthlyPayment: number;
     totalInterest: number;
@@ -57,40 +61,32 @@ export default function Home() {
     endDate: Date;
   } | null>(null);
 
-  // Check if inputs are valid
   const [inputsValid, setInputsValid] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isLoanNameValid, setIsLoanNameValid] = useState(true);
 
-  // Validate inputs
+  const handleLoanNameValidation = (isValid: boolean) => {
+    setIsLoanNameValid(isValid);
+  };
+
   useEffect(() => {
-    const totalInvestment = investors.reduce(
-      (sum, investor) => sum + investor.investmentAmount,
-      0
-    );
-
-    const isValid =
-      loanParams.totalAmount > 0 &&
-      loanParams.interestRate >= 0 &&
+    const isButtonEnabled =
+      isLoanNameValid &&
+      loanParams.interestRate > 0 &&
       loanParams.termMonths > 0 &&
       investors.length >= 3 &&
-      investors.every(investor => investor.name.trim() !== "") &&
-      Math.abs(totalInvestment - loanParams.totalAmount) < 0.01;
+      investors.every(investor => investor.name.trim() !== "");
 
-    setInputsValid(isValid);
-  }, [loanParams, investors]);
+    setInputsValid(isButtonEnabled);
+  }, [loanParams, investors, isLoanNameValid]);
 
-  // Calculation mutation using TanStack Query
   const calculateMutation = useMutation({
     mutationFn: async () => {
-      // Send calculation request to server
       const response = await apiRequest("POST", "/api/calculate", {
         loanParams,
         investors
       });
-      
       const data = await response.json();
-      
-      // Process the response from server
       const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
         ...payment,
         date: new Date(payment.date),
@@ -99,8 +95,6 @@ export default function Home() {
         interest: Number(payment.interest),
         balance: Number(payment.balance)
       }));
-      
-      // Return the processed data
       return {
         loanId: data.loanId,
         monthlyPayment: data.monthlyPayment,
@@ -113,12 +107,14 @@ export default function Home() {
     onSuccess: (data) => {
       setCalculationResults(data);
       setActiveTab('schedule');
+      setIsCalculating(false);
       toast({
         title: "Calculation Complete",
         description: "Your investment returns have been calculated successfully.",
       });
     },
     onError: (error) => {
+      setIsCalculating(false);
       toast({
         title: "Calculation Failed",
         description: error.message || "There was an error calculating your investment returns.",
@@ -128,47 +124,88 @@ export default function Home() {
   });
 
   const handleCalculate = () => {
-    if (!inputsValid) {
+    const totalInvestment = investors.reduce(
+      (sum, investor) => sum + investor.investmentAmount,
+      0
+    );
+
+    if (Math.abs(totalInvestment - loanParams.totalAmount) >= 0.01) {
       toast({
-        title: "Validation Error",
-        description: "Please ensure all required fields are filled correctly and investor amounts match the loan amount.",
+        title: "Amount Mismatch",
+        description: "Total investment amount must exactly match the loan amount.",
         variant: "destructive",
       });
       return;
     }
-    
+
+    if (!inputsValid) {
+      toast({
+        title: "Validation Error",
+        description: "Please ensure all required fields are filled correctly.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCalculating(true);
     calculateMutation.mutate();
   };
 
+  // 2. Lógica actualizada para generar y descargar el PDF
   const handleExportSummary = () => {
+    if (!calculationResults) {
+      toast({
+        title: "No Data to Export",
+        description: "Please calculate the investment returns first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
-      title: "Export Started",
-      description: "Your summary report is being generated.",
+      title: "Generating Report...",
+      description: "Your summary report is being created.",
     });
-    
-    // In a real app, this would trigger a download from the server
-    setTimeout(() => {
+
+    try {
+      const doc = generateProjectSummaryReport(
+        loanParams.totalAmount,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        loanParams.startDate,
+        calculationResults.endDate,
+        calculationResults.monthlyPayment,
+        calculationResults.totalInterest,
+        calculationResults.investorReturns
+      );
+
+      doc.save(`project_summary_${loanParams.loanName.replace(/\s+/g, '_')}.pdf`);
+
       toast({
         title: "Export Complete",
         description: "Your summary report has been downloaded.",
       });
-    }, 1500);
+    } catch (error) {
+      console.error("Error generating summary report:", error);
+      toast({
+        title: "Export Failed",
+        description: "An error occurred while generating the report.",
+        variant: "destructive",
+      });
+    }
   };
-  
-  // Wizard functions
+
   const openWizard = () => {
     setWizardOpen(true);
   };
-  
+
   const closeWizard = () => {
     setWizardOpen(false);
   };
-  
+
   const handleWizardSave = (newLoanParams: LoanParameters, newInvestors: Investor[]) => {
     setLoanParams(newLoanParams);
     setInvestors(newInvestors);
-    
     toast({
       title: "Setup Complete",
       description: "Your financing plan has been created successfully.",
@@ -179,7 +216,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-neutral-900 text-foreground">
       <Header />
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Finance Calculator</h1>
           <div className="flex gap-3">
@@ -189,7 +226,7 @@ export default function Home() {
               className="px-6"
             >
               <CalculatorIcon className="h-5 w-5 mr-2" />
-              Calculate Investment Returns
+              {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
             </Button>
             <Button
               variant="outline"
@@ -198,12 +235,6 @@ export default function Home() {
             >
               <Wand2 className="h-5 w-5 mr-2" />
               Setup Wizard
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => window.location.href = "/"}
-            >
-              Calculator
             </Button>
             <Button
               variant="outline"
@@ -215,31 +246,28 @@ export default function Home() {
         </div>
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        <div className="tab-content">
-          {/* Input Parameters Tab */}
+        <div className="tab-content min-h-[60vh]">
           {activeTab === 'input' && (
             <div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <LoanParametersCard 
-                  loanParams={loanParams} 
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
+                <LoanParametersCard
+                  loanParams={loanParams}
                   setLoanParams={setLoanParams}
                   isCalculating={calculateMutation.isPending}
+                  onValidationChange={handleLoanNameValidation}
                 />
-                <InvestorsCard 
-                  investors={investors} 
+                <InvestorsCard
+                  investors={investors}
                   setInvestors={setInvestors}
                   totalRequired={loanParams.totalAmount}
                   isCalculating={calculateMutation.isPending}
                 />
               </div>
-              
-              {/* Removed duplicate Calculate button since we moved it to the top */}
             </div>
           )}
 
-          {/* Payment Schedule Tab */}
           {activeTab === 'schedule' && calculationResults && (
-            <PaymentScheduleTab 
+            <PaymentScheduleTab
               loanAmount={loanParams.totalAmount}
               monthlyPayment={calculationResults.monthlyPayment}
               totalInterest={calculationResults.totalInterest}
@@ -247,17 +275,15 @@ export default function Home() {
             />
           )}
 
-          {/* Investor Returns Tab */}
           {activeTab === 'investors' && calculationResults && (
-            <InvestorReturnsTab 
+            <InvestorReturnsTab
               investorReturns={calculationResults.investorReturns}
               paymentSchedule={calculationResults.paymentSchedule}
             />
           )}
 
-          {/* Summary Tab */}
           {activeTab === 'summary' && calculationResults && (
-            <SummaryTab 
+            <SummaryTab
               loanAmount={loanParams.totalAmount}
               interestRate={loanParams.interestRate}
               termMonths={loanParams.termMonths}
@@ -271,7 +297,6 @@ export default function Home() {
             />
           )}
 
-          {/* Financial Projections Tab */}
           {activeTab === 'projections' && calculationResults && (
             <ProjectionsTab
               loanAmount={loanParams.totalAmount}
@@ -281,8 +306,7 @@ export default function Home() {
               startDate={loanParams.startDate}
             />
           )}
-          
-          {/* Banking Reports Tab */}
+
           {activeTab === 'banking' && calculationResults && (
             <BankerReportsTab
               loanAmount={loanParams.totalAmount}
@@ -295,8 +319,7 @@ export default function Home() {
               investors={calculationResults.investorReturns}
             />
           )}
-          
-          {/* Reports & Documents Tab */}
+
           {activeTab === 'reports' && calculationResults && (
             <ReportsTab
               loanAmount={loanParams.totalAmount}
@@ -314,11 +337,9 @@ export default function Home() {
       </main>
 
       <Footer />
-      
-      {/* About Footer with company information */}
+
       <AboutFooter />
-      
-      {/* Setup Wizard */}
+
       <SetupWizard
         isOpen={wizardOpen}
         onClose={closeWizard}

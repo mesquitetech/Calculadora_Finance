@@ -25,6 +25,7 @@ export interface IStorage {
   // Loan operations
   getLoan(id: number): Promise<Loan | undefined>;
   createLoan(loan: InsertLoan): Promise<Loan>;
+  deleteLoan(id: number): Promise<void>;
   
   // Investor operations
   getInvestor(id: number): Promise<Investor | undefined>;
@@ -62,6 +63,25 @@ export class MemStorage implements IStorage {
   }
 
   // User methods
+  async deleteLoan(id: number): Promise<void> {
+    // Borra también los inversores y pagos asociados para mantener la consistencia
+    const investorsToDelete = Array.from(this.investors.values()).filter(
+      (investor) => investor.loanId === id
+    );
+    for (const investor of investorsToDelete) {
+      this.investors.delete(investor.id);
+    }
+
+    const paymentsToDelete = Array.from(this.payments.values()).filter(
+      (payment) => payment.loanId === id
+    );
+    for (const payment of paymentsToDelete) {
+      this.payments.delete(payment.id);
+    }
+
+    this.loans.delete(id);
+  }
+  
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -163,6 +183,10 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async deleteLoan(id: number): Promise<void> {
+    await db.delete(loans).where(eq(loans.id, id));
   }
   
   // Loan methods

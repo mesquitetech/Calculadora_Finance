@@ -23,6 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate inputs
       const validatedLoan = insertLoanSchema.parse({
+        loanName: loanParams.loanName,
         amount: String(loanParams.totalAmount),
         interestRate: String(loanParams.interestRate),
         termMonths: loanParams.termMonths,
@@ -224,6 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Map loans to a simpler response format
       const calculations = allLoans.map((loan) => ({
         id: loan.id,
+        loanName: loan.loanName,
         amount: Number(loan.amount),
         interestRate: Number(loan.interestRate),
         termMonths: loan.termMonths,
@@ -236,6 +238,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching calculations:", error);
       res.status(500).json({ message: "Failed to fetch calculations" });
+    }
+  });
+
+  app.delete("/api/calculations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      await storage.deleteLoan(id);
+
+      res.status(200).json({ message: `Calculation with ID ${id} deleted successfully.` });
+
+    } catch (error) {
+      console.error("Error deleting calculation:", error);
+      res.status(500).json({ message: "Failed to delete calculation" });
     }
   });
 
@@ -290,6 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({
         loanId: loan.id,
+        loanName: loan.loanName,
         amount: Number(loan.amount),
         interestRate: Number(loan.interestRate),
         termMonths: loan.termMonths,

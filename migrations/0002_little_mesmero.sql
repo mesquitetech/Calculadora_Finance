@@ -1,0 +1,1 @@
+ALTER TABLE "loans" ALTER COLUMN "loan_name" DROP DEFAULT;

@@ -45,7 +45,7 @@ export function AboutFooter() {
   ];
   
   return (
-    <div className="w-full">
+    <div className="w-full px-6">
       <div className="flex justify-center my-8">
         <Button variant="ghost" onClick={() => setExpanded(!expanded)}>
           {expanded ? "Hide Details" : "About This Software"}

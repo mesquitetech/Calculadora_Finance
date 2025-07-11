@@ -1,19 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 // Export the type so it can be imported elsewhere
 export interface LoanParameters {
+  loanName: string,
   totalAmount: number;
   interestRate: number;
   termMonths: number;
@@ -25,25 +27,74 @@ interface LoanParametersCardProps {
   loanParams: LoanParameters;
   setLoanParams: React.Dispatch<React.SetStateAction<LoanParameters>>;
   isCalculating: boolean;
+  onValidationChange: (isValid: boolean) => void;
 }
 
-export function LoanParametersCard({ 
-  loanParams, 
+export function LoanParametersCard({
+  loanParams,
   setLoanParams,
-  isCalculating
+  isCalculating,
+  onValidationChange
 }: LoanParametersCardProps) {
+  const [loanNameError, setLoanNameError] = useState('');
+
+  // CORREGIDO: La lógica de validación ha sido simplificada y corregida.
+  useEffect(() => {
+    // La regla de validación: el nombre debe tener entre 3 y 59 caracteres.
+    const isValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+
+    // Notifica al componente padre del estado de validación.
+    onValidationChange(isValid);
+
+    // Solo muestra un mensaje de error si el usuario ha comenzado a escribir.
+    if (loanParams.loanName.length >= 0) {
+      if (loanParams.loanName.length < 3) {
+        setLoanNameError('Loan name must be at least 3 characters long.');
+      } else if (loanParams.loanName.length >= 60) {
+        setLoanNameError('Loan name must be shorter than 60 characters.');
+      } else {
+        // Si el nombre es válido, limpia cualquier mensaje de error existente.
+        setLoanNameError('');
+      }
+    } else {
+      // Si el campo está vacío, no muestra un error.
+      setLoanNameError('');
+    }
+  }, [loanParams.loanName, onValidationChange]);
+
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    setLoanParams(prev => ({ ...prev, loanName: name }));
+  };
+
   const handleAmountChange = (value: number) => {
     setLoanParams(prev => ({ ...prev, totalAmount: value }));
   };
 
+
   const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
-    setLoanParams(prev => ({ ...prev, interestRate: isNaN(value) ? 0 : value }));
+    if (isNaN(value)) {
+      setLoanParams(prev => ({ ...prev, interestRate: 0 }));
+      return;
+    }
+    if (value < 0 || value > 999) {
+      return;
+    }
+    setLoanParams(prev => ({ ...prev, interestRate: value }));
   };
 
   const handleTermMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    setLoanParams(prev => ({ ...prev, termMonths: isNaN(value) ? 0 : value }));
+    if (isNaN(value)) {
+      setLoanParams(prev => ({ ...prev, termMonths: 0 }));
+      return;
+    }
+    if (value < 1 || value > 1200) {
+      return;
+    }
+    setLoanParams(prev => ({ ...prev, termMonths: value }));
   };
 
   const handleStartDateChange = (date: Date | undefined) => {
@@ -53,8 +104,8 @@ export function LoanParametersCard({
   };
 
   const handleFrequencyChange = (value: string) => {
-    setLoanParams(prev => ({ 
-      ...prev, 
+    setLoanParams(prev => ({
+      ...prev,
       paymentFrequency: value as "monthly" | "quarterly" | "semi-annual" | "annual"
     }));
   };
@@ -63,8 +114,29 @@ export function LoanParametersCard({
     <Card className="col-span-1">
       <CardContent className="pt-6">
         <h2 className="text-lg font-bold mb-4 text-foreground">Loan Parameters</h2>
-        
+
         <div className="space-y-4">
+          <div className="form-group">
+            <Label htmlFor="loan-name" className="mb-1">
+              Loan Name
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Input
+              id="loan-name"
+              name="loan-name"
+              type="text"
+              onChange={handleTitleChange}
+              value={loanParams.loanName}
+              disabled={isCalculating}
+              required
+              className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
+            />
+            {loanNameError && (
+              <p className="text-xs text-red-500 mt-1">{loanNameError}</p>
+            )}
+          </div>
+
+
           <div className="form-group">
             <Label htmlFor="total-amount" className="mb-1">
               Total Loan Amount
@@ -76,10 +148,11 @@ export function LoanParametersCard({
               value={loanParams.totalAmount}
               onChange={handleAmountChange}
               min={1000}
+              max={100000000}
               disabled={isCalculating}
               required
             />
-            <p className="text-xs text-muted-foreground mt-1">Minimum required amount: $1,000</p>
+            <p className="text-xs text-muted-foreground mt-1">Minimum required amount: $1,000 Maximum: $100,000,000</p>
           </div>
 
           <div className="form-group">
@@ -88,13 +161,14 @@ export function LoanParametersCard({
               <span className="text-destructive ml-1">*</span>
             </Label>
             <div className="relative">
-              <Input 
+              <Input
                 id="interest-rate"
                 name="interest-rate"
                 type="number"
                 value={loanParams.interestRate.toString()}
                 onChange={handleInterestRateChange}
                 min={0}
+                max={999}
                 step={0.01}
                 className="pr-12"
                 placeholder="0.00"
@@ -105,6 +179,7 @@ export function LoanParametersCard({
                 <span className="text-muted-foreground">%</span>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">Maximum interest rate: 999%</p>
           </div>
 
           <div className="form-group">
@@ -127,23 +202,25 @@ export function LoanParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="start-date" className="mb-1">
-              Start Date
-              <span className="text-destructive ml-1">*</span>
+            <Label className="w-full">
+              <span className="flex items-center mb-1">
+                Start Date
+                <span className="text-destructive ml-1">*</span>
+              </span>
+              <DatePicker
+                date={loanParams.startDate}
+                setDate={handleStartDateChange}
+                disabled={isCalculating}
+              />
             </Label>
-            <DatePicker
-              date={loanParams.startDate}
-              setDate={handleStartDateChange}
-              disabled={isCalculating}
-            />
           </div>
 
           <div className="form-group">
             <Label htmlFor="payment-frequency" className="mb-1">
               Payment Frequency
             </Label>
-            <Select 
-              value={loanParams.paymentFrequency} 
+            <Select
+              value={loanParams.paymentFrequency}
               onValueChange={handleFrequencyChange}
               disabled={isCalculating}
             >

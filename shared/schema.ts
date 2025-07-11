@@ -1,4 +1,4 @@
-import { pgTable, text, serial, numeric, timestamp, integer, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, integer, varchar, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -18,6 +18,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 // Define the loans table
 export const loans = pgTable("loans", {
   id: serial("id").primaryKey(),
+  loanName: text('loan_name').notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
   interestRate: numeric("interest_rate", { precision: 5, scale: 2 }).notNull(),
   termMonths: integer("term_months").notNull(),
@@ -27,6 +28,7 @@ export const loans = pgTable("loans", {
 });
 
 export const insertLoanSchema = createInsertSchema(loans).pick({
+  loanName: true,
   amount: true,
   interestRate: true,
   termMonths: true,

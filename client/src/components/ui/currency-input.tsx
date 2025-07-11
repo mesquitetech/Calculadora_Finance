@@ -6,64 +6,62 @@ interface CurrencyInputProps {
   name?: string;
   value: number;
   onChange: (value: number) => void;
+  onBlur?: () => void; 
   placeholder?: string;
   min?: number;
+  max?: number;
   className?: string;
   disabled?: boolean;
   required?: boolean;
 }
 
 export function CurrencyInput({
-  id,
-  name,
   value,
   onChange,
-  placeholder = "0.00",
+  onBlur,
   min = 0,
-  className = "",
-  disabled = false,
-  required = false,
+  max = Number.MAX_SAFE_INTEGER,
+  ...props
 }: CurrencyInputProps) {
   const [displayValue, setDisplayValue] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Format the numeric value to display value with commas
   useEffect(() => {
-    if (value !== undefined) {
-      // Convert to string with 2 decimal places
+    if (!isFocused) {
+
       const formatted = value.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
       setDisplayValue(formatted);
-    } else {
-      setDisplayValue("");
     }
-  }, [value]);
+  }, [value, isFocused]); 
+  const handleFocus = () => {
+    setIsFocused(true);
+ setDisplayValue(value.toString());
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+
+    let numericValue = parseFloat(displayValue);
+
+    if (isNaN(numericValue) || numericValue < min) {
+      numericValue = min;
+    }
+    else if (numericValue > max) {
+      numericValue = max; 
+    }
+
+    onChange(numericValue);
+
+    if (onBlur) {
+      onBlur();
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let inputValue = e.target.value;
-    
-    // Remove non-numeric characters except decimal point
-    inputValue = inputValue.replace(/[^0-9.]/g, "");
-    
-    // Ensure only one decimal point
-    const decimalCount = (inputValue.match(/\./g) || []).length;
-    if (decimalCount > 1) {
-      const firstDecimalIndex = inputValue.indexOf(".");
-      inputValue = 
-        inputValue.substring(0, firstDecimalIndex + 1) + 
-        inputValue.substring(firstDecimalIndex + 1).replace(/\./g, "");
-    }
-    
-    // Convert to number
-    const numericValue = parseFloat(inputValue) || 0;
-    
-    // Validate min value
-    if (numericValue >= min) {
-      onChange(numericValue);
-    } else if (inputValue === "" || inputValue === "0" || inputValue === "0.") {
-      onChange(0);
-    }
+    setDisplayValue(e.target.value);
   };
 
   return (
@@ -72,14 +70,12 @@ export function CurrencyInput({
         <span className="text-muted-foreground">$</span>
       </div>
       <Input
-        id={id}
-        name={name}
+        {...props}
         value={displayValue}
         onChange={handleChange}
-        className={`pl-7 ${className}`}
-        placeholder={placeholder}
-        disabled={disabled}
-        required={required}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className={`pl-7 ${props.className || ""}`}
       />
     </div>
   );
