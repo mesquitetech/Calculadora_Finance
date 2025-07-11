@@ -18,22 +18,33 @@ import { InvestorReturn, formatCurrency, formatPercentage } from "@/lib/finance"
 
 interface PaymentScheduleEntry {
   paymentNumber: number;
-  // Add other properties if needed
+  date: Date;
+  payment: number;
+  principal: number;
+  interest: number;
+  balance: number;
 }
 
 interface InvestorReturnsTabProps {
   investorReturns: InvestorReturn[];
   paymentSchedule: PaymentScheduleEntry[];
+  paymentFrequency?: string;
 }
 
 export function InvestorReturnsTab({ 
   investorReturns,
-  paymentSchedule
+  paymentSchedule,
+  paymentFrequency = 'monthly'
 }: InvestorReturnsTabProps) {
   // Prepare data for the comparison chart
   const comparisonData = paymentSchedule.map((payment, index) => {
+    const periodLabel = paymentFrequency === 'monthly' ? 'Month' :
+                       paymentFrequency === 'quarterly' ? 'Quarter' :
+                       paymentFrequency === 'semi-annual' ? 'Period' :
+                       paymentFrequency === 'annual' ? 'Year' : 'Period';
+    
     const dataPoint: any = {
-      month: `Month ${index + 1}`,
+      month: `${periodLabel} ${index + 1}`,
       paymentNumber: payment.paymentNumber,
     };
 
@@ -66,11 +77,15 @@ export function InvestorReturnsTab({
   // Prepare cumulative return data for each investor
   const prepareInvestorCumulativeData = (investor: InvestorReturn) => {
     let cumulativeReturn = 0;
+    const periodLabel = paymentFrequency === 'monthly' ? 'Month' :
+                       paymentFrequency === 'quarterly' ? 'Quarter' :
+                       paymentFrequency === 'semi-annual' ? 'Period' :
+                       paymentFrequency === 'annual' ? 'Year' : 'Period';
 
     return sampleIndices.map(index => {
       cumulativeReturn += investor.monthlyReturns[index] || 0;
       return {
-        month: `Month ${paymentSchedule[index]?.paymentNumber}`,
+        month: `${periodLabel} ${paymentSchedule[index]?.paymentNumber}`,
         return: investor.monthlyReturns[index] || 0,
         cumulativeReturn,
       };
@@ -154,7 +169,9 @@ export function InvestorReturnsTab({
 
       <Card className="shadow">
         <CardHeader className="border-b border-neutral-lighter px-6 py-4">
-          <CardTitle>Monthly Returns by Investor</CardTitle>
+          <CardTitle>
+            {paymentFrequency.charAt(0).toUpperCase() + paymentFrequency.slice(1)} Returns by Investor
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="h-80">

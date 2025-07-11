@@ -104,7 +104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return calculation results
       res.status(200).json({
         loanId: loan.id,
-        monthlyPayment: paymentSchedule[0].payment,
+        monthlyPayment: paymentSchedule[0].payment, // Keep for backward compatibility
+        periodicPayment: paymentSchedule[0].payment,
+        paymentFrequency: paymentFrequency,
         totalInterest: paymentSchedule.reduce((sum, p) => sum + Number(p.interest), 0),
         paymentSchedule: savedPayments,
         investorReturns,
@@ -136,21 +138,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   ) {
     const schedule = [];
     let balance = principal;
-    const monthlyRate = annualInterestRate / 100 / 12;
+    
+    // Get payment periods per year based on frequency
+    const getPaymentPeriodsPerYear = (frequency: string): number => {
+      switch (frequency.toLowerCase()) {
+        case 'monthly': return 12;
+        case 'quarterly': return 4;
+        case 'semi-annual': return 2;
+        case 'annual': return 1;
+        default: return 12;
+      }
+    };
 
-    // Calculate monthly payment using the formula: P = (Pv*r(1+r)^n)/((1+r)^n-1)
-    const monthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, termMonths)) /
-      (Math.pow(1 + monthlyRate, termMonths) - 1);
+    // Calculate next payment date
+    const calculateNextPaymentDate = (startDate: Date, paymentNumber: number, frequency: string): Date => {
+      const nextDate = new Date(startDate);
+      switch (frequency.toLowerCase()) {
+        case 'monthly':
+          nextDate.setMonth(nextDate.getMonth() + paymentNumber);
+          break;
+        case 'quarterly':
+          nextDate.setMonth(nextDate.getMonth() + (paymentNumber * 3));
+          break;
+        case 'semi-annual':
+          nextDate.setMonth(nextDate.getMonth() + (paymentNumber * 6));
+          break;
+        case 'annual':
+          nextDate.setFullYear(nextDate.getFullYear() + paymentNumber);
+          break;
+        default:
+          nextDate.setMonth(nextDate.getMonth() + paymentNumber);
+      }
+      return nextDate;
+    };
 
-    for (let i = 0; i < termMonths; i++) {
-      const date = new Date(startDate);
-      date.setMonth(startDate.getMonth() + i);
+    const periodsPerYear = getPaymentPeriodsPerYear(paymentFrequency);
+    const totalPeriods = Math.ceil(termMonths / (12 / periodsPerYear));
+    const periodicRate = annualInterestRate / 100 / periodsPerYear;
 
-      // Calculate interest for this month
-      const interest = balance * monthlyRate;
+    // Calculate periodic payment
+    const periodicPayment = periodicRate === 0 
+      ? principal / totalPeriods
+      : (principal * periodicRate * Math.pow(1 + periodicRate, totalPeriods)) /
+        (Math.pow(1 + periodicRate, totalPeriods) - 1);
 
-      // Calculate principal for this month
-      const principalPayment = monthlyPayment - interest;
+    for (let i = 0; i < totalPeriods; i++) {
+      const date = calculateNextPaymentDate(startDate, i, paymentFrequency);
+
+      // Calculate interest for this period
+      const interest = balance * periodicRate;
+
+      // Calculate principal for this period
+      const principalPayment = periodicPayment - interest;
 
       // Update balance
       balance = Math.max(0, balance - principalPayment);
@@ -158,14 +197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       schedule.push({
         paymentNumber: i + 1,
         date,
-        payment: monthlyPayment,
+        payment: periodicPayment,
         principal: principalPayment,
         interest,
         balance,
       });
 
       // Handle final payment adjustments
-      if (balance <= 0) {
+      if (balance <= 0.01) {
         break;
       }
     }

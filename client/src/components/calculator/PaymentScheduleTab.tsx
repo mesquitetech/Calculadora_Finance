@@ -14,32 +14,36 @@ interface PaymentScheduleTabProps {
   monthlyPayment: number;
   totalInterest: number;
   paymentSchedule: PaymentScheduleEntry[];
+  paymentFrequency: string;
+  periodicPayment: number;
 }
 
 export function PaymentScheduleTab({ 
   loanAmount, 
   monthlyPayment, 
   totalInterest, 
-  paymentSchedule 
+  paymentSchedule,
+  paymentFrequency,
+  periodicPayment
 }: PaymentScheduleTabProps) {
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(paymentSchedule.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, paymentSchedule.length);
   const currentItems = paymentSchedule.slice(startIndex, endIndex);
-  
+
   // Pagination controls
   const goToPreviousPage = () => {
     setCurrentPage(prev => Math.max(prev - 1, 1));
   };
-  
+
   const goToNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
-  
+
   return (
     <Card className="shadow-md">
       <CardHeader className="border-b border-neutral-lighter">
@@ -61,9 +65,11 @@ export function PaymentScheduleTab({
           </Card>
           <Card className="bg-card shadow-sm">
             <CardContent className="p-3">
-              <p className="text-sm text-muted-foreground">Monthly Payment</p>
+              <p className="text-sm text-muted-foreground">
+                {paymentFrequency.charAt(0).toUpperCase() + paymentFrequency.slice(1)} Payment
+              </p>
               <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(monthlyPayment)}
+                {formatCurrency(periodicPayment || monthlyPayment)}
               </p>
             </CardContent>
           </Card>
@@ -80,11 +86,11 @@ export function PaymentScheduleTab({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-muted">
+          <TableHeader>
             <TableRow>
               <TableHead>Payment #</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Payment</TableHead>
+              <TableHead>{paymentFrequency.charAt(0).toUpperCase() + paymentFrequency.slice(1)} Payment</TableHead>
               <TableHead>Principal</TableHead>
               <TableHead>Interest</TableHead>
               <TableHead>Balance</TableHead>
