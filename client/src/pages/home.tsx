@@ -59,7 +59,6 @@ export default function Home() {
     paymentSchedule: PaymentScheduleEntry[];
     investorReturns: any[];
     endDate: Date;
-    periodicPayment: number;
   } | null>(null);
 
   const [inputsValid, setInputsValid] = useState(false);
@@ -103,8 +102,7 @@ export default function Home() {
         totalInterest: data.totalInterest,
         paymentSchedule: paymentSchedule,
         investorReturns: data.investorReturns,
-        endDate: new Date(data.endDate),
-        periodicPayment: data.periodicPayment
+        endDate: new Date(data.endDate)
       };
     },
     onSuccess: (data) => {
@@ -275,8 +273,6 @@ export default function Home() {
               monthlyPayment={calculationResults.monthlyPayment}
               totalInterest={calculationResults.totalInterest}
               paymentSchedule={calculationResults.paymentSchedule}
-              paymentFrequency={loanParams.paymentFrequency}
-              periodicPayment={calculationResults.periodicPayment}
             />
           )}
 
@@ -284,7 +280,6 @@ export default function Home() {
             <InvestorReturnsTab
               investorReturns={calculationResults.investorReturns}
               paymentSchedule={calculationResults.paymentSchedule}
-              paymentFrequency={loanParams.paymentFrequency}
             />
           )}
 
