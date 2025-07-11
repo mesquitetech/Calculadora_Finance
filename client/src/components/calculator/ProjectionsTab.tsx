@@ -143,7 +143,7 @@ export function ProjectionsTab({
         ]),
          didDrawPage: (data) => {
             doc.setFontSize(14);
-            doc.text("Risk Assessment Matrix", 14, (data.settings.margin as any).top);
+            
         }
       });
 
