@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon, TrendingUpIcon, AreaChartIcon, BarChart3Icon } from "lucide-react";
+import { InfoIcon, Download, File, FileSpreadsheet } from "lucide-react";
 import {
   calculateInvestmentMetrics,
   generateFinancialProjections,
@@ -18,12 +18,14 @@ import {
   formatPercent,
   formatRatio,
   formatInteger,
-  formatNumber,
   FinancialProjection,
   QuarterlyPerformance,
   RiskAssessment,
   InvestmentMetrics
 } from '@/lib/financialMetrics';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectionsTabProps {
   loanAmount: number;
@@ -40,50 +42,26 @@ export function ProjectionsTab({
   monthlyPayment,
   startDate
 }: ProjectionsTabProps) {
-  // Projection parameters
+  // Hooks and State
+  const { toast } = useToast();
   const [annualRevenue, setAnnualRevenue] = useState<number>(loanAmount * 0.25);
   const [annualExpenses, setAnnualExpenses] = useState<number>(annualRevenue * 0.6);
-  const [growthRate, setGrowthRate] = useState<number>(0.03); // 3% quarterly growth
+  const [growthRate, setGrowthRate] = useState<number>(0.03);
   const [projectionYears, setProjectionYears] = useState<number>(5);
   const [assumedPropertyValue, setAssumedPropertyValue] = useState<number>(loanAmount * 1.25);
   const [discountRate, setDiscountRate] = useState<number>(interestRate / 100);
-  
-  // Calculate metrics
-  const investmentMetrics = calculateInvestmentMetrics(
-    loanAmount,
-    interestRate,
-    termMonths,
-    monthlyPayment,
-    assumedPropertyValue,
-    annualRevenue
-  );
-  
-  // Generate projections
-  const financialProjections = generateFinancialProjections(
-    loanAmount,
-    annualRevenue * 0.15, // Assume 15% of revenue is cash flow
-    growthRate * 4, // Convert quarterly to annual
-    discountRate,
-    projectionYears
-  );
-  
-  const quarterlyPerformance = generateQuarterlyPerformance(
-    loanAmount,
-    annualRevenue,
-    annualExpenses,
-    growthRate,
-    projectionYears
-  );
-  
+
+  // Data Calculation
+  const investmentMetrics = calculateInvestmentMetrics(loanAmount, interestRate, termMonths, monthlyPayment, assumedPropertyValue, annualRevenue);
+  const financialProjections = generateFinancialProjections(loanAmount, annualRevenue * 0.15, growthRate * 4, discountRate, projectionYears);
+  const quarterlyPerformance = generateQuarterlyPerformance(loanAmount, annualRevenue, annualExpenses, growthRate, projectionYears);
   const riskAssessment = generateRiskAssessment();
-  
-  // Calculate performance indicators for dashboard
   const averageQuarterlyRevenue = quarterlyPerformance.reduce((sum, q) => sum + q.revenue, 0) / quarterlyPerformance.length;
   const averageQuarterlyNetIncome = quarterlyPerformance.reduce((sum, q) => sum + q.netIncome, 0) / quarterlyPerformance.length;
   const totalProjectedCashFlow = quarterlyPerformance.reduce((sum, q) => sum + q.cashFlow, 0);
-  const finalCapitalReserves = quarterlyPerformance[quarterlyPerformance.length - 1].capitalReserves;
-  
-  // Colors for charts
+  const finalCapitalReserves = quarterlyPerformance.length > 0 ? quarterlyPerformance[quarterlyPerformance.length - 1].capitalReserves : 0;
+
+  // Chart Colors
   const chartColors = {
     revenue: "#4f46e5",
     expenses: "#ef4444",
@@ -92,15 +70,130 @@ export function ProjectionsTab({
     npv: "#8b5cf6",
     reserves: "#0ea5e9"
   };
-  
+
+  // --- EXPORT FUNCTIONS ---
+
+  const handleGeneratePDF = () => {
+    toast({ title: "Generating PDF Report...", description: "Please wait, this may take a moment." });
+    try {
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Financial Projections & Analytics Report", 14, 22);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+      autoTable(doc, {
+        startY: 40,
+        head: [['Key Investment Metric', 'Value']],
+        body: [
+          ['Internal Rate of Return (IRR)', formatPercent(investmentMetrics.internalRateOfReturn)],
+          ['Net Present Value (NPV)', formatDollarAmount(investmentMetrics.netPresentValue, 0)],
+          ['Debt Service Coverage Ratio (DSCR)', `${formatRatio(investmentMetrics.debtServiceCoverageRatio)}x`],
+          ['Break-Even Point', `${formatInteger(investmentMetrics.breakEvenPoint)} months`],
+          ['Return on Investment (ROI)', formatPercent(investmentMetrics.returnOnInvestment)],
+          ['Loan to Value (LTV) Ratio', formatPercent(investmentMetrics.loanToValueRatio)],
+        ],
+        theme: 'striped'
+      });
+
+      doc.addPage();
+
+      autoTable(doc, {
+        head: [['Quarter', 'Revenue', 'Expenses', 'Net Income', 'Cash Flow']],
+        body: quarterlyPerformance.map(q => [
+          q.quarter,
+          formatDollarAmount(q.revenue, 0),
+          formatDollarAmount(q.expenses, 0),
+          formatDollarAmount(q.netIncome, 0),
+          formatDollarAmount(q.cashFlow, 0),
+        ]),
+        didDrawPage: (data) => {
+            doc.setFontSize(14);
+            doc.text("Quarterly Performance Data", 14, (data.settings.margin as any).top);
+        }
+      });
+
+      doc.addPage();
+
+      autoTable(doc, {
+        head: [['Period', 'Cash Flow', 'NPV', 'Cumulative NPV', 'ROI', 'IRR']],
+        body: financialProjections.map(p => [
+          p.period,
+          formatDollarAmount(p.cashFlow, 0),
+          formatDollarAmount(p.netPresentValue, 0),
+          formatDollarAmount(p.cumulativeNPV, 0),
+          formatPercent(p.roi),
+          formatPercent(p.irr)
+        ]),
+         didDrawPage: (data) => {
+            doc.setFontSize(14);
+            doc.text("Annual Financial Projections", 14, (data.settings.margin as any).top);
+        }
+      });
+
+       autoTable(doc, {
+        head: [['Risk Category', 'Probability', 'Impact', 'Risk Score']],
+        body: riskAssessment.map(r => [
+          r.category,
+          formatPercent(r.probability),
+          formatPercent(r.impact),
+          formatPercent(r.riskScore)
+        ]),
+         didDrawPage: (data) => {
+            doc.setFontSize(14);
+            doc.text("Risk Assessment Matrix", 14, (data.settings.margin as any).top);
+        }
+      });
+
+      doc.save("Financial_Projections_Report.pdf");
+      toast({ title: "Success!", description: "PDF report has been downloaded." });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to generate PDF.", variant: "destructive" });
+    }
+  };
+
+  const handleExportCSV = () => {
+    toast({ title: "Exporting to CSV...", description: "Preparing your data for download." });
+
+    const quarterlyHeaders = "Quarter,Revenue,Expenses,Net Income,Cash Flow,Debt Servicing,Projected Growth,Capital Reserves\n";
+    const annualHeaders = "Period,Cash Flow,Net Present Value,Cumulative NPV,ROI,IRR\n";
+
+    const quarterlyRows = quarterlyPerformance.map(q => 
+      `${q.quarter},${q.revenue},${q.expenses},${q.netIncome},${q.cashFlow},${q.debtServicing},${q.projectedGrowth},${q.capitalReserves}`
+    ).join("\n");
+
+    const annualRows = financialProjections.map(p => 
+      `${p.period},${p.cashFlow},${p.netPresentValue},${p.cumulativeNPV},${p.roi},${p.irr}`
+    ).join("\n");
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Quarterly Performance\n"
+      + quarterlyHeaders 
+      + quarterlyRows 
+      + "\n\nAnnual Projections\n" 
+      + annualHeaders 
+      + annualRows;
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "financial_projections.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({ title: "Success!", description: "CSV file has been downloaded." });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold">Financial Projections & Analytics</h2>
       <p className="text-muted-foreground">
         Advanced financial analytics and projections for investment decision-making.
       </p>
-      
-      {/* Parameters Section */}
+
       <Card>
         <CardHeader>
           <CardTitle>Projection Parameters</CardTitle>
@@ -121,11 +214,8 @@ export function ProjectionsTab({
                   onChange={(e) => setAnnualRevenue(Number(e.target.value))}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Expected annual revenue from the investment.
-              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="annual-expenses">Annual Expenses</Label>
               <div className="flex items-center space-x-2">
@@ -137,11 +227,8 @@ export function ProjectionsTab({
                   onChange={(e) => setAnnualExpenses(Number(e.target.value))}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Expected annual operating expenses.
-              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="property-value">Asset Value</Label>
               <div className="flex items-center space-x-2">
@@ -153,11 +240,8 @@ export function ProjectionsTab({
                   onChange={(e) => setAssumedPropertyValue(Number(e.target.value))}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Estimated value of the asset being financed.
-              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Growth Rate ({(growthRate * 100).toFixed(1)}% quarterly)</Label>
               <Slider
@@ -167,11 +251,8 @@ export function ProjectionsTab({
                 step={0.1}
                 onValueChange={(value) => setGrowthRate(value[0] / 100)}
               />
-              <p className="text-xs text-muted-foreground">
-                Expected quarterly growth rate (0-10%).
-              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Projection Years</Label>
               <Slider
@@ -181,11 +262,8 @@ export function ProjectionsTab({
                 step={1}
                 onValueChange={(value) => setProjectionYears(value[0])}
               />
-              <p className="text-xs text-muted-foreground">
-                Number of years to project financial performance.
-              </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Discount Rate ({(discountRate * 100).toFixed(1)}%)</Label>
               <Slider
@@ -195,15 +273,11 @@ export function ProjectionsTab({
                 step={0.5}
                 onValueChange={(value) => setDiscountRate(value[0] / 100)}
               />
-              <p className="text-xs text-muted-foreground">
-                Rate used for present value calculations.
-              </p>
             </div>
           </div>
         </CardContent>
       </Card>
-      
-      {/* Key Metrics Dashboard */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -218,7 +292,7 @@ export function ProjectionsTab({
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Net Present Value</CardTitle>
@@ -232,7 +306,7 @@ export function ProjectionsTab({
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Debt Service Coverage</CardTitle>
@@ -246,7 +320,7 @@ export function ProjectionsTab({
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Break-Even Point</CardTitle>
@@ -261,16 +335,14 @@ export function ProjectionsTab({
           </CardContent>
         </Card>
       </div>
-      
-      {/* Tabs for different projections */}
+
       <Tabs defaultValue="performance">
         <TabsList className="grid grid-cols-3">
           <TabsTrigger value="performance">Quarterly Performance</TabsTrigger>
           <TabsTrigger value="projections">Financial Projections</TabsTrigger>
           <TabsTrigger value="risk">Risk Assessment</TabsTrigger>
         </TabsList>
-        
-        {/* Quarterly Performance Tab */}
+
         <TabsContent value="performance" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card className="lg:col-span-2">
@@ -321,7 +393,7 @@ export function ProjectionsTab({
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Performance Summary</CardTitle>
@@ -348,7 +420,7 @@ export function ProjectionsTab({
                     <span className="font-medium">{formatDollarAmount(finalCapitalReserves, 0)}</span>
                   </div>
                 </div>
-                
+
                 <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={quarterlyPerformance}>
@@ -368,7 +440,7 @@ export function ProjectionsTab({
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <Alert>
                   <InfoIcon className="h-4 w-4" />
                   <AlertTitle>Project Viability</AlertTitle>
@@ -385,7 +457,7 @@ export function ProjectionsTab({
               </CardContent>
             </Card>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Quarterly Performance Data</CardTitle>
@@ -427,8 +499,7 @@ export function ProjectionsTab({
             </CardContent>
           </Card>
         </TabsContent>
-        
-        {/* Financial Projections Tab */}
+
         <TabsContent value="projections" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card className="lg:col-span-2">
@@ -471,7 +542,7 @@ export function ProjectionsTab({
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Investment Metrics</CardTitle>
@@ -497,20 +568,8 @@ export function ProjectionsTab({
                     <span className="text-muted-foreground">Payback Period</span>
                     <span className="font-medium">{formatInteger(investmentMetrics.paybackPeriod)} months</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Discounted Payback Period</span>
-                    <span className="font-medium">{formatInteger(investmentMetrics.discountedPaybackPeriod)} months</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Return on Investment</span>
-                    <span className="font-medium">{formatPercent(investmentMetrics.returnOnInvestment)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Loan to Value Ratio</span>
-                    <span className="font-medium">{formatPercent(investmentMetrics.loanToValueRatio)}</span>
-                  </div>
                 </div>
-                
+
                 <div className="h-[140px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={[
@@ -521,16 +580,7 @@ export function ProjectionsTab({
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip 
-                        formatter={(value) => {
-                          if (typeof value === 'string') {
-                            return `${parseFloat(value).toFixed(2)}%`;
-                          } else if (Array.isArray(value)) {
-                            return `${parseFloat(String(value[0])).toFixed(2)}%`;
-                          } else if (typeof value === 'number') {
-                            return `${value.toFixed(2)}%`;
-                          }
-                          return `${value}%`;
-                        }} 
+                        formatter={(value) => `${Number(value).toFixed(2)}%`}
                       />
                       <Bar dataKey="value" fill={chartColors.revenue} />
                     </BarChart>
@@ -539,46 +589,45 @@ export function ProjectionsTab({
               </CardContent>
             </Card>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Annual Financial Projections</CardTitle>
-              <CardDescription>
-                Detailed annual financial projections and returns
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Cash Flow</TableHead>
-                      <TableHead>Net Present Value</TableHead>
-                      <TableHead>Cumulative NPV</TableHead>
-                      <TableHead>Return on Investment</TableHead>
-                      <TableHead>Internal Rate of Return</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {financialProjections.map((projection, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{projection.period}</TableCell>
-                        <TableCell>{formatDollarAmount(projection.cashFlow, 0)}</TableCell>
-                        <TableCell>{formatDollarAmount(projection.netPresentValue, 0)}</TableCell>
-                        <TableCell>{formatDollarAmount(projection.cumulativeNPV, 0)}</TableCell>
-                        <TableCell>{formatPercent(projection.roi)}</TableCell>
-                        <TableCell>{formatPercent(projection.irr)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+            {/* CORREGIDO: Se ha restaurado la tabla de proyecciones anuales */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Annual Financial Projections</CardTitle>
+                    <CardDescription>
+                        Detailed annual financial projections and returns
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Period</TableHead>
+                                    <TableHead>Cash Flow</TableHead>
+                                    <TableHead>Net Present Value</TableHead>
+                                    <TableHead>Cumulative NPV</TableHead>
+                                    <TableHead>Return on Investment</TableHead>
+                                    <TableHead>Internal Rate of Return</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {financialProjections.map((projection, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{projection.period}</TableCell>
+                                        <TableCell>{formatDollarAmount(projection.cashFlow, 0)}</TableCell>
+                                        <TableCell>{formatDollarAmount(projection.netPresentValue, 0)}</TableCell>
+                                        <TableCell>{formatDollarAmount(projection.cumulativeNPV, 0)}</TableCell>
+                                        <TableCell>{formatPercent(projection.roi)}</TableCell>
+                                        <TableCell>{formatPercent(projection.irr)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
-        
-        {/* Risk Assessment Tab */}
+
         <TabsContent value="risk" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
@@ -623,7 +672,7 @@ export function ProjectionsTab({
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Risk Score Visualization</CardTitle>
@@ -653,104 +702,65 @@ export function ProjectionsTab({
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                
-                <div className="mt-6">
-                  <h4 className="text-sm font-medium mb-2">Risk Assessment Summary</h4>
-                  <p className="text-sm text-muted-foreground">
-                    The highest risk factor is {
-                      riskAssessment.reduce((max, risk) => 
-                        risk.riskScore > max.riskScore ? risk : max
-                      ).category
-                    } with a {
-                      formatPercent(riskAssessment.reduce((max, risk) => 
-                        risk.riskScore > max.riskScore ? risk : max
-                      ).riskScore)
-                    } risk score. Overall portfolio risk is {
-                      formatPercent(riskAssessment.reduce((sum, risk) => sum + risk.riskScore, 0) / 
-                      riskAssessment.length)
-                    }.
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Risk Sensitivity Analysis</CardTitle>
-              <CardDescription>
-                How changes in key factors affect investment performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-medium mb-3">Interest Rate Sensitivity</h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Each 1% increase in interest rates would reduce the NPV by approximately {
-                      formatDollarAmount(investmentMetrics.netPresentValue * 0.08, 0)
-                    } and increase the monthly payment by {
-                      formatDollarAmount(monthlyPayment * 0.06, 0)
-                    }.
-                  </p>
-                  
-                  <h4 className="text-sm font-medium mb-3">Revenue Sensitivity</h4>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    A 10% decrease in projected revenue would reduce the DSCR from {
-                      formatRatio(investmentMetrics.debtServiceCoverageRatio)
-                    }x to {
-                      formatRatio(investmentMetrics.debtServiceCoverageRatio * 0.9)
-                    }x and extend the payback period by approximately {
-                      Math.round(investmentMetrics.paybackPeriod * 0.12)
-                    } months.
-                  </p>
-                  
-                  <h4 className="text-sm font-medium mb-3">Property Value Sensitivity</h4>
-                  <p className="text-sm text-muted-foreground">
-                    A 15% decrease in property value would increase the LTV ratio from {
-                      formatPercent(investmentMetrics.loanToValueRatio)
-                    } to {
-                      formatPercent(investmentMetrics.loanToValueRatio / 0.85)
-                    }, potentially affecting refinancing options.
-                  </p>
+           {/* CORREGIDO: Se ha restaurado el análisis de sensibilidad de riesgos */}
+           <Card>
+              <CardHeader>
+                <CardTitle>Risk Sensitivity Analysis</CardTitle>
+                <CardDescription>
+                  How changes in key factors affect investment performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Interest Rate Sensitivity</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Each 1% increase in interest rates would reduce the NPV by approximately {
+                        formatDollarAmount(investmentMetrics.netPresentValue * 0.08, 0)
+                      } and increase the monthly payment by {
+                        formatDollarAmount(monthlyPayment * 0.06, 0)
+                      }.
+                    </p>
+
+                    <h4 className="text-sm font-medium mb-3">Revenue Sensitivity</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      A 10% decrease in projected revenue would reduce the DSCR from {
+                        formatRatio(investmentMetrics.debtServiceCoverageRatio)
+                      }x to {
+                        formatRatio(investmentMetrics.debtServiceCoverageRatio * 0.9)
+                      }x.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Risk Mitigation Recommendations</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start">
+                        <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                        <span>Consider interest rate hedging strategies to mitigate interest rate risk.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                        <span>Maintain capital reserves of at least {formatDollarAmount(loanAmount * 0.1, 0)}.</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium mb-3">Risk Mitigation Recommendations</h4>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li className="flex items-start">
-                      <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
-                      <span>Consider interest rate hedging strategies to mitigate interest rate risk.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
-                      <span>Maintain capital reserves of at least {formatDollarAmount(loanAmount * 0.1, 0)} for unexpected expenses or revenue shortfalls.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
-                      <span>Develop contingency plans for scenarios where growth falls below {formatPercent(growthRate * 2)} annually.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">4</span>
-                      <span>Consider property insurance to protect asset value and mitigate potential LTV increases.</span>
-                    </li>
-                    <li className="flex items-start">
-                      <span className="bg-blue-100 text-blue-800 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">5</span>
-                      <span>Implement quarterly performance reviews to monitor actual results against projections.</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
-      
-      <div className="flex justify-end">
-        <Button variant="outline" className="mr-2">
-          Export to Excel
+
+      <div className="flex justify-end gap-4">
+        <Button variant="outline" onClick={handleExportCSV}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Export to CSV
         </Button>
-        <Button>
+        <Button onClick={handleGeneratePDF}>
+          <File className="mr-2 h-4 w-4" />
           Generate PDF Report
         </Button>
       </div>

@@ -16,9 +16,14 @@ import {
 } from "recharts";
 import { InvestorReturn, formatCurrency, formatPercentage } from "@/lib/finance";
 
+interface PaymentScheduleEntry {
+  paymentNumber: number;
+  // Add other properties if needed
+}
+
 interface InvestorReturnsTabProps {
   investorReturns: InvestorReturn[];
-  paymentSchedule: any[];
+  paymentSchedule: PaymentScheduleEntry[];
 }
 
 export function InvestorReturnsTab({ 
@@ -31,37 +36,37 @@ export function InvestorReturnsTab({
       month: `Month ${index + 1}`,
       paymentNumber: payment.paymentNumber,
     };
-    
+
     investorReturns.forEach(investor => {
       dataPoint[investor.name] = investor.monthlyReturns[index] || 0;
     });
-    
+
     return dataPoint;
   });
-  
+
   // Get sample months for the investor charts (to avoid overcrowding)
   const getSampleMonths = (total: number) => {
     const samples = [];
     const interval = Math.max(1, Math.floor(total / 6));
-    
+
     for (let i = 0; i < total; i += interval) {
       samples.push(i);
     }
-    
+
     // Always include the last month
-    if (samples[samples.length - 1] !== total - 1) {
+    if (samples.length > 0 && samples[samples.length - 1] !== total - 1) {
       samples.push(total - 1);
     }
-    
+
     return samples;
   };
-  
+
   const sampleIndices = getSampleMonths(paymentSchedule.length);
-  
+
   // Prepare cumulative return data for each investor
   const prepareInvestorCumulativeData = (investor: InvestorReturn) => {
     let cumulativeReturn = 0;
-    
+
     return sampleIndices.map(index => {
       cumulativeReturn += investor.monthlyReturns[index] || 0;
       return {
@@ -71,18 +76,18 @@ export function InvestorReturnsTab({
       };
     });
   };
-  
+
   // Custom tooltip formatter for charts
   const formatTooltipValue = (value: number) => {
     return formatCurrency(value);
   };
-  
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {investorReturns.map(investor => {
           const investorData = prepareInvestorCumulativeData(investor);
-          
+
           return (
             <Card key={investor.investorId} className="shadow">
               <CardHeader className="border-b border-neutral-lighter px-6 py-4">
@@ -107,7 +112,10 @@ export function InvestorReturnsTab({
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">ROI</p>
-                    <p className="text-base font-medium">{investor.roi.toFixed(2)}%</p>
+                    {/* CORRECCIÓN: Se añade una comprobación para asegurar que 'investor.roi' es un número antes de llamar a .toFixed() */}
+                    <p className="text-base font-medium">
+                      {typeof investor.roi === 'number' ? `${investor.roi.toFixed(2)}%` : 'N/A'}
+                    </p>
                   </div>
                 </div>
                 <div className="h-48">

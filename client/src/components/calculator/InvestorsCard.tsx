@@ -46,15 +46,19 @@ export function InvestorsCard({
     }
   }, [investors, totalRequired]);
 
-  // Handle adding a new investor
+  // CORREGIDO: Se actualiza la función para asignar un nombre por defecto
   const addInvestor = () => {
-    const newId = investors.length > 0 
+    const newId = investors.length > 0
       ? Math.max(...investors.map(i => i.id)) + 1
       : 1;
-      
+
+    // El número del nuevo inversor será el tamaño actual de la lista + 1
+    const newInvestorNumber = investors.length + 1;
+
     setInvestors([
       ...investors,
-      { id: newId, name: "", investmentAmount: 0 }
+      // Se asigna el nombre por defecto, por ejemplo "Investor 4"
+      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0 }
     ]);
   };
 
@@ -74,7 +78,7 @@ export function InvestorsCard({
 
   // Check if we have at least 3 investors
   const hasMinInvestors = investors.length >= 3;
-  
+
   // Format investment difference for display
   const investmentDifference = totalRequired - totalInvestment;
 
@@ -88,7 +92,7 @@ export function InvestorsCard({
             <span>Minimum 3 investors required</span>
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {investors.map((investor, index) => (
             <div 
@@ -148,7 +152,7 @@ export function InvestorsCard({
             <Plus className="h-4 w-4 mr-2" />
             Add Investor
           </Button>
-          
+
           <div className="flex items-center text-sm">
             <div className="mr-4">
               <span className="font-medium">Total Investment:</span>
