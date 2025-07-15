@@ -48,7 +48,7 @@ export default function Home() {
 
   const [investors, setInvestors] = useState<Investor[]>([
     { id: 1, name: "John Doe", investmentAmount: 40000 },
-    { id: 2, name: "Jane Smith", investmentAmount: 35000 },
+    { id: 2, name: "Jane Smith", investmentAmount: 60000 },
   ]);
 
   const [calculationResults, setCalculationResults] = useState<{
