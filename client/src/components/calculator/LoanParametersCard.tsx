@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// Export the type so it can be imported elsewhere
 export interface LoanParameters {
   loanName: string,
   totalAmount: number;
@@ -27,7 +26,7 @@ interface LoanParametersCardProps {
   loanParams: LoanParameters;
   setLoanParams: React.Dispatch<React.SetStateAction<LoanParameters>>;
   isCalculating: boolean;
-  onValidationChange: (isValid: boolean) => void;
+  onValidationChange: (validations: { isLoanNameValid: boolean; isTermValid: boolean }) => void;
 }
 
 export function LoanParametersCard({
@@ -37,64 +36,64 @@ export function LoanParametersCard({
   onValidationChange
 }: LoanParametersCardProps) {
   const [loanNameError, setLoanNameError] = useState('');
+  const [termError, setTermError] = useState('');
 
-  // CORREGIDO: La lógica de validación ha sido simplificada y corregida.
   useEffect(() => {
-    // La regla de validación: el nombre debe tener entre 3 y 59 caracteres.
-    const isValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
-
-    // Notifica al componente padre del estado de validación.
-    onValidationChange(isValid);
-
-    // Solo muestra un mensaje de error si el usuario ha comenzado a escribir.
-    if (loanParams.loanName.length >= 0) {
-      if (loanParams.loanName.length < 3) {
-        setLoanNameError('Loan name must be at least 3 characters long.');
-      } else if (loanParams.loanName.length >= 60) {
-        setLoanNameError('Loan name must be shorter than 60 characters.');
-      } else {
-        // Si el nombre es válido, limpia cualquier mensaje de error existente.
-        setLoanNameError('');
-      }
+    // Validación del nombre del préstamo
+    const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+    if (loanParams.loanName.length > 0 && !isLoanNameValid) {
+      setLoanNameError(loanParams.loanName.length < 3 ? 'Loan name must be at least 3 characters long.' : 'Loan name must be shorter than 60 characters.');
     } else {
-      // Si el campo está vacío, no muestra un error.
       setLoanNameError('');
     }
-  }, [loanParams.loanName, onValidationChange]);
 
+    // Validación del plazo del préstamo
+    const { termMonths, paymentFrequency } = loanParams;
+    let isTermValid = true;
+    let termErrorMessage = '';
+    const monthsPerPeriod = {
+      'monthly': 1,
+      'quarterly': 3,
+      'semi-annual': 6,
+      'annual': 12
+    }[paymentFrequency];
 
+    if (termMonths > 0 && termMonths % monthsPerPeriod !== 0) {
+      isTermValid = false;
+      termErrorMessage = `For ${paymentFrequency} payments, term must be a multiple of ${monthsPerPeriod}.`;
+    }
+    setTermError(termErrorMessage);
+
+    // Notificar al componente padre del estado de ambas validaciones
+    onValidationChange({ isLoanNameValid, isTermValid });
+
+  }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, onValidationChange]);
+
+  // Manejadores de eventos individuales para mantener la lógica original
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    setLoanParams(prev => ({ ...prev, loanName: name }));
+    setLoanParams(prev => ({ ...prev, loanName: e.target.value }));
   };
 
   const handleAmountChange = (value: number) => {
     setLoanParams(prev => ({ ...prev, totalAmount: value }));
   };
 
-
   const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
-    if (isNaN(value)) {
-      setLoanParams(prev => ({ ...prev, interestRate: 0 }));
-      return;
+    if (!isNaN(value) && value >= 0 && value <= 999) {
+      setLoanParams(prev => ({ ...prev, interestRate: value }));
+    } else if (e.target.value === '') {
+        setLoanParams(prev => ({...prev, interestRate: 0}));
     }
-    if (value < 0 || value > 999) {
-      return;
-    }
-    setLoanParams(prev => ({ ...prev, interestRate: value }));
   };
 
   const handleTermMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (isNaN(value)) {
-      setLoanParams(prev => ({ ...prev, termMonths: 0 }));
-      return;
+    const value = parseInt(e.target.value, 10);
+     if (!isNaN(value) && value >= 1 && value <= 1200) {
+      setLoanParams(prev => ({ ...prev, termMonths: value }));
+    } else if (e.target.value === '') {
+        setLoanParams(prev => ({...prev, termMonths: 0}));
     }
-    if (value < 1 || value > 1200) {
-      return;
-    }
-    setLoanParams(prev => ({ ...prev, termMonths: value }));
   };
 
   const handleStartDateChange = (date: Date | undefined) => {
@@ -114,34 +113,24 @@ export function LoanParametersCard({
     <Card className="col-span-1">
       <CardContent className="pt-6">
         <h2 className="text-lg font-bold mb-4 text-foreground">Loan Parameters</h2>
-
         <div className="space-y-4">
           <div className="form-group">
-            <Label htmlFor="loan-name" className="mb-1">
-              Loan Name
-              <span className="text-destructive ml-1">*</span>
-            </Label>
+            <Label htmlFor="loan-name">Loan Name <span className="text-destructive">*</span></Label>
             <Input
               id="loan-name"
               name="loan-name"
               type="text"
-              onChange={handleTitleChange}
               value={loanParams.loanName}
+              onChange={handleTitleChange}
               disabled={isCalculating}
               required
               className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
             />
-            {loanNameError && (
-              <p className="text-xs text-red-500 mt-1">{loanNameError}</p>
-            )}
+            {loanNameError && <p className="text-xs text-red-500 mt-1">{loanNameError}</p>}
           </div>
 
-
           <div className="form-group">
-            <Label htmlFor="total-amount" className="mb-1">
-              Total Loan Amount
-              <span className="text-destructive ml-1">*</span>
-            </Label>
+            <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
             <CurrencyInput
               id="total-amount"
               name="total-amount"
@@ -156,10 +145,7 @@ export function LoanParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="interest-rate" className="mb-1">
-              Annual Interest Rate (%)
-              <span className="text-destructive ml-1">*</span>
-            </Label>
+            <Label htmlFor="interest-rate">Annual Interest Rate (%) <span className="text-destructive">*</span></Label>
             <div className="relative">
               <Input
                 id="interest-rate"
@@ -183,10 +169,7 @@ export function LoanParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="loan-term" className="mb-1">
-              Loan Term (Months)
-              <span className="text-destructive ml-1">*</span>
-            </Label>
+            <Label htmlFor="loan-term">Loan Term (Months) <span className="text-destructive">*</span></Label>
             <Input
               id="loan-term"
               name="loan-term"
@@ -194,39 +177,32 @@ export function LoanParametersCard({
               value={loanParams.termMonths.toString()}
               onChange={handleTermMonthsChange}
               min={1}
-              max={360}
+              max={1200}
               placeholder="Enter loan term in months"
               disabled={isCalculating}
               required
+              className={cn(termError && "border-red-500")}
+            />
+            {termError && <p className="text-xs text-red-500 mt-1">{termError}</p>}
+          </div>
+
+          <div className="form-group">
+            <Label>Start Date <span className="text-destructive">*</span></Label>
+            <DatePicker
+              date={loanParams.startDate}
+              setDate={handleStartDateChange}
+              disabled={isCalculating}
             />
           </div>
 
           <div className="form-group">
-            <Label className="w-full">
-              <span className="flex items-center mb-1">
-                Start Date
-                <span className="text-destructive ml-1">*</span>
-              </span>
-              <DatePicker
-                date={loanParams.startDate}
-                setDate={handleStartDateChange}
-                disabled={isCalculating}
-              />
-            </Label>
-          </div>
-
-          <div className="form-group">
-            <Label htmlFor="payment-frequency" className="mb-1">
-              Payment Frequency
-            </Label>
+            <Label htmlFor="payment-frequency">Payment Frequency</Label>
             <Select
               value={loanParams.paymentFrequency}
               onValueChange={handleFrequencyChange}
               disabled={isCalculating}
             >
-              <SelectTrigger id="payment-frequency">
-                <SelectValue placeholder="Select frequency" />
-              </SelectTrigger>
+              <SelectTrigger id="payment-frequency"><SelectValue placeholder="Select frequency" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="monthly">Monthly</SelectItem>
                 <SelectItem value="quarterly">Quarterly</SelectItem>

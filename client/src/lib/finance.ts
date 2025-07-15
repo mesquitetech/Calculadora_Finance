@@ -88,29 +88,24 @@ export interface PaymentScheduleEntry {
   balance: number;
 }
 
-export interface PaymentScheduleItem {
-  paymentNumber: number;
-  paymentDate: Date;
-  principalPayment: number;
-  interestPayment: number;
-  totalPayment: number;
-  remainingBalance: number;
-}
+// --- INICIO DE LA REFACTORIZACIÓN ---
+// Se elimina la interfaz 'PaymentScheduleItem' para usar una única estructura.
 
+// La función ahora devuelve el tipo 'PaymentScheduleEntry[]', que es el que el frontend espera.
 export function generatePaymentSchedule(
   principal: number,
   annualRate: number,
   termMonths: number,
   startDate: Date,
   frequency: string = 'monthly'
-): PaymentScheduleItem[] {
+): PaymentScheduleEntry[] {
   const periodsPerYear = getPaymentPeriodsPerYear(frequency);
   const totalPeriods = Math.ceil(termMonths / (12 / periodsPerYear));
   const periodicPayment = calculatePeriodicPayment(principal, annualRate, termMonths, frequency);
   const periodicRate = annualRate / 100 / periodsPerYear;
 
   let remainingBalance = principal;
-  const schedule: PaymentScheduleItem[] = [];
+  const schedule: PaymentScheduleEntry[] = [];
 
   for (let period = 1; period <= totalPeriods; period++) {
     const interestPayment = remainingBalance * periodicRate;
@@ -121,27 +116,28 @@ export function generatePaymentSchedule(
     if (period === totalPeriods && remainingBalance > 0.01) {
       const adjustedPrincipalPayment = principalPayment + remainingBalance;
       remainingBalance = 0;
-
       const paymentDate = calculateNextPaymentDate(startDate, period - 1, frequency);
 
+      // Las propiedades del objeto ahora coinciden con la interfaz 'PaymentScheduleEntry'.
       schedule.push({
         paymentNumber: period,
-        paymentDate,
-        principalPayment: adjustedPrincipalPayment,
-        interestPayment,
-        totalPayment: adjustedPrincipalPayment + interestPayment,
-        remainingBalance
+        date: paymentDate,
+        payment: adjustedPrincipalPayment + interestPayment,
+        principal: adjustedPrincipalPayment,
+        interest: interestPayment,
+        balance: remainingBalance
       });
     } else {
       const paymentDate = calculateNextPaymentDate(startDate, period - 1, frequency);
 
+      // Las propiedades del objeto ahora coinciden con la interfaz 'PaymentScheduleEntry'.
       schedule.push({
         paymentNumber: period,
-        paymentDate,
-        principalPayment,
-        interestPayment,
-        totalPayment: periodicPayment,
-        remainingBalance: Math.max(0, remainingBalance)
+        date: paymentDate,
+        payment: periodicPayment,
+        principal: principalPayment,
+        interest: interestPayment,
+        balance: Math.max(0, remainingBalance)
       });
     }
   }
@@ -150,7 +146,7 @@ export function generatePaymentSchedule(
 }
 
 export interface InvestorReturn {
-  investorId: number;
+  investorId: number | string;
   name: string;
   investmentAmount: number;
   share: number;
@@ -160,100 +156,85 @@ export interface InvestorReturn {
   roi: number;
 }
 
-interface MonthlyReturn {
-  month: number;
-  date: Date;
-  monthlyReturn: number;
-  cumulativeReturn: number;
-  principalBalance: number;
-}
-
+// La función ahora espera el tipo de calendario de pagos correcto.
 export function calculateInvestorReturns(
   investmentAmount: number,
   totalInvestmentAmount: number,
-  paymentSchedule: PaymentScheduleItem[],
+  paymentSchedule: PaymentScheduleEntry[], // Se usa la interfaz correcta
   investorId: string,
-  name: string,
-  frequency: string = 'monthly'
+  name: string
 ): InvestorReturn {
-  const investmentPercentage = investmentAmount / totalInvestmentAmount;
-  const monthlyReturns: MonthlyReturn[] = [];
-  let cumulativeReturn = 0;
+  const share = totalInvestmentAmount > 0 ? investmentAmount / totalInvestmentAmount : 0;
+
+  const monthlyReturns: number[] = [];
+  let cumulativeInterest = 0;
 
   paymentSchedule.forEach((payment) => {
-    const periodicReturn = payment.interestPayment * investmentPercentage;
-    cumulativeReturn += periodicReturn;
-
-    monthlyReturns.push({
-      month: payment.paymentNumber,
-      date: payment.paymentDate,
-      monthlyReturn: periodicReturn, // Keep field name for compatibility
-      cumulativeReturn,
-      principalBalance: payment.remainingBalance * investmentPercentage
-    });
+    const periodicInterest = payment.interest * share;
+    cumulativeInterest += periodicInterest;
+    monthlyReturns.push(periodicInterest);
   });
 
-  const totalReturn = cumulativeReturn;
-  const roi = totalReturn / investmentAmount;
+  const totalInterest = cumulativeInterest;
+  const totalReturn = investmentAmount + totalInterest;
+  const roi = investmentAmount > 0 ? totalInterest / investmentAmount : 0;
 
   return {
     investorId,
     name,
     investmentAmount,
-    investmentPercentage,
+    share,
     monthlyReturns,
     totalReturn,
+    totalInterest,
     roi
   };
 }
+// --- FIN DE LA REFACTORIZACIÓN ---
 
-// Format currency for display
+// Funciones de formato (con comprobaciones de seguridad)
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return '$0.00';
+  }
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 }
 
-// Format date in readable format
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date);
+export function formatDate(date: Date | string): string {
+  if (!date) return "Invalid Date";
+  const dateObj = date instanceof Date ? date : new Date(date);
+  if (isNaN(dateObj.getTime())) {
+    return "Invalid Date";
+  }
+  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(dateObj);
 }
 
-// Format percentage
 export function formatPercentage(percent: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(percent / 100);
+  if (typeof percent !== 'number' || isNaN(percent)) {
+    return '0.00%';
+  }
+  return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(percent / 100);
 }
 
-// Group payment schedule by year for charts
 export function groupPaymentsByYear(schedule: PaymentScheduleEntry[]): {
   year: string;
   principal: number;
   interest: number;
 }[] {
   const yearlyData: Record<string, { principal: number; interest: number }> = {};
-
   schedule.forEach(payment => {
-    const year = payment.date.getFullYear().toString();
-
-    if (!yearlyData[year]) {
-      yearlyData[year] = { principal: 0, interest: 0 };
+    if (payment && payment.date) {
+        const dateObj = payment.date instanceof Date ? payment.date : new Date(payment.date);
+        if (!isNaN(dateObj.getTime())) {
+            const year = dateObj.getFullYear().toString();
+            if (!yearlyData[year]) {
+                yearlyData[year] = { principal: 0, interest: 0 };
+            }
+            yearlyData[year].principal += payment.principal || 0;
+            yearlyData[year].interest += payment.interest || 0;
+        }
     }
-
-    yearlyData[year].principal += payment.principal;
-    yearlyData[year].interest += payment.interest;
   });
-
   return Object.entries(yearlyData).map(([year, data]) => ({
     year,
     principal: data.principal,

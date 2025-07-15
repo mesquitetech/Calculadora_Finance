@@ -1,13 +1,13 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   LineChart,
   Line,
@@ -16,9 +16,10 @@ import {
 } from "recharts";
 import { InvestorReturn, formatCurrency, formatPercentage } from "@/lib/finance";
 
+// Se añade la propiedad 'payment' a la interfaz para que el componente sepa que existe.
 interface PaymentScheduleEntry {
   paymentNumber: number;
-  // Add other properties if needed
+  payment: number;
 }
 
 interface InvestorReturnsTabProps {
@@ -26,55 +27,59 @@ interface InvestorReturnsTabProps {
   paymentSchedule: PaymentScheduleEntry[];
 }
 
-export function InvestorReturnsTab({ 
+export function InvestorReturnsTab({
   investorReturns,
   paymentSchedule
 }: InvestorReturnsTabProps) {
-  // Prepare data for the comparison chart
+
+  // Lógica para el gráfico de comparación inferior.
   const comparisonData = paymentSchedule.map((payment, index) => {
     const dataPoint: any = {
-      month: `Month ${index + 1}`,
+      period: `Period ${payment.paymentNumber}`,
       paymentNumber: payment.paymentNumber,
     };
 
     investorReturns.forEach(investor => {
-      dataPoint[investor.name] = investor.monthlyReturns[index] || 0;
+      // Usar valores por defecto para evitar NaN.
+      dataPoint[investor.name] = (payment.payment || 0) * (investor.share || 0);
     });
 
     return dataPoint;
   });
 
-  // Get sample months for the investor charts (to avoid overcrowding)
-  const getSampleMonths = (total: number) => {
+  // Función para obtener una muestra de los índices para los gráficos.
+  const getSampleIndices = (total: number) => {
+    if (total <= 12) {
+        return Array.from({ length: total }, (_, i) => i);
+    }
     const samples = [];
-    const interval = Math.max(1, Math.floor(total / 6));
-
+    const interval = Math.max(1, Math.floor(total / 11));
     for (let i = 0; i < total; i += interval) {
       samples.push(i);
     }
-
-    // Always include the last month
-    if (samples.length > 0 && samples[samples.length - 1] !== total - 1) {
+    if (samples[samples.length - 1] < total - 1) {
       samples.push(total - 1);
     }
-
     return samples;
   };
 
-  const sampleIndices = getSampleMonths(paymentSchedule.length);
+  const sampleIndices = getSampleIndices(paymentSchedule.length);
 
-  // Prepare cumulative return data for each investor
+  // Lógica para preparar los datos de retorno acumulado.
   const prepareInvestorCumulativeData = (investor: InvestorReturn) => {
-    let cumulativeReturn = 0;
+    // Asegurarse de que monthlyReturns es un array.
+    if (!Array.isArray(investor.monthlyReturns)) return [];
 
-    return sampleIndices.map(index => {
-      cumulativeReturn += investor.monthlyReturns[index] || 0;
+    const fullCumulativeData = investor.monthlyReturns.map((_, i) => {
+      const cumulative = investor.monthlyReturns.slice(0, i + 1).reduce((sum, val) => sum + (val || 0), 0);
       return {
-        month: `Month ${paymentSchedule[index]?.paymentNumber}`,
-        return: investor.monthlyReturns[index] || 0,
-        cumulativeReturn,
+        period: `Period ${paymentSchedule[i]?.paymentNumber}`,
+        return: investor.monthlyReturns[i] || 0,
+        cumulativeReturn: cumulative,
       };
     });
+
+    return sampleIndices.map(index => fullCumulativeData[index]);
   };
 
   // Custom tooltip formatter for charts
@@ -86,35 +91,45 @@ export function InvestorReturnsTab({
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {investorReturns.map(investor => {
+          // --- INICIO DE LA CORRECCIÓN ---
+          // 1. Recalcular los valores clave dentro del componente para asegurar que no sean NaN.
+          const safeMonthlyReturns = Array.isArray(investor.monthlyReturns) ? investor.monthlyReturns : [];
+          const totalInterest = safeMonthlyReturns.reduce((sum, r) => sum + (r || 0), 0);
+          const investmentAmount = investor.investmentAmount || 0;
+          const totalReturn = investmentAmount + totalInterest;
+          const roi = investmentAmount > 0 ? (totalInterest / investmentAmount) * 100 : 0;
+          const share = investor.share || 0;
+
           const investorData = prepareInvestorCumulativeData(investor);
+          // --- FIN DE LA CORRECCIÓN ---
 
           return (
             <Card key={investor.investorId} className="shadow">
               <CardHeader className="border-b border-neutral-lighter px-6 py-4">
-                <CardTitle className="text-lg">{investor.name}</CardTitle>
+                <CardTitle className="text-lg">{investor.name || 'Unnamed Investor'}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {formatPercentage(investor.share * 100)} Investment Share
+                  {/* 2. Usar los valores seguros calculados. */}
+                  {formatPercentage(share * 100)} Investment Share
                 </p>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Investment Amount</p>
-                    <p className="text-lg font-bold">{formatCurrency(investor.investmentAmount)}</p>
+                    <p className="text-lg font-bold">{formatCurrency(investmentAmount)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Return</p>
-                    <p className="text-lg font-bold text-green-600">{formatCurrency(investor.totalReturn)}</p>
+                    <p className="text-lg font-bold text-green-600">{formatCurrency(totalReturn)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Interest</p>
-                    <p className="text-base font-medium text-primary">{formatCurrency(investor.totalInterest)}</p>
+                    <p className="text-base font-medium text-primary">{formatCurrency(totalInterest)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">ROI</p>
-                    {/* CORRECCIÓN: Se añade una comprobación para asegurar que 'investor.roi' es un número antes de llamar a .toFixed() */}
                     <p className="text-base font-medium">
-                      {typeof investor.roi === 'number' ? `${investor.roi.toFixed(2)}%` : 'N/A'}
+                      {`${roi.toFixed(2)}%`}
                     </p>
                   </div>
                 </div>
@@ -125,23 +140,23 @@ export function InvestorReturnsTab({
                       margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis 
-                        dataKey="month" 
-                        fontSize={10} 
-                        tick={{ fill: '#6b7280' }} 
+                      <XAxis
+                        dataKey="period"
+                        fontSize={10}
+                        tick={{ fill: '#6b7280' }}
                       />
-                      <YAxis 
-                        fontSize={10} 
-                        tick={{ fill: '#6b7280' }} 
-                        tickFormatter={formatTooltipValue} 
+                      <YAxis
+                        fontSize={10}
+                        tick={{ fill: '#6b7280' }}
+                        tickFormatter={formatTooltipValue}
                       />
                       <Tooltip formatter={formatTooltipValue} />
-                      <Area 
-                        type="monotone" 
-                        dataKey="cumulativeReturn" 
-                        name="Cumulative Return" 
-                        stroke="#1a56db" 
-                        fill="rgba(26, 86, 219, 0.1)" 
+                      <Area
+                        type="monotone"
+                        dataKey="cumulativeReturn"
+                        name="Cumulative Return"
+                        stroke="#1a56db"
+                        fill="rgba(26, 86, 219, 0.1)"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -154,7 +169,7 @@ export function InvestorReturnsTab({
 
       <Card className="shadow">
         <CardHeader className="border-b border-neutral-lighter px-6 py-4">
-          <CardTitle>Monthly Returns by Investor</CardTitle>
+          <CardTitle>Periodic Returns by Investor</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="h-80">
@@ -164,21 +179,21 @@ export function InvestorReturnsTab({
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="period"
                   fontSize={11}
                   tick={{ fill: '#6b7280' }}
                 />
-                <YAxis 
-                  tickFormatter={formatTooltipValue} 
+                <YAxis
+                  tickFormatter={formatTooltipValue}
                   fontSize={11}
                   tick={{ fill: '#6b7280' }}
                 />
-                <Tooltip 
-                  formatter={formatTooltipValue} 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #e5e7eb' 
+                <Tooltip
+                  formatter={formatTooltipValue}
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb'
                   }}
                 />
                 <Legend />

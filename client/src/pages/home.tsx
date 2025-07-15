@@ -24,7 +24,6 @@ import {
   calculateInvestorReturns,
   PaymentScheduleEntry
 } from "@/lib/finance";
-// 1. Importar la función para generar el reporte PDF
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 
 export default function Home() {
@@ -63,22 +62,28 @@ export default function Home() {
 
   const [inputsValid, setInputsValid] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [isLoanNameValid, setIsLoanNameValid] = useState(true);
 
-  const handleLoanNameValidation = (isValid: boolean) => {
-    setIsLoanNameValid(isValid);
+  const [validations, setValidations] = useState({
+    isLoanNameValid: true,
+    isTermValid: true,
+  });
+
+  const handleValidationChange = (newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
+    setValidations(newValidations);
   };
 
   useEffect(() => {
     const isButtonEnabled =
-      isLoanNameValid &&
+      validations.isLoanNameValid &&
+      validations.isTermValid &&
       loanParams.interestRate > 0 &&
       loanParams.termMonths > 0 &&
       investors.length >= 3 &&
       investors.every(investor => investor.name.trim() !== "");
 
     setInputsValid(isButtonEnabled);
-  }, [loanParams, investors, isLoanNameValid]);
+  }, [loanParams, investors, validations]);
+
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
@@ -88,6 +93,7 @@ export default function Home() {
         paymentFrequency: loanParams.paymentFrequency,
       });
       const data = await response.json();
+
       const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
         ...payment,
         date: new Date(payment.date),
@@ -96,12 +102,39 @@ export default function Home() {
         interest: Number(payment.interest),
         balance: Number(payment.balance)
       }));
+
+      // --- INICIO DE LA CORRECCIÓN ---
+      // 1. Remodelar los datos de 'investorReturns' para que coincidan con lo que espera el frontend.
+      const transformedInvestorReturns = data.investorReturns.map((investor: any) => {
+        // Asegurarse de que 'monthlyReturns' sea un array.
+        if (!Array.isArray(investor.monthlyReturns)) {
+            return { ...investor, totalInterest: 0, totalReturn: investor.investmentAmount, monthlyReturns: [] };
+        }
+
+        // Convertir el array de retornos a un array de números, sin importar si viene como objetos o números.
+        const numericMonthlyReturns = investor.monthlyReturns.map((ret: any) => 
+            typeof ret === 'object' ? Number(ret.monthlyReturn || 0) : Number(ret || 0)
+        );
+
+        const totalInterest = numericMonthlyReturns.reduce((sum: number, current: number) => sum + current, 0);
+        const totalReturn = investor.investmentAmount + totalInterest;
+
+        return {
+          ...investor,
+          
+          totalInterest: totalInterest,
+          totalReturn: totalReturn,
+          monthlyReturns: numericMonthlyReturns, // Asegurarse de que la propiedad final sea un array de números.
+        };
+      });
+      // --- FIN DE LA CORRECCIÓN ---
+
       return {
         loanId: data.loanId,
         monthlyPayment: data.monthlyPayment,
         totalInterest: data.totalInterest,
         paymentSchedule: paymentSchedule,
-        investorReturns: data.investorReturns,
+        investorReturns: transformedInvestorReturns, // 2. Usar los datos transformados.
         endDate: new Date(data.endDate)
       };
     },
@@ -152,7 +185,6 @@ export default function Home() {
     calculateMutation.mutate();
   };
 
-  // 2. Lógica actualizada para generar y descargar el PDF
   const handleExportSummary = () => {
     if (!calculationResults) {
       toast({
@@ -255,7 +287,7 @@ export default function Home() {
                   loanParams={loanParams}
                   setLoanParams={setLoanParams}
                   isCalculating={calculateMutation.isPending}
-                  onValidationChange={handleLoanNameValidation}
+                  onValidationChange={handleValidationChange}
                 />
                 <InvestorsCard
                   investors={investors}
@@ -270,7 +302,7 @@ export default function Home() {
           {activeTab === 'schedule' && calculationResults && (
             <PaymentScheduleTab
               loanAmount={loanParams.totalAmount}
-              monthlyPayment={calculationResults.monthlyPayment}
+              periodicPayment={calculationResults.monthlyPayment}
               totalInterest={calculationResults.totalInterest}
               paymentSchedule={calculationResults.paymentSchedule}
             />
