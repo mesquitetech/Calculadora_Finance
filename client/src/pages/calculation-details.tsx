@@ -169,7 +169,7 @@ export default function CalculationDetails() {
   const formattedPaymentSchedule = data.paymentSchedule.map(entry => ({
     ...entry,
     date: new Date(entry.date),
-    payment: Number(entry.amount),
+    payment: Number(entry.payment || entry.amount), // Usar payment primero, luego amount como fallback
     principal: Number(entry.principal),
     interest: Number(entry.interest),
     balance: Number(entry.balance)
