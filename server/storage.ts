@@ -146,8 +146,6 @@ export class MemStorage implements IStorage {
 }
 
 // Database storage implementation (for production)
-import { paymentSchedules, investorReturns } from "@shared/schema";
-
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -174,19 +172,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLoan(id: number): Promise<void> {
-    await db.transaction(async (tx) => {
-      await tx.delete(paymentSchedules).where(eq(paymentSchedules.loanId, id));
-      await tx.delete(investorReturns).where(eq(investorReturns.loanId, id));
-      await tx.delete(loans).where(eq(loans.id, id));
-    });
-  }
-
-  async deleteAllLoans(): Promise<void> {
-    await db.transaction(async (tx) => {
-      await tx.delete(paymentSchedules);
-      await tx.delete(investorReturns);
-      await tx.delete(loans);
-    });
+    // ON DELETE CASCADE in the schema handles deleting related investors and payments.
+    await db.delete(loans).where(eq(loans.id, id));
   }
 
   async updateLoan(id: number, loanData: Partial<InsertLoan>): Promise<Loan> {

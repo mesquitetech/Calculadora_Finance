@@ -59,14 +59,6 @@ async function deleteCalculation(id: number): Promise<void> {
   }
 }
 
-async function deleteAllCalculations(): Promise<void> {
-  const response = await fetch("/api/calculations", { method: "DELETE" });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || "Failed to delete all calculations");
-  }
-}
-
 async function updateCalculation(data: EditableData): Promise<void> {
     const payload = {
         loanParams: {
@@ -144,17 +136,6 @@ export default function SavedCalculations() {
     },
   });
 
-  const deleteAllMutation = useMutation({
-    mutationFn: deleteAllCalculations,
-    onSuccess: () => {
-      toast({ title: "Success", description: "All calculations deleted." });
-      queryClient.invalidateQueries({ queryKey: ["/api/calculations"] });
-    },
-    onError: (error) => {
-      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
-    },
-  });
-
   const updateMutation = useMutation({
     mutationFn: updateCalculation,
     onSuccess: () => {
@@ -191,34 +172,6 @@ export default function SavedCalculations() {
         <div className="container mx-auto flex items-center justify-between py-4 px-6">
           <h1 className="text-3xl font-bold">Saved Calculations</h1>
           <div className="flex items-center gap-3">
-            {filteredCalculations.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete All
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all {filteredCalculations.length} calculation(s) from your account.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => deleteAllMutation.mutate()} 
-                      disabled={deleteAllMutation.isPending}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {deleteAllMutation.isPending ? "Deleting..." : "Delete All"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
             <Button onClick={() => setLocation("/")}>Home</Button>
             <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
             <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('table')}><List className="h-4 w-4" /></Button>
