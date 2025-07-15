@@ -49,7 +49,6 @@ export default function Home() {
   const [investors, setInvestors] = useState<Investor[]>([
     { id: 1, name: "John Doe", investmentAmount: 40000 },
     { id: 2, name: "Jane Smith", investmentAmount: 35000 },
-    { id: 3, name: "Robert Johnson", investmentAmount: 25000 }
   ]);
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -78,7 +77,7 @@ export default function Home() {
       validations.isTermValid &&
       loanParams.interestRate > 0 &&
       loanParams.termMonths > 0 &&
-      investors.length >= 3 &&
+      investors.length >= 1 &&
       investors.every(investor => investor.name.trim() !== "");
 
     setInputsValid(isButtonEnabled);

@@ -76,8 +76,8 @@ export function InvestorsCard({
     );
   };
 
-  // Check if we have at least 3 investors
-  const hasMinInvestors = investors.length >= 3;
+  // Check if we have at least 1 investor
+  const hasMinInvestors = investors.length >= 1;
 
   // Format investment difference for display
   const investmentDifference = totalRequired - totalInvestment;
@@ -89,7 +89,7 @@ export function InvestorsCard({
           <h2 className="text-lg font-bold text-foreground">Investors</h2>
           <div className="text-sm text-muted-foreground flex items-center">
             <AlertCircle className="h-4 w-4 mr-1" />
-            <span>Minimum 3 investors required</span>
+            <span>1-20 investors allowed</span>
           </div>
         </div>
 
@@ -181,7 +181,7 @@ export function InvestorsCard({
         {!hasMinInvestors && (
           <Alert className="mt-3 bg-amber-50 text-amber-800 border-amber-200">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please add at least 3 investors.</AlertDescription>
+            <AlertDescription>Please add at least 1 investor.</AlertDescription>
           </Alert>
         )}
       </CardContent>
