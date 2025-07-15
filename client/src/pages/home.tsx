@@ -97,7 +97,7 @@ export default function Home() {
       const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
         ...payment,
         date: new Date(payment.date),
-        payment: Number(payment.amount),
+        payment: Number(payment.payment || payment.amount), // Usar payment primero, luego amount como fallback
         principal: Number(payment.principal),
         interest: Number(payment.interest),
         balance: Number(payment.balance)
