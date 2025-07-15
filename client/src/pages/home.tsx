@@ -299,7 +299,7 @@ export default function Home() {
           {activeTab === 'schedule' && calculationResults && (
             <PaymentScheduleTab
               loanAmount={loanParams.totalAmount}
-              periodicPayment={calculationResults.monthlyPayment}
+              monthlyPayment={calculationResults.monthlyPayment}
               totalInterest={calculationResults.totalInterest}
               paymentSchedule={calculationResults.paymentSchedule}
             />
