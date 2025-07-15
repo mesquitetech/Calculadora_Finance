@@ -315,9 +315,16 @@ export default function SavedCalculations() {
                 {filteredCalculations.map((calculation) => (
                   <Card key={calculation.id} className="transition-all hover:shadow-md flex flex-col">
                     <CardHeader className="flex flex-row items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <Tooltip><TooltipTrigger asChild><CardTitle className="truncate">{calculation.loanName}</CardTitle></TooltipTrigger><TooltipContent><p>{calculation.loanName}</p></TooltipContent></Tooltip>
-                        <CardDescription>Created on {new Date(calculation.createdAt).toLocaleDateString()}</CardDescription>
+                      <div className="flex items-start gap-3 min-w-0">
+                        <Checkbox
+                          checked={selectedItems.has(calculation.id)}
+                          onCheckedChange={(checked) => handleSelectItem(calculation.id, checked as boolean)}
+                          className="mt-1"
+                        />
+                        <div className="min-w-0">
+                          <Tooltip><TooltipTrigger asChild><CardTitle className="truncate">{calculation.loanName}</CardTitle></TooltipTrigger><TooltipContent><p>{calculation.loanName}</p></TooltipContent></Tooltip>
+                          <CardDescription>Created on {new Date(calculation.createdAt).toLocaleDateString()}</CardDescription>
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1">
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-7 w-7" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}><Pencil className="h-4 w-4" /></Button>
