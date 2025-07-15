@@ -29,8 +29,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentFrequency: loanParams.paymentFrequency,
       });
 
-      if (!Array.isArray(clientInvestors) || clientInvestors.length < 3) {
-        return res.status(400).json({ message: "At least 3 investors are required" });
+      if (!Array.isArray(clientInvestors) || clientInvestors.length < 1) {
+        return res.status(400).json({ message: "At least 1 investor is required" });
       }
 
       const validatedInvestors = clientInvestors.map(investor => ({
@@ -93,8 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             interestRate: String(loanParams.interestRate), termMonths: loanParams.termMonths,
             startDate: new Date(loanParams.startDate), paymentFrequency: loanParams.paymentFrequency,
         });
-        if (!Array.isArray(updatedInvestors) || updatedInvestors.length < 3) {
-            return res.status(400).json({ message: "At least 3 investors are required" });
+        if (!Array.isArray(updatedInvestors) || updatedInvestors.length < 1) {
+            return res.status(400).json({ message: "At least 1 investor is required" });
         }
         const totalInvestment = updatedInvestors.reduce((sum, inv) => sum + Number(inv.investmentAmount), 0);
         if (Math.abs(totalInvestment - Number(validatedLoan.amount)) > 0.01) {
