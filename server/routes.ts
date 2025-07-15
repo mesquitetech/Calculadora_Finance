@@ -153,6 +153,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE /api/calculations - Borrar todos los cálculos
+  app.delete("/api/calculations", async (req, res) => {
+    try {
+      await storage.deleteAllLoans();
+      res.status(200).json({ message: "All calculations deleted successfully." });
+    } catch (error) {
+      console.error("Error deleting all calculations:", error);
+      res.status(500).json({ message: "Failed to delete all calculations" });
+    }
+  });
+
   // GET /api/calculations/:id - Obtener los detalles de un cálculo específico
   app.get("/api/calculations/:id", async (req, res) => {
     try {
