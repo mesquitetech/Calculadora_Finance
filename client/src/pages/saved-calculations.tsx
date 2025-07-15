@@ -36,6 +36,7 @@ import { Trash2, LayoutGrid, List, Search, Pencil, Loader2 } from "lucide-react"
 // 1. Corregir la ruta de importación y la interfaz que se importa.
 import { EditCalculationModal, EditableData } from "@/components/calculator/EditCalculatorModal";
 // --- FIN DE LA CORRECCIÓN ---
+import { Checkbox } from "@/components/ui/checkbox"
 
 
 // Interfaces para los datos
@@ -96,6 +97,7 @@ export default function SavedCalculations() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCalc, setSelectedCalc] = useState<EditableData | null>(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   const { data: calculations, isLoading, error } = useQuery<Calculation[]>({
     queryKey: ["/api/calculations"],
@@ -155,6 +157,20 @@ export default function SavedCalculations() {
     },
   });
 
+    const deleteSelectedMutation = useMutation({
+        mutationFn: async (ids: number[]) => {
+            await Promise.all(ids.map(id => deleteCalculation(id)));
+        },
+        onSuccess: () => {
+            toast({ title: "Success", description: "Selected calculations deleted." });
+            queryClient.invalidateQueries({ queryKey: ["/api/calculations"] });
+            setSelectedItems(new Set()); // Clear selected items after deletion
+        },
+        onError: (error) => {
+            toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+        },
+    });
+
   const updateMutation = useMutation({
     mutationFn: updateCalculation,
     onSuccess: () => {
@@ -177,6 +193,27 @@ export default function SavedCalculations() {
     );
   }, [calculations, searchTerm]);
 
+  const handleSelectItem = (id: number, checked: boolean) => {
+    const newSelectedItems = new Set(selectedItems);
+    if (checked) {
+      newSelectedItems.add(id);
+    } else {
+      newSelectedItems.delete(id);
+    }
+    setSelectedItems(newSelectedItems);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    const newSelectedItems = new Set<number>();
+    if (checked) {
+      filteredCalculations.forEach(calc => newSelectedItems.add(calc.id));
+    }
+    setSelectedItems(newSelectedItems);
+  };
+
+  const someSelected = selectedItems.size > 0 && selectedItems.size < filteredCalculations.length;
+  const allSelected = filteredCalculations.length > 0 && selectedItems.size === filteredCalculations.length;
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -192,32 +229,63 @@ export default function SavedCalculations() {
           <h1 className="text-3xl font-bold">Saved Calculations</h1>
           <div className="flex items-center gap-3">
             {filteredCalculations.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete All
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all {filteredCalculations.length} calculation(s) from your account.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={() => deleteAllMutation.mutate()} 
-                      disabled={deleteAllMutation.isPending}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {deleteAllMutation.isPending ? "Deleting..." : "Delete All"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <>
+                {selectedItems.size > 0 ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Selected
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the selected {selectedItems.size} calculation(s) from your account.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteSelectedMutation.mutate(Array.from(selectedItems))}
+                          disabled={deleteSelectedMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteSelectedMutation.isPending ? "Deleting..." : "Delete Selected"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete All
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete all {filteredCalculations.length} calculation(s) from your account.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteAllMutation.mutate()}
+                          disabled={deleteAllMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteAllMutation.isPending ? "Deleting..." : "Delete All"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </>
             )}
             <Button onClick={() => setLocation("/")}>Home</Button>
             <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('grid')}><LayoutGrid className="h-4 w-4" /></Button>
@@ -240,46 +308,66 @@ export default function SavedCalculations() {
             <p className="text-muted-foreground">{searchTerm ? "Your search returned no results." : "You haven't created any loan calculations yet."}</p>
             { !searchTerm && <Button onClick={() => setLocation("/")}>Create New Calculation</Button> }
           </div></CardContent></Card>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {filteredCalculations.map((calculation) => (
-              <Card key={calculation.id} className="transition-all hover:shadow-md flex flex-col">
-                <CardHeader className="flex flex-row items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <Tooltip><TooltipTrigger asChild><CardTitle className="truncate">{calculation.loanName}</CardTitle></TooltipTrigger><TooltipContent><p>{calculation.loanName}</p></TooltipContent></Tooltip>
-                    <CardDescription>Created on {new Date(calculation.createdAt).toLocaleDateString()}</CardDescription>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-7 w-7" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}><Pencil className="h-4 w-4" /></Button>
-                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete "{calculation.loanName}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteMutation.mutate(calculation.id)} disabled={deleteMutation.isPending}>{deleteMutation.isPending ? "Deleting..." : "Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-grow"><div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span><span className="font-medium">{formatCurrency(calculation.amount)}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Interest Rate:</span><span className="font-medium">{formatPercentage(calculation.interestRate)}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Term:</span><span className="font-medium">{calculation.termMonths} months</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Start Date:</span><span className="font-medium">{formatDate(new Date(calculation.startDate))}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Frequency:</span><span className="font-medium capitalize">{calculation.paymentFrequency}</span></div>
-                </div></CardContent>
-                <CardFooter className="border-t p-4"><Button className="w-full" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View Details</Button></CardFooter>
-              </Card>
-            ))}
-          </div>
         ) : (
-          <Card><Table><TableHeader><TableRow><TableHead>Loan Name</TableHead><TableHead>Amount</TableHead><TableHead>Interest</TableHead><TableHead>Term</TableHead><TableHead>Start Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
-            {filteredCalculations.map((calculation) => (
-              <TableRow key={calculation.id}>
-                <TableCell className="font-medium">{calculation.loanName}</TableCell><TableCell>{formatCurrency(calculation.amount)}</TableCell>
-                <TableCell>{formatPercentage(calculation.interestRate)}</TableCell><TableCell>{calculation.termMonths} months</TableCell>
-                <TableCell>{formatDate(new Date(calculation.startDate))}</TableCell>
-                <TableCell className="text-right"><div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}>Edit</Button>
-                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete "{calculation.loanName}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteMutation.mutate(calculation.id)} disabled={deleteMutation.isPending}>{deleteMutation.isPending ? "Deleting..." : "Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                </div></TableCell>
-              </TableRow>
-            ))}
-          </TableBody></Table></Card>
+          <>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {filteredCalculations.map((calculation) => (
+                  <Card key={calculation.id} className="transition-all hover:shadow-md flex flex-col">
+                    <CardHeader className="flex flex-row items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <Tooltip><TooltipTrigger asChild><CardTitle className="truncate">{calculation.loanName}</CardTitle></TooltipTrigger><TooltipContent><p>{calculation.loanName}</p></TooltipContent></Tooltip>
+                        <CardDescription>Created on {new Date(calculation.createdAt).toLocaleDateString()}</CardDescription>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-7 w-7" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}><Pencil className="h-4 w-4" /></Button>
+                        <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-7 w-7"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete "{calculation.loanName}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteMutation.mutate(calculation.id)} disabled={deleteMutation.isPending}>{deleteMutation.isPending ? "Deleting..." : "Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow"><div className="space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Amount:</span><span className="font-medium">{formatCurrency(calculation.amount)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Interest Rate:</span><span className="font-medium">{formatPercentage(calculation.interestRate)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Term:</span><span className="font-medium">{calculation.termMonths} months</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Start Date:</span><span className="font-medium">{formatDate(new Date(calculation.startDate))}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Frequency:</span><span className="font-medium capitalize">{calculation.paymentFrequency}</span></div>
+                    </div></CardContent>
+                    <CardFooter className="border-t p-4"><Button className="w-full" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View Details</Button></CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card><Table><TableHeader><TableRow><TableHead className="w-12">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={handleSelectAll}
+                  ref={(ref) => {
+                    if (ref) {
+                      ref.indeterminate = someSelected;
+                    }
+                  }}
+                />
+              </TableHead><TableHead>Loan Name</TableHead><TableHead>Amount</TableHead><TableHead>Interest</TableHead><TableHead>Term</TableHead><TableHead>Start Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
+                {filteredCalculations.map((calculation) => (
+                  <TableRow key={calculation.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedItems.has(calculation.id)}
+                        onCheckedChange={(checked) => handleSelectItem(calculation.id, checked as boolean)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{calculation.loanName}</TableCell><TableCell>{formatCurrency(calculation.amount)}</TableCell>
+                    <TableCell>{formatPercentage(calculation.interestRate)}</TableCell><TableCell>{calculation.termMonths} months</TableCell>
+                    <TableCell>{formatDate(new Date(calculation.startDate))}</TableCell>
+                    <TableCell className="text-right"><div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}>Edit</Button>
+                        <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete "{calculation.loanName}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => deleteMutation.mutate(calculation.id)} disabled={deleteMutation.isPending}>{deleteMutation.isPending ? "Deleting..." : "Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                    </div></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody></Table></Card>
+            )}
+          </>
         )}
       </div>
       {/* --- INICIO DE LA CORRECCIÓN --- */}
