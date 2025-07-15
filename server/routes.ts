@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(200).json({
         loanId: loan.id, 
-        periodicPayment: paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
+        monthlyPayment: paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
         totalInterest: paymentSchedule.reduce((sum, p) => sum + p.interest, 0),
         paymentSchedule: paymentSchedule,
         investorReturns, 
@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         termMonths: loan.termMonths,
         startDate: loan.startDate,
         paymentFrequency: loan.paymentFrequency,
-        periodicPayment:paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
+        monthlyPayment: paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
         totalInterest: paymentSchedule.reduce((sum, p) => sum + p.interest, 0),
         paymentSchedule: paymentSchedule, // 3. Se envía el calendario formateado desde la BD.
         investorReturns,

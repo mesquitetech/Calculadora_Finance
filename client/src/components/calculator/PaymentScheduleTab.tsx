@@ -14,14 +14,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 // 1. Interfaz actualizada para usar un nombre de prop genérico y claro.
 interface PaymentScheduleTabProps {
   loanAmount: number;
-  periodicPayment: number; // 'monthlyPayment' renombrado a 'periodicPayment'
+  monthlyPayment: number;
   totalInterest: number;
   paymentSchedule: PaymentScheduleEntry[];
 }
 
 export function PaymentScheduleTab({
   loanAmount,
-  periodicPayment, // 2. La prop ahora se llama 'periodicPayment'.
+  monthlyPayment,
   totalInterest,
   paymentSchedule
 }: PaymentScheduleTabProps) {
@@ -66,10 +66,9 @@ export function PaymentScheduleTab({
           </Card>
           <Card className="bg-card shadow-sm">
             <CardContent className="p-3">
-              <p className="text-sm text-muted-foreground">Periodic Payment</p>
+              <p className="text-sm text-muted-foreground">Monthly Payment</p>
               <p className="text-2xl font-bold text-green-600">
-                {/* 3. Se usa la nueva prop para mostrar el valor del pago periódico. */}
-                {formatCurrency(periodicPayment)}
+                {formatCurrency(monthlyPayment)}
               </p>
             </CardContent>
           </Card>

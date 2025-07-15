@@ -106,12 +106,10 @@ export default function Home() {
       // --- INICIO DE LA CORRECCIÓN ---
       // 1. Remodelar los datos de 'investorReturns' para que coincidan con lo que espera el frontend.
       const transformedInvestorReturns = data.investorReturns.map((investor: any) => {
-        // Asegurarse de que 'monthlyReturns' sea un array.
         if (!Array.isArray(investor.monthlyReturns)) {
             return { ...investor, totalInterest: 0, totalReturn: investor.investmentAmount, monthlyReturns: [] };
         }
 
-        // Convertir el array de retornos a un array de números, sin importar si viene como objetos o números.
         const numericMonthlyReturns = investor.monthlyReturns.map((ret: any) => 
             typeof ret === 'object' ? Number(ret.monthlyReturn || 0) : Number(ret || 0)
         );
@@ -121,10 +119,9 @@ export default function Home() {
 
         return {
           ...investor,
-          
           totalInterest: totalInterest,
           totalReturn: totalReturn,
-          monthlyReturns: numericMonthlyReturns, // Asegurarse de que la propiedad final sea un array de números.
+          monthlyReturns: numericMonthlyReturns,
         };
       });
       // --- FIN DE LA CORRECCIÓN ---
