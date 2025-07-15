@@ -64,9 +64,7 @@ export function SetupWizard({
     initialInvestors.length > 0
       ? initialInvestors
       : [
-          { id: 1, name: "Investor 1", investmentAmount: 0 },
-          { id: 2, name: "Investor 2", investmentAmount: 0 },
-          { id: 3, name: "Investor 3", investmentAmount: 0 },
+          { id: 1, name: "Investor 1", investmentAmount: 0 }
         ]
   );
 
@@ -147,7 +145,7 @@ export function SetupWizard({
   };
 
   const handleRemoveInvestor = (id: number) => {
-    if (investors.length > 3) {
+    if (investors.length > 1) {
       setInvestors(investors.filter(investor => investor.id !== id));
     }
   };
@@ -166,7 +164,7 @@ export function SetupWizard({
     loanParams.interestRate > 0 &&
     loanParams.termMonths > 0;
   const investorsValid =
-    investors.length >= 3 &&
+    investors.length >= 1 && investors.length <= 20 &&
     investors.every(inv => inv.name.trim() !== '' && inv.investmentAmount > 0) &&
     investmentMatchesLoan;
 
@@ -354,7 +352,7 @@ export function SetupWizard({
                 <div key={investor.id} className="p-4 border rounded-lg space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-medium">Investor {index + 1}</h3>
-                    {investors.length > 3 && (
+                    {investors.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -391,6 +389,7 @@ export function SetupWizard({
                 variant="outline"
                 className="w-full"
                 onClick={handleAddInvestor}
+                disabled={investors.length >= 20}
               >
                 + Add Another Investor
               </Button>

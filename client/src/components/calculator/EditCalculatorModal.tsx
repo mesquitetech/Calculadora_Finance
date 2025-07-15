@@ -136,12 +136,14 @@ export function EditCalculationModal({
 
     // Validación de inversores
     const totalInvestment = investors.reduce((sum, inv) => sum + inv.investmentAmount, 0);
-    if (Math.abs(totalInvestment - loanParams.amount) < 0.01 && investors.length >= 3) {
+    if (Math.abs(totalInvestment - loanParams.amount) < 0.01 && investors.length >= 1 && investors.length <= 20) {
         setInvestorError(null);
         investorsAreValid = true;
     } else {
-        if (investors.length < 3) {
-            setInvestorError("A minimum of 3 investors is required.");
+        if (investors.length < 1) {
+            setInvestorError("At least 1 investor is required.");
+        } else if (investors.length > 20) {
+            setInvestorError("Maximum 20 investors allowed.");
         } else {
             setInvestorError("Total investment must match the loan amount.");
         }
@@ -184,10 +186,10 @@ export function EditCalculationModal({
   };
 
   const removeInvestor = (id: number | string) => {
-    if (editedData && editedData.investors.length > 3) {
+    if (editedData && editedData.investors.length > 1) {
       setEditedData({ ...editedData, investors: editedData.investors.filter(inv => inv.id !== id) });
     } else {
-      toast({ title: "Validation Error", description: "A minimum of 3 investors is required.", variant: "destructive" });
+      toast({ title: "Validation Error", description: "At least 1 investor is required.", variant: "destructive" });
     }
   };
 
@@ -262,7 +264,7 @@ export function EditCalculationModal({
                         <div key={investor.id} className="investor-entry bg-muted rounded-md p-3">
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-medium">Investor {index + 1}</h3>
-                                <Button variant="ghost" size="sm" onClick={() => removeInvestor(investor.id)} className="text-muted-foreground hover:text-destructive"><Trash className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="sm" onClick={() => removeInvestor(investor.id)} disabled={editedData.investors.length <= 1} className="text-muted-foreground hover:text-destructive"><Trash className="h-4 w-4" /></Button>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -278,7 +280,7 @@ export function EditCalculationModal({
                     ))}
                 </div>
                 <div className="flex justify-between items-center mt-4">
-                    <Button onClick={addInvestor} variant="secondary"><Plus className="h-4 w-4 mr-2" />Add Investor</Button>
+                    <Button onClick={addInvestor} variant="secondary" disabled={editedData.investors.length >= 20}><Plus className="h-4 w-4 mr-2" />Add Investor</Button>
                     <div className="text-sm">
                         Total: <span className={cn("font-bold", investorError && "text-red-500")}>{formatCurrency(totalInvestment)}</span> / {formatCurrency(editedData.loanParams.amount)}
                     </div>

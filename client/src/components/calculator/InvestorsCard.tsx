@@ -102,12 +102,12 @@ export function InvestorsCard({
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-medium">Investor {index + 1}</h3>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeInvestor(investor.id)}
-                  disabled={investors.length <= 3 || isCalculating}
-                  className="text-muted-foreground hover:text-destructive"
-                >
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeInvestor(investor.id)}
+                    disabled={investors.length <= 1 || isCalculating}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
                   <Trash className="h-4 w-4" />
                 </Button>
               </div>
