@@ -59,6 +59,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       );
 
+      // Save business parameters if provided
+      if (req.body.businessParams) {
+        const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
+        await storage.createBusinessParameters({
+          loanId: loan.id,
+          assetCost: String(assetCost || 0),
+          otherExpenses: String(otherExpenses || 0),
+          monthlyExpenses: String(monthlyExpenses || 0)
+        });
+      }
+
       const investorReturns = createdInvestors.map(investor =>
         calculateInvestorReturns(Number(investor.investmentAmount), totalInvestment, paymentSchedule, String(investor.id), investor.name)
       );
@@ -102,6 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         await storage.deletePaymentsByLoanId(id);
         await storage.deleteInvestorsByLoanId(id);
+        await storage.deleteBusinessParametersByLoanId(id);
         const loan = await storage.updateLoan(id, validatedLoan);
         await Promise.all(
             updatedInvestors.map(investor =>
@@ -119,6 +131,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 })
             )
         );
+
+        // Save business parameters if provided
+        if (req.body.businessParams) {
+            const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
+            await storage.createBusinessParameters({
+                loanId: id,
+                assetCost: String(assetCost || 0),
+                otherExpenses: String(otherExpenses || 0),
+                monthlyExpenses: String(monthlyExpenses || 0)
+            });
+        }
+
         res.status(200).json({ message: "Calculation updated successfully" });
     } catch (error) {
         console.error("Update error:", error);
@@ -224,6 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const investors = await storage.getInvestorsByLoanId(id);
       const paymentScheduleFromDb = await storage.getPaymentsByLoanId(id);
+      const businessParams = await storage.getBusinessParametersByLoanId(id);
 
       // --- INICIO DE LA CORRECCIÓN ---
       // 1. Mapear los datos de la BD al formato que el frontend espera.
@@ -260,9 +285,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentFrequency: loan.paymentFrequency,
         monthlyPayment: paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
         totalInterest: paymentSchedule.reduce((sum, p) => sum + p.interest, 0),
-        paymentSchedule: paymentSchedule, // 3. Se envía el calendario formateado desde la BD.
+        paymentSchedule: paymentSchedule,
         investorReturns,
         endDate: paymentSchedule.length > 0 ? paymentSchedule[paymentSchedule.length - 1].date : new Date(),
+        businessParams: businessParams ? {
+          assetCost: Number(businessParams.assetCost),
+          otherExpenses: Number(businessParams.otherExpenses),
+          monthlyExpenses: Number(businessParams.monthlyExpenses)
+        } : null,
       });
     } catch (error) {
       console.error("Error fetching calculation details:", error);

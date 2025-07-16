@@ -176,6 +176,7 @@ export default function Home() {
       const response = await apiRequest("POST", "/api/calculate", {
         loanParams,
         investors,
+        businessParams,
         paymentFrequency: loanParams.paymentFrequency,
       });
       const data = await response.json();

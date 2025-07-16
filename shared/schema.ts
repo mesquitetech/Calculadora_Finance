@@ -77,9 +77,10 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
 });
 
 // Define Relations
-export const loansRelations = relations(loans, ({ many }) => ({
+export const loansRelations = relations(loans, ({ many, one }) => ({
   investors: many(investors),
   payments: many(payments),
+  businessParameters: one(businessParameters),
 }));
 
 export const investorsRelations = relations(investors, ({ one }) => ({
@@ -92,6 +93,13 @@ export const investorsRelations = relations(investors, ({ one }) => ({
 export const paymentsRelations = relations(payments, ({ one }) => ({
   loan: one(loans, {
     fields: [payments.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const businessParametersRelations = relations(businessParameters, ({ one }) => ({
+  loan: one(loans, {
+    fields: [businessParameters.loanId],
     references: [loans.id],
   }),
 }));
@@ -114,6 +122,23 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
   renterConfig: true,
 });
 
+// Define business parameters table
+export const businessParameters = pgTable("business_parameters", {
+  id: serial("id").primaryKey(),
+  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: 'cascade' }),
+  assetCost: numeric("asset_cost", { precision: 12, scale: 2 }).notNull(),
+  otherExpenses: numeric("other_expenses", { precision: 12, scale: 2 }).notNull(),
+  monthlyExpenses: numeric("monthly_expenses", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBusinessParametersSchema = createInsertSchema(businessParameters).pick({
+  loanId: true,
+  assetCost: true,
+  otherExpenses: true,
+  monthlyExpenses: true,
+});
+
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -129,3 +154,6 @@ export type Payment = typeof payments.$inferSelect;
 
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
+
+export type InsertBusinessParameters = z.infer<typeof insertBusinessParametersSchema>;
+export type BusinessParametersDB = typeof businessParameters.$inferSelect;

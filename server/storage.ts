@@ -9,11 +9,14 @@ import {
   InsertPayment,
   UserSettings,
   InsertUserSettings,
+  BusinessParametersDB,
+  InsertBusinessParameters,
   users,
   loans,
   investors,
   payments,
-  userSettings
+  userSettings,
+  businessParameters
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -44,6 +47,12 @@ export interface IStorage {
   // User Settings operations
   getUserSettings(sessionId: string): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(settings: InsertUserSettings): Promise<UserSettings>;
+
+  // Business Parameters operations
+  getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined>;
+  createBusinessParameters(businessParams: InsertBusinessParameters): Promise<BusinessParametersDB>;
+  updateBusinessParameters(loanId: number, businessParams: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB>;
+  deleteBusinessParametersByLoanId(loanId: number): Promise<void>;
 }
 
 
@@ -54,12 +63,14 @@ export class MemStorage implements IStorage {
   private investors: Map<number, Investor> = new Map();
   private payments: Map<number, Payment> = new Map();
   private userSettings: Map<number, UserSettings> = new Map();
+  private businessParams: Map<number, BusinessParametersDB> = new Map();
 
   private userId: number = 1;
   private loanId: number = 1;
   private investorId: number = 1;
   private paymentId: number = 1;
   private userSettingsId: number = 1;
+  private businessParamsId: number = 1;
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -98,6 +109,7 @@ export class MemStorage implements IStorage {
   async deleteLoan(id: number): Promise<void> {
     this.deleteInvestorsByLoanId(id);
     this.deletePaymentsByLoanId(id);
+    this.deleteBusinessParametersByLoanId(id);
     this.loans.delete(id);
   }
 
@@ -180,6 +192,40 @@ export class MemStorage implements IStorage {
       };
       this.userSettings.set(id, settings);
       return settings;
+    }
+  }
+
+  // Business Parameters methods
+  async getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined> {
+    return Array.from(this.businessParams.values()).find(params => params.loanId === loanId);
+  }
+
+  async createBusinessParameters(insertBusinessParams: InsertBusinessParameters): Promise<BusinessParametersDB> {
+    const id = this.businessParamsId++;
+    const now = new Date();
+    const businessParams: BusinessParametersDB = {
+      ...insertBusinessParams,
+      id,
+      createdAt: now
+    };
+    this.businessParams.set(id, businessParams);
+    return businessParams;
+  }
+
+  async updateBusinessParameters(loanId: number, businessParamsData: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB> {
+    const existing = await this.getBusinessParametersByLoanId(loanId);
+    if (!existing) {
+      throw new Error(`Business parameters for loan ${loanId} not found`);
+    }
+    const updated = { ...existing, ...businessParamsData };
+    this.businessParams.set(existing.id, updated);
+    return updated;
+  }
+
+  async deleteBusinessParametersByLoanId(loanId: number): Promise<void> {
+    const existing = await this.getBusinessParametersByLoanId(loanId);
+    if (existing) {
+      this.businessParams.delete(existing.id);
     }
   }
 }
@@ -274,6 +320,28 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db.insert(userSettings).values(insertSettings).returning();
       return created;
     }
+  }
+
+  // Business Parameters methods
+  async getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined> {
+    return await db.query.businessParameters.findFirst({ where: eq(businessParameters.loanId, loanId) });
+  }
+
+  async createBusinessParameters(insertBusinessParams: InsertBusinessParameters): Promise<BusinessParametersDB> {
+    const [businessParam] = await db.insert(businessParameters).values(insertBusinessParams).returning();
+    return businessParam;
+  }
+
+  async updateBusinessParameters(loanId: number, businessParamsData: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB> {
+    const [updated] = await db.update(businessParameters)
+      .set(businessParamsData)
+      .where(eq(businessParameters.loanId, loanId))
+      .returning();
+    return updated;
+  }
+
+  async deleteBusinessParametersByLoanId(loanId: number): Promise<void> {
+    await db.delete(businessParameters).where(eq(businessParameters.loanId, loanId));
   }
 }
 
