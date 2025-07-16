@@ -18,6 +18,8 @@ interface RenterSummaryTabProps {
   monthlyRevenue: number;
   setMonthlyRevenue: (value: number) => void;
   assetCost: number;
+  discountRate?: number;
+  residualValueRate?: number;
 }
 
 export function RenterSummaryTab({
@@ -28,7 +30,9 @@ export function RenterSummaryTab({
   otherExpenses,
   monthlyRevenue,
   setMonthlyRevenue,
-  assetCost
+  assetCost,
+  discountRate = 0.04,
+  residualValueRate = 0.15
 }: RenterSummaryTabProps) {
   
   // Calculate break-even point (minimum revenue to cover expenses)
@@ -46,11 +50,17 @@ export function RenterSummaryTab({
   const initialInvestment = assetCost - loanAmount; // Down payment
   const annualCashFlow = netMonthlyCashFlow * 12;
   
-  // Generate cash flows for IRR calculation (simple annual cash flows)
-  const cashFlows = Array(Math.ceil(termMonths / 12)).fill(annualCashFlow);
+  // Calculate residual value at end of loan term
+  const residualValue = assetCost * residualValueRate;
   
-  // Calculate NPV (using 4% discount rate)
-  const discountRate = 0.04;
+  // Generate cash flows for IRR calculation (including residual value in final year)
+  const numYears = Math.ceil(termMonths / 12);
+  const cashFlows = Array(numYears).fill(annualCashFlow);
+  if (cashFlows.length > 0) {
+    cashFlows[cashFlows.length - 1] += residualValue; // Add residual value to final year
+  }
+  
+  // Calculate NPV using configurable discount rate
   const npv = calculateNPV(initialInvestment, cashFlows, discountRate);
   
   // Calculate IRR
@@ -150,7 +160,7 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Net Present Value (NPV)</CardTitle>
-            <p className="text-sm text-muted-foreground">At 4% discount rate</p>
+            <p className="text-sm text-muted-foreground">At {(discountRate * 100).toFixed(1)}% discount rate</p>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${npv >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -207,6 +217,19 @@ export function RenterSummaryTab({
           <CardContent>
             <div className={`text-2xl font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatPercentage(roi)}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Residual Value */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Residual Value</CardTitle>
+            <p className="text-sm text-muted-foreground">Asset value at loan end ({(residualValueRate * 100).toFixed(0)}%)</p>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatDollarAmount(residualValue)}
             </div>
           </CardContent>
         </Card>

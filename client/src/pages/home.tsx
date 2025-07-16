@@ -20,6 +20,7 @@ import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
 import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
 import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
 import { RenterMetricsExplainedTab } from "@/components/calculator/RenterMetricsExplainedTab";
+import { RenterConfigModal, RenterConfig } from "@/components/calculator/RenterConfigModal";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -39,6 +40,12 @@ export default function Home() {
 
   // Interactive revenue state for renter/operator analysis
   const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
+  
+  // Renter configuration state
+  const [renterConfig, setRenterConfig] = useState<RenterConfig>({
+    discountRate: 4.0,
+    residualValueRate: 15
+  });
 
   const today = new Date();
   const todayDate = new Date(
@@ -266,25 +273,33 @@ export default function Home() {
     switch (activeMainTab) {
       case 'input':
         return (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 px-6">
-            <LoanParametersCard
-              loanParams={loanParams}
-              setLoanParams={setLoanParams}
-              isCalculating={calculateMutation.isPending}
-              onValidationChange={handleValidationChange}
-            />
-            <InvestorsCard
-              investors={investors}
-              setInvestors={setInvestors}
-              totalRequired={loanParams.totalAmount}
-              isCalculating={calculateMutation.isPending}
-            />
-            <BusinessParametersCard
-              businessParams={businessParams}
-              setBusinessParams={setBusinessParams}
-              isCalculating={calculateMutation.isPending}
-              loanAmount={loanParams.totalAmount}
-            />
+          <div className="px-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              <div className="transform transition-all duration-300 hover:scale-105">
+                <LoanParametersCard
+                  loanParams={loanParams}
+                  setLoanParams={setLoanParams}
+                  isCalculating={calculateMutation.isPending}
+                  onValidationChange={handleValidationChange}
+                />
+              </div>
+              <div className="transform transition-all duration-300 hover:scale-105">
+                <InvestorsCard
+                  investors={investors}
+                  setInvestors={setInvestors}
+                  totalRequired={loanParams.totalAmount}
+                  isCalculating={calculateMutation.isPending}
+                />
+              </div>
+              <div className="transform transition-all duration-300 hover:scale-105">
+                <BusinessParametersCard
+                  businessParams={businessParams}
+                  setBusinessParams={setBusinessParams}
+                  isCalculating={calculateMutation.isPending}
+                  loanAmount={loanParams.totalAmount}
+                />
+              </div>
+            </div>
           </div>
         );
 
@@ -380,6 +395,8 @@ export default function Home() {
                 monthlyRevenue={interactiveRevenue}
                 setMonthlyRevenue={setInteractiveRevenue}
                 assetCost={businessParams.assetCost + businessParams.otherExpenses}
+                discountRate={renterConfig.discountRate / 100}
+                residualValueRate={renterConfig.residualValueRate / 100}
               />
             );
           case 'cash-flow':
@@ -404,6 +421,8 @@ export default function Home() {
                 monthlyRevenue={interactiveRevenue}
                 setMonthlyRevenue={setInteractiveRevenue}
                 assetCost={businessParams.assetCost + businessParams.otherExpenses}
+                discountRate={renterConfig.discountRate / 100}
+                residualValueRate={renterConfig.residualValueRate / 100}
               />
             );
           case 'metrics-explained':
@@ -422,14 +441,24 @@ export default function Home() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Finance Calculator</h1>
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Finance Calculator
+            </h1>
+            {activeMainTab === 'renter-operator' && (
+              <RenterConfigModal
+                config={renterConfig}
+                onConfigChange={setRenterConfig}
+              />
+            )}
+          </div>
           <div className="flex gap-3">
             {activeMainTab === 'input' && (
               <Button
                 onClick={handleCalculate}
                 disabled={!inputsValid || calculateMutation.isPending}
-                className="px-6"
+                className="px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 <CalculatorIcon className="h-5 w-5 mr-2" />
                 {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
@@ -438,7 +467,7 @@ export default function Home() {
             <Button
               variant="outline"
               onClick={openWizard}
-              className="px-6"
+              className="px-6 border-2 hover:bg-blue-50"
             >
               <Wand2 className="h-5 w-5 mr-2" />
               Setup Wizard
@@ -446,6 +475,7 @@ export default function Home() {
             <Button
               variant="outline"
               onClick={() => window.location.href = "/saved-calculations"}
+              className="border-2 hover:bg-purple-50"
             >
               View Saved Calculations
             </Button>

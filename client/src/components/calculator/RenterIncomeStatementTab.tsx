@@ -12,6 +12,8 @@ interface RenterIncomeStatementTabProps {
   monthlyRevenue: number;
   setMonthlyRevenue: (value: number) => void;
   assetCost: number;
+  discountRate?: number;
+  residualValueRate?: number;
 }
 
 export function RenterIncomeStatementTab({
@@ -22,7 +24,9 @@ export function RenterIncomeStatementTab({
   otherExpenses,
   monthlyRevenue,
   setMonthlyRevenue,
-  assetCost
+  assetCost,
+  discountRate = 0.04,
+  residualValueRate = 0.15
 }: RenterIncomeStatementTabProps) {
   
   // Calculate break-even point and handler

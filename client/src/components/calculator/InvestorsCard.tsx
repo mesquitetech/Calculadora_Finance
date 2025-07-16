@@ -83,11 +83,14 @@ export function InvestorsCard({
   const investmentDifference = totalRequired - totalInvestment;
 
   return (
-    <Card className="col-span-1">
-      <CardContent className="pt-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-bold text-foreground">Investors</h2>
-          <div className="text-xs text-muted-foreground flex items-center">
+    <Card className="col-span-1 border-2 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <CardContent className="pt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center">
+            <div className="w-2 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full mr-3"></div>
+            Investors
+          </h2>
+          <div className="text-xs text-muted-foreground flex items-center bg-blue-50 px-2 py-1 rounded-full">
             <AlertCircle className="h-3 w-3 mr-1" />
             <span>1-20 allowed</span>
           </div>
@@ -97,20 +100,26 @@ export function InvestorsCard({
           {investors.map((investor, index) => (
             <div 
               key={investor.id} 
-              className="investor-entry bg-muted rounded-md p-3"
+              className="investor-entry bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200 hover:border-blue-300 transition-colors duration-200"
             >
-              <div className="flex justify-end items-center mb-2">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
+                    <span className="text-white text-xs font-bold">{index + 1}</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">Investor {index + 1}</span>
+                </div>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeInvestor(investor.id)}
                     disabled={investors.length <= 1 || isCalculating}
-                    className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
+                    className="text-muted-foreground hover:text-red-500 h-6 w-6 p-0 hover:bg-red-50"
                   >
                   <Trash className="h-3 w-3" />
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="form-group">
                   <Input
                     value={investor.name}
@@ -118,7 +127,7 @@ export function InvestorsCard({
                     placeholder={`Investor ${index + 1}`}
                     disabled={isCalculating}
                     required
-                    className="text-sm h-8"
+                    className="text-sm h-9 border-blue-200 focus:border-blue-400"
                   />
                 </div>
                 <div className="form-group">
@@ -128,7 +137,7 @@ export function InvestorsCard({
                     min={0}
                     disabled={isCalculating}
                     required
-                    className="text-sm h-8"
+                    className="text-sm h-9 border-blue-200 focus:border-blue-400"
                   />
                 </div>
               </div>
@@ -136,32 +145,42 @@ export function InvestorsCard({
           ))}
         </div>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-4 space-y-3">
           <Button
             onClick={addInvestor}
             variant="secondary"
             size="sm"
             disabled={isCalculating}
-            className="w-full h-8"
+            className="w-full h-10 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
           >
-            <Plus className="h-3 w-3 mr-1" />
+            <Plus className="h-4 w-4 mr-2" />
             Add Investor
           </Button>
 
-          <div className="text-xs space-y-1">
-            <div className="flex justify-between">
-              <span>Total Investment:</span>
-              <span className={`font-bold ${
-                Math.abs(investmentDifference) < 0.01 ? "text-green-600" : ""
-              }`}>
-                {formatCurrency(totalInvestment)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Required:</span>
-              <span className="font-bold">
-                {formatCurrency(totalRequired)}
-              </span>
+          <div className="bg-white rounded-lg p-3 border-2 border-dashed border-blue-200">
+            <div className="text-sm space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Total Investment:</span>
+                <span className={`font-bold text-lg ${
+                  Math.abs(investmentDifference) < 0.01 ? "text-green-600" : "text-gray-900"
+                }`}>
+                  {formatCurrency(totalInvestment)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Required:</span>
+                <span className="font-bold text-lg text-blue-600">
+                  {formatCurrency(totalRequired)}
+                </span>
+              </div>
+              {Math.abs(investmentDifference) >= 0.01 && (
+                <div className="flex justify-between items-center pt-1 border-t border-gray-200">
+                  <span className="font-medium text-orange-600">Difference:</span>
+                  <span className="font-bold text-orange-600">
+                    {investmentDifference > 0 ? "+" : ""}{formatCurrency(investmentDifference)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
