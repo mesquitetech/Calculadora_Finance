@@ -67,7 +67,11 @@ export function RenterSummaryTab({
   const irr = calculateIRR(-initialInvestment, cashFlows);
   
   // Calculate payback period (in months)
-  const paybackPeriod = initialInvestment > 0 ? initialInvestment / Math.max(netMonthlyCashFlow, 1) : 0;
+  const paybackPeriod = initialInvestment > 0 && netMonthlyCashFlow > 0 
+    ? initialInvestment / netMonthlyCashFlow 
+    : initialInvestment === 0 
+    ? 0 // No initial investment to recover
+    : Infinity; // Negative cash flow means never recovers
   
   // Calculate total return over loan term
   const totalNetIncome = netMonthlyCashFlow * termMonths;
@@ -190,7 +194,11 @@ export function RenterSummaryTab({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {paybackPeriod > 0 ? `${Math.ceil(paybackPeriod)} months` : 'Never'}
+              {initialInvestment === 0 
+                ? 'No Down Payment' 
+                : paybackPeriod === Infinity || paybackPeriod <= 0 
+                ? 'Never' 
+                : `${Math.ceil(paybackPeriod)} months`}
             </div>
           </CardContent>
         </Card>
