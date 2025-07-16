@@ -317,13 +317,11 @@ export default function Home() {
     setWizardOpen(false);
   };
 
-  const handleWizardSave = (newLoanParams: LoanParameters, newInvestors: Investor[]) => {
-    setLoanParams(newLoanParams);
-    setInvestors(newInvestors);
-    toast({
-      title: "Setup Complete",
-      description: "Your financing plan has been created successfully.",
-    });
+  const handleWizardSave = (loanParams: LoanParameters, investors: Investor[], businessParams: BusinessParameters) => {
+    setLoanParams(loanParams);
+    setInvestors(investors);
+    setBusinessParams(businessParams);
+    setWizardOpen(false);
   };
 
   const renderMainTabContent = () => {
@@ -564,6 +562,7 @@ export default function Home() {
         onSave={handleWizardSave}
         initialLoanParams={loanParams}
         initialInvestors={investors}
+        initialBusinessParams={businessParams}
       />
     </div>
   );

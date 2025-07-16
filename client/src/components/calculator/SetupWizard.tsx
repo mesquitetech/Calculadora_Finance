@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Dialog,
@@ -23,23 +24,24 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, CreditCard, DollarSign, Percent, Calendar as CalendarIcon2, Users, FileSignature } from "lucide-react"; // Icono añadido
+import { CalendarIcon, CreditCard, DollarSign, Calendar as CalendarIcon2, Users, Building2 } from "lucide-react";
 import { LoanParameters } from "./LoanParametersCard";
 import { Investor } from "./InvestorsCard";
+import { BusinessParameters } from "./BusinessParametersCard";
 
 interface SetupWizardProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (loanParams: LoanParameters, investors: Investor[]) => void;
+  onSave: (loanParams: LoanParameters, investors: Investor[], businessParams: BusinessParameters) => void;
   initialLoanParams: LoanParameters;
   initialInvestors: Investor[];
+  initialBusinessParams: BusinessParameters;
 }
 
-// 1. Se añade el nuevo paso 'loan-name'
 type WizardStep =
-  | 'loan-name'
-  | 'loan-amount'
+  | 'loan-basic'
   | 'loan-details'
+  | 'business-params'
   | 'investors'
   | 'review';
 
@@ -49,15 +51,18 @@ export function SetupWizard({
   onSave,
   initialLoanParams,
   initialInvestors,
+  initialBusinessParams,
 }: SetupWizardProps) {
-  // 2. El estado inicial ahora es el nuevo primer paso
-  const [currentStep, setCurrentStep] = useState<WizardStep>('loan-name');
+  const [currentStep, setCurrentStep] = useState<WizardStep>('loan-basic');
 
   // State for loan parameters
   const [loanParams, setLoanParams] = useState<LoanParameters>(initialLoanParams);
 
-  // 3. Estado para el error de validación del nombre
+  // State for loan name validation
   const [loanNameError, setLoanNameError] = useState<string>('');
+
+  // State for business parameters
+  const [businessParams, setBusinessParams] = useState<BusinessParameters>(initialBusinessParams);
 
   // State for investors
   const [investors, setInvestors] = useState<Investor[]>(
@@ -68,10 +73,11 @@ export function SetupWizard({
         ]
   );
 
-  // 4. Lógica de validación para el nombre del préstamo
+  // Validation logic
   const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+  const isLoanAmountValid = loanParams.totalAmount >= 1000;
 
-  // 5. Manejador específico para el cambio de nombre que incluye la validación
+  // Loan name change handler with validation
   const handleLoanNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
     setLoanParams(prev => ({ ...prev, loanName: name }));
@@ -85,16 +91,16 @@ export function SetupWizard({
     }
   };
 
-  // 6. Se actualiza la navegación para incluir el nuevo paso
+  // Navigation functions
   const goToNextStep = () => {
     switch (currentStep) {
-      case 'loan-name':
-        if (isLoanNameValid) setCurrentStep('loan-amount');
-        break;
-      case 'loan-amount':
-        setCurrentStep('loan-details');
+      case 'loan-basic':
+        if (isLoanNameValid && isLoanAmountValid) setCurrentStep('loan-details');
         break;
       case 'loan-details':
+        setCurrentStep('business-params');
+        break;
+      case 'business-params':
         setCurrentStep('investors');
         break;
       case 'investors':
@@ -108,14 +114,14 @@ export function SetupWizard({
 
   const goToPreviousStep = () => {
     switch (currentStep) {
-      case 'loan-amount':
-        setCurrentStep('loan-name');
-        break;
       case 'loan-details':
-        setCurrentStep('loan-amount');
+        setCurrentStep('loan-basic');
+        break;
+      case 'business-params':
+        setCurrentStep('loan-details');
         break;
       case 'investors':
-        setCurrentStep('loan-details');
+        setCurrentStep('business-params');
         break;
       case 'review':
         setCurrentStep('investors');
@@ -126,6 +132,10 @@ export function SetupWizard({
   // Handlers
   const handleLoanParamChange = (key: keyof LoanParameters, value: any) => {
     setLoanParams(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleBusinessParamChange = (key: keyof BusinessParameters, value: any) => {
+    setBusinessParams(prev => ({ ...prev, [key]: value }));
   };
 
   const handleInvestorChange = (id: number, key: keyof Investor, value: any) => {
@@ -151,7 +161,7 @@ export function SetupWizard({
   };
 
   const handleSave = () => {
-    onSave(loanParams, investors);
+    onSave(loanParams, investors, businessParams);
     onClose();
   };
 
@@ -159,10 +169,10 @@ export function SetupWizard({
   const investmentMatchesLoan = Math.abs(totalInvestment - loanParams.totalAmount) < 0.01;
 
   // Validation state
-  const loanAmountValid = loanParams.totalAmount >= 1000;
   const loanDetailsValid =
     loanParams.interestRate > 0 &&
     loanParams.termMonths > 0;
+  const businessParamsValid = businessParams.assetCost >= 0 && businessParams.otherExpenses >= 0 && businessParams.monthlyExpenses >= 0;
   const investorsValid =
     investors.length >= 1 && investors.length <= 20 &&
     investors.every(inv => inv.name.trim() !== '' && inv.investmentAmount > 0) &&
@@ -171,12 +181,14 @@ export function SetupWizard({
   const handleAmountChange = (value: number) => {
     setLoanParams(prev => ({ ...prev, totalAmount: value }));
   };
+
   const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value) && value >= 0 && value <= 999) {
       setLoanParams(prev => ({ ...prev, interestRate: value }));
     }
   };
+
   const handleTermMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value >= 1 && value <= 1200) {
@@ -184,50 +196,36 @@ export function SetupWizard({
     }
   };
 
-  // 7. Se renderiza el contenido del nuevo primer paso
   const renderStepContent = () => {
     switch (currentStep) {
-      case 'loan-name':
-        return (
-          <div className="space-y-6 py-4">
-            <div className="flex flex-col items-center justify-center mb-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <FileSignature className="h-10 w-10 text-blue-700" />
-              </div>
-              <h2 className="text-2xl font-bold text-center">Give Your Loan a Name</h2>
-              <p className="text-muted-foreground text-center max-w-md mt-2">
-                Create a unique name for this financing project to easily identify it later.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="loanName">Loan Name</Label>
-              <Input
-                id="loanName"
-                value={loanParams.loanName}
-                onChange={handleLoanNameChange}
-                placeholder="e.g., Downtown Office Renovation"
-                className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
-              />
-              {loanNameError && (
-                <p className="text-sm text-red-500 mt-1">{loanNameError}</p>
-              )}
-            </div>
-          </div>
-        );
-      case 'loan-amount':
+      case 'loan-basic':
         return (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center mb-6">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <DollarSign className="h-10 w-10 text-blue-700" />
               </div>
-              <h2 className="text-2xl font-bold text-center">Enter Loan Amount</h2>
+              <h2 className="text-2xl font-bold text-center">Loan Information</h2>
               <p className="text-muted-foreground text-center max-w-md mt-2">
-                Let's start by entering the total amount for this financing project.
+                Let's start with the basic loan information: name and amount.
               </p>
             </div>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loanName">Loan Name</Label>
+                <Input
+                  id="loanName"
+                  value={loanParams.loanName}
+                  onChange={handleLoanNameChange}
+                  placeholder="e.g., Downtown Office Renovation"
+                  className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
+                />
+                {loanNameError && (
+                  <p className="text-sm text-red-500 mt-1">{loanNameError}</p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="totalAmount">Total Loan Amount</Label>
                 <CurrencyInput
@@ -248,92 +246,155 @@ export function SetupWizard({
 
       case 'loan-details':
         return (
-            <div className="space-y-6 py-4">
-                <div className="flex flex-col items-center justify-center mb-6">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                        <CreditCard className="h-10 w-10 text-blue-700" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-center">Loan Details</h2>
-                    <p className="text-muted-foreground text-center max-w-md mt-2">
-                        Now let's set up the terms and conditions for this loan.
-                    </p>
-                </div>
-                <div className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                        <div className="relative">
-                            <Input
-                                id="interest-rate"
-                                name="interest-rate"
-                                type="number"
-                                value={loanParams.interestRate}
-                                onChange={handleInterestRateChange}
-                                min={0}
-                                max={999}
-                                step={0.01}
-                                className="pr-12"
-                                placeholder="Interest rate"
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="termMonths">Term Length (months)</Label>
-                        <Input
-                            id="loan-term"
-                            name="loan-term"
-                            type="number"
-                            value={loanParams.termMonths}
-                            onChange={handleTermMonthsChange}
-                            min={1}
-                            max={360}
-                            placeholder="Enter loan term in months"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="paymentFrequency">Payment Frequency</Label>
-                        <Select
-                            value={loanParams.paymentFrequency}
-                            onValueChange={(value) => handleLoanParamChange('paymentFrequency', value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select frequency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                                    <SelectItem value="semi-annual">Semi-Annual</SelectItem>
-                                    <SelectItem value="annual">Annual</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Start Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn("w-full justify-start text-left font-normal", !loanParams.startDate && "text-muted-foreground")}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {loanParams.startDate ? format(loanParams.startDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={loanParams.startDate}
-                                    onSelect={(date) => handleLoanParamChange('startDate', date || new Date())}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
+          <div className="space-y-6 py-4">
+            <div className="flex flex-col items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <CreditCard className="h-10 w-10 text-blue-700" />
+              </div>
+              <h2 className="text-2xl font-bold text-center">Loan Details</h2>
+              <p className="text-muted-foreground text-center max-w-md mt-2">
+                Now let's set up the terms and conditions for this loan.
+              </p>
             </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                <div className="relative">
+                  <Input
+                    id="interest-rate"
+                    name="interest-rate"
+                    type="number"
+                    value={loanParams.interestRate}
+                    onChange={handleInterestRateChange}
+                    min={0}
+                    max={999}
+                    step={0.01}
+                    className="pr-12"
+                    placeholder="Interest rate"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="termMonths">Term Length (months)</Label>
+                <Input
+                  id="loan-term"
+                  name="loan-term"
+                  type="number"
+                  value={loanParams.termMonths}
+                  onChange={handleTermMonthsChange}
+                  min={1}
+                  max={360}
+                  placeholder="Enter loan term in months"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentFrequency">Payment Frequency</Label>
+                <Select
+                  value={loanParams.paymentFrequency}
+                  onValueChange={(value) => handleLoanParamChange('paymentFrequency', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="semi-annual">Semi-Annual</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn("w-full justify-start text-left font-normal", !loanParams.startDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {loanParams.startDate ? format(loanParams.startDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={loanParams.startDate}
+                      onSelect={(date) => handleLoanParamChange('startDate', date || new Date())}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
         );
+
+      case 'business-params':
+        return (
+          <div className="space-y-6 py-4">
+            <div className="flex flex-col items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Building2 className="h-10 w-10 text-blue-700" />
+              </div>
+              <h2 className="text-2xl font-bold text-center">Business Parameters</h2>
+              <p className="text-muted-foreground text-center max-w-md mt-2">
+                Configure the business parameters for operational analysis.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="assetCost">Asset Cost</Label>
+                <CurrencyInput
+                  id="asset-cost"
+                  name="asset-cost"
+                  value={businessParams.assetCost}
+                  onChange={(value) => handleBusinessParamChange('assetCost', value)}
+                  min={0}
+                  max={100000000}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Cost of the asset being financed.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="otherExpenses">Other Expenses</Label>
+                <CurrencyInput
+                  id="other-expenses"
+                  name="other-expenses"
+                  value={businessParams.otherExpenses}
+                  onChange={(value) => handleBusinessParamChange('otherExpenses', value)}
+                  min={0}
+                  max={100000000}
+                />
+                <p className="text-sm text-muted-foreground">
+                  One-time expenses added to the total project cost.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="monthlyExpenses">Monthly Expenses</Label>
+                <CurrencyInput
+                  id="monthly-expenses"
+                  name="monthly-expenses"
+                  value={businessParams.monthlyExpenses}
+                  onChange={(value) => handleBusinessParamChange('monthlyExpenses', value)}
+                  min={0}
+                  max={100000000}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Recurring monthly operational expenses.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'investors':
         return (
           <div className="space-y-6 py-4">
@@ -463,6 +524,20 @@ export function SetupWizard({
               </div>
 
               <div className="p-4 border rounded-lg">
+                <h3 className="font-medium mb-3">Business Parameters</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">Asset Cost:</div>
+                  <div className="font-medium">${businessParams.assetCost.toLocaleString()}</div>
+
+                  <div className="text-muted-foreground">Other Expenses:</div>
+                  <div className="font-medium">${businessParams.otherExpenses.toLocaleString()}</div>
+
+                  <div className="text-muted-foreground">Monthly Expenses:</div>
+                  <div className="font-medium">${businessParams.monthlyExpenses.toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className="p-4 border rounded-lg">
                 <h3 className="font-medium mb-3">Investors</h3>
                 {investors.map((investor) => (
                   <div key={investor.id} className="mb-4 pb-4 border-b last:border-0 last:mb-0 last:pb-0">
@@ -487,24 +562,22 @@ export function SetupWizard({
     }
   };
 
-  // 8. Se actualiza la lista de pasos para el indicador de progreso
   const steps = [
-    { id: 'loan-name', label: 'Loan Name' },
-    { id: 'loan-amount', label: 'Loan Amount' },
+    { id: 'loan-basic', label: 'Loan Info' },
     { id: 'loan-details', label: 'Loan Details' },
+    { id: 'business-params', label: 'Business' },
     { id: 'investors', label: 'Investors' },
     { id: 'review', label: 'Review' },
   ];
 
-  // 9. Se actualiza la lógica para deshabilitar el botón "Next"
   const isNextDisabled = () => {
     switch (currentStep) {
-      case 'loan-name':
-        return !isLoanNameValid;
-      case 'loan-amount':
-        return !loanAmountValid;
+      case 'loan-basic':
+        return !isLoanNameValid || !isLoanAmountValid;
       case 'loan-details':
         return !loanDetailsValid;
+      case 'business-params':
+        return !businessParamsValid;
       case 'investors':
         return !investorsValid;
       default:
@@ -525,7 +598,6 @@ export function SetupWizard({
         <div className="w-full flex justify-between mb-6 mt-4 px-2">
           {steps.map((step, index) => (
             <div key={step.id} style={{ display: 'contents' }}>
-
               {index > 0 && (
                 <div className="flex-1 h-0.5 self-center bg-gray-200 relative">
                   <div
@@ -560,9 +632,9 @@ export function SetupWizard({
         <DialogFooter className="pt-4 border-t flex items-center justify-between">
           <Button
             variant="outline"
-            onClick={currentStep === 'loan-name' ? onClose : goToPreviousStep}
+            onClick={currentStep === 'loan-basic' ? onClose : goToPreviousStep}
           >
-            {currentStep === 'loan-name' ? 'Cancel' : 'Back'}
+            {currentStep === 'loan-basic' ? 'Cancel' : 'Back'}
           </Button>
 
           <Button
