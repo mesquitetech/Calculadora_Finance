@@ -36,6 +36,13 @@
       "when": 1752693113251,
       "tag": "0004_secret_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1752694846786,
+      "tag": "0005_needy_dazzler",
+      "breakpoints": true
     }
   ]
 }
