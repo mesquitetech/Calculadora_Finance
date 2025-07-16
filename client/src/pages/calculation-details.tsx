@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +10,15 @@ import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
+import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
+import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
+import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { formatCurrency, formatDate, formatPercentage } from "@/lib/finance";
-import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator"; 
+import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
+import { BusinessParameters } from "@/components/calculator/BusinessParametersCard"; 
 
 interface InvestorReturn {
   investorId: number;
@@ -49,16 +54,28 @@ interface CalculationDetails {
   paymentSchedule: PaymentScheduleEntry[];
   investorReturns: InvestorReturn[];
   endDate: string;
+  businessParams?: BusinessParameters;
 }
 
 export default function CalculationDetails() {
   const { id } = useParams<{ id: string }>();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'lender' | 'renter'>('lender');
+  const [activeRenterSubTab, setActiveRenterSubTab] = useState<'summary' | 'cashflow' | 'income'>('summary');
+  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
 
   const { data, isLoading, error } = useQuery<CalculationDetails>({
     queryKey: [`/api/calculations/${id}`],
   });
+
+  // Set break-even revenue when data becomes available
+  useEffect(() => {
+    if (data?.monthlyPayment && data?.businessParams?.monthlyExpenses) {
+      const breakEvenRevenue = data.monthlyPayment + data.businessParams.monthlyExpenses;
+      setInteractiveRevenue(breakEvenRevenue);
+    }
+  }, [data]);
 
   const handleExportSummary = () => {
     if (!data) {
@@ -234,59 +251,41 @@ export default function CalculationDetails() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="schedule" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="schedule">Payment Schedule</TabsTrigger>
-          <TabsTrigger value="investors">Investor Returns</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="projections">Projections</TabsTrigger>
-          <TabsTrigger value="banking">Banking</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+      <Tabs defaultValue="lender" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="lender">Lender Analysis</TabsTrigger>
+          <TabsTrigger value="renter">Renter Analysis</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="lender">
+          <Tabs defaultValue="schedule" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="schedule">Payment Schedule</TabsTrigger>
+              <TabsTrigger value="investors">Investor Returns</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="projections">Projections</TabsTrigger>
+              <TabsTrigger value="banking">Banking</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+            </TabsList>
+
         <TabsContent value="schedule">
-          {data && <PaymentScheduleTab
-            loanAmount={data.amount}
-            monthlyPayment={data.monthlyPayment}
-            totalInterest={data.totalInterest}
-            paymentSchedule={formattedPaymentSchedule}
-          />}
-        </TabsContent>
-
-        <TabsContent value="investors">
-          {data && <InvestorReturnsTab
-            investorReturns={data.investorReturns}
-            paymentSchedule={formattedPaymentSchedule} 
-          />}
-        </TabsContent>
-
-        <TabsContent value="summary">
-          {data && <SummaryTab
-            loanAmount={data.amount}
-            interestRate={data.interestRate}
-            termMonths={data.termMonths}
-            monthlyPayment={data.monthlyPayment}
-            totalInterest={data.totalInterest}
-            startDate={startDate}
-            endDate={endDate}
-            investors={data.investorReturns}
-            paymentSchedule={formattedPaymentSchedule}
-            onExport={handleExportSummary}
-          />}
-        </TabsContent>
-
-        <TabsContent value="projections">
-            {data && <ProjectionsTab
+              {data && <PaymentScheduleTab
                 loanAmount={data.amount}
-                interestRate={data.interestRate}
-                termMonths={data.termMonths}
                 monthlyPayment={data.monthlyPayment}
-                startDate={startDate}
-            />}
-        </TabsContent>
+                totalInterest={data.totalInterest}
+                paymentSchedule={formattedPaymentSchedule}
+              />}
+            </TabsContent>
 
-        <TabsContent value="banking">
-            {data && <BankerReportsTab
+            <TabsContent value="investors">
+              {data && <InvestorReturnsTab
+                investorReturns={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule} 
+              />}
+            </TabsContent>
+
+            <TabsContent value="summary">
+              {data && <SummaryTab
                 loanAmount={data.amount}
                 interestRate={data.interestRate}
                 termMonths={data.termMonths}
@@ -295,21 +294,95 @@ export default function CalculationDetails() {
                 startDate={startDate}
                 endDate={endDate}
                 investors={data.investorReturns}
-            />}
+                paymentSchedule={formattedPaymentSchedule}
+                onExport={handleExportSummary}
+              />}
+            </TabsContent>
+
+            <TabsContent value="projections">
+                {data && <ProjectionsTab
+                    loanAmount={data.amount}
+                    interestRate={data.interestRate}
+                    termMonths={data.termMonths}
+                    monthlyPayment={data.monthlyPayment}
+                    startDate={startDate}
+                />}
+            </TabsContent>
+
+            <TabsContent value="banking">
+                {data && <BankerReportsTab
+                    loanAmount={data.amount}
+                    interestRate={data.interestRate}
+                    termMonths={data.termMonths}
+                    monthlyPayment={data.monthlyPayment}
+                    totalInterest={data.totalInterest}
+                    startDate={startDate}
+                    endDate={endDate}
+                    investors={data.investorReturns}
+                />}
+            </TabsContent>
+
+            <TabsContent value="reports">
+              {data && <ReportsTab
+                loanAmount={data.amount}
+                interestRate={data.interestRate}
+                termMonths={data.termMonths}
+                monthlyPayment={data.monthlyPayment}
+                totalInterest={data.totalInterest}
+                startDate={startDate}
+                endDate={endDate}
+                investors={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule}
+              />}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="reports">
-          {data && <ReportsTab
-            loanAmount={data.amount}
-            interestRate={data.interestRate}
-            termMonths={data.termMonths}
-            monthlyPayment={data.monthlyPayment}
-            totalInterest={data.totalInterest}
-            startDate={startDate}
-            endDate={endDate}
-            investors={data.investorReturns}
-            paymentSchedule={formattedPaymentSchedule}
-          />}
+        <TabsContent value="renter">
+          {data && data.businessParams ? (
+            <Tabs value={activeRenterSubTab} onValueChange={(value) => setActiveRenterSubTab(value as 'summary' | 'cashflow' | 'income')} className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+                <TabsTrigger value="income">Income Statement</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="summary">
+                <RenterSummaryTab
+                  loanAmount={data.amount}
+                  monthlyPayment={data.monthlyPayment}
+                  businessParams={data.businessParams}
+                  interactiveRevenue={interactiveRevenue}
+                  setInteractiveRevenue={setInteractiveRevenue}
+                />
+              </TabsContent>
+
+              <TabsContent value="cashflow">
+                <RenterCashFlowTab
+                  loanAmount={data.amount}
+                  monthlyPayment={data.monthlyPayment}
+                  businessParams={data.businessParams}
+                  interactiveRevenue={interactiveRevenue}
+                  setInteractiveRevenue={setInteractiveRevenue}
+                />
+              </TabsContent>
+
+              <TabsContent value="income">
+                <RenterIncomeStatementTab
+                  loanAmount={data.amount}
+                  monthlyPayment={data.monthlyPayment}
+                  businessParams={data.businessParams}
+                  interactiveRevenue={interactiveRevenue}
+                  setInteractiveRevenue={setInteractiveRevenue}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground mb-4">Business parameters not available for this calculation.</p>
+              <p className="text-sm text-muted-foreground">Renter analysis requires business parameters to be configured.</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

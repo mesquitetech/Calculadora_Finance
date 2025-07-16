@@ -49,6 +49,11 @@ interface Calculation {
   startDate: string;
   paymentFrequency: string;
   createdAt: string;
+  businessParams?: {
+    assetCost: number;
+    otherExpenses: number;
+    monthlyExpenses: number;
+  };
 }
 
 // Funciones API
@@ -337,6 +342,12 @@ export default function SavedCalculations() {
                         <div className="flex justify-between"><span className="text-muted-foreground">Term:</span><span className="font-medium">{calculation.termMonths} months</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Start Date:</span><span className="font-medium">{formatDate(new Date(calculation.startDate))}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Frequency:</span><span className="font-medium capitalize">{calculation.paymentFrequency}</span></div>
+                        {calculation.businessParams && (
+                          <>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Asset Cost:</span><span className="font-medium">{formatCurrency(calculation.businessParams.assetCost)}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground">Monthly Expenses:</span><span className="font-medium">{formatCurrency(calculation.businessParams.monthlyExpenses)}</span></div>
+                          </>
+                        )}
                     </div></CardContent>
                     <CardFooter className="border-t p-4"><Button className="w-full" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View Details</Button></CardFooter>
                   </Card>
@@ -353,7 +364,7 @@ export default function SavedCalculations() {
                     }
                   }}
                 />
-              </TableHead><TableHead>Loan Name</TableHead><TableHead>Amount</TableHead><TableHead>Interest</TableHead><TableHead>Term</TableHead><TableHead>Start Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
+              </TableHead><TableHead>Loan Name</TableHead><TableHead>Amount</TableHead><TableHead>Interest</TableHead><TableHead>Term</TableHead><TableHead>Start Date</TableHead><TableHead>Asset Cost</TableHead><TableHead>Monthly Exp.</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
                 {filteredCalculations.map((calculation) => (
                   <TableRow key={calculation.id}>
                     <TableCell>
@@ -365,6 +376,8 @@ export default function SavedCalculations() {
                     <TableCell className="font-medium">{calculation.loanName}</TableCell><TableCell>{formatCurrency(calculation.amount)}</TableCell>
                     <TableCell>{formatPercentage(calculation.interestRate)}</TableCell><TableCell>{calculation.termMonths} months</TableCell>
                     <TableCell>{formatDate(new Date(calculation.startDate))}</TableCell>
+                    <TableCell>{calculation.businessParams ? formatCurrency(calculation.businessParams.assetCost) : '-'}</TableCell>
+                    <TableCell>{calculation.businessParams ? formatCurrency(calculation.businessParams.monthlyExpenses) : '-'}</TableCell>
                     <TableCell className="text-right"><div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setLocation(`/calculation/${calculation.id}`)}>View</Button>
                         <Button variant="outline" size="sm" onClick={() => handleEditClick(calculation)} disabled={isFetchingDetails}>Edit</Button>
