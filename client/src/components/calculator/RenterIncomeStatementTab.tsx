@@ -97,7 +97,7 @@ export function RenterIncomeStatementTab({
                       min="0"
                       step="100"
                     />
-                    <span className="text-sm text-muted-foreground">USD</span>
+                    <span className="text-sm text-muted-foreground">$</span>
                   </div>
                 </div>
                 <div className="relative">
@@ -107,7 +107,7 @@ export function RenterIncomeStatementTab({
                     min={0}
                     max={breakEvenRevenue * 3}
                     step={100}
-                    className="w-full"
+                    className="w-full opacity-70"
                   />
                   {/* Breakeven marker */}
                   <div 
