@@ -1,54 +1,90 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { 
   FileText, 
   Calculator, 
-  Calendar, 
-  PieChart, 
-  BarChart, 
   TrendingUp, 
-  Briefcase, 
-  LineChart 
+  Users
 } from "lucide-react";
 
 // Export the Tab type to be reused in other components
-export type Tab = 'input' | 'schedule' | 'investors' | 'summary' | 'projections' | 'banking' | 'reports';
+export type MainTab = 'input' | 'lender-investor' | 'renter-operator';
+export type LenderSubTab = 'schedule' | 'investors' | 'summary' | 'projections' | 'reports';
 
 interface TabNavigationProps {
-  activeTab: Tab;
-  setActiveTab: (tab: Tab) => void;
+  activeMainTab: MainTab;
+  setActiveMainTab: (tab: MainTab) => void;
+  activeLenderSubTab?: LenderSubTab;
+  setActiveLenderSubTab?: (tab: LenderSubTab) => void;
+  showSubTabs?: boolean;
 }
 
-export function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+export function TabNavigation({ 
+  activeMainTab, 
+  setActiveMainTab, 
+  activeLenderSubTab,
+  setActiveLenderSubTab,
+  showSubTabs = false
+}: TabNavigationProps) {
+  const mainTabs: { id: MainTab; label: string; icon: React.ReactNode }[] = [
     { id: 'input', label: 'Input Parameters', icon: <Calculator className="h-4 w-4 mr-1" /> },
-    { id: 'schedule', label: 'Payment Schedule', icon: <Calendar className="h-4 w-4 mr-1" /> },
-    { id: 'investors', label: 'Investor Returns', icon: <PieChart className="h-4 w-4 mr-1" /> },
-    { id: 'summary', label: 'Summary', icon: <BarChart className="h-4 w-4 mr-1" /> },
-    { id: 'projections', label: 'Financial Projections', icon: <TrendingUp className="h-4 w-4 mr-1" /> },
-    { id: 'banking', label: 'Banking Reports', icon: <Briefcase className="h-4 w-4 mr-1" /> },
-    { id: 'reports', label: 'Reports & Documents', icon: <FileText className="h-4 w-4 mr-1" /> },
+    { id: 'lender-investor', label: 'Lender / Investor Results', icon: <TrendingUp className="h-4 w-4 mr-1" /> },
+    { id: 'renter-operator', label: 'Renter / Operator Results', icon: <Users className="h-4 w-4 mr-1" /> },
+  ];
+
+  const lenderSubTabs: { id: LenderSubTab; label: string }[] = [
+    { id: 'schedule', label: 'Schedule' },
+    { id: 'investors', label: 'Investors' },
+    { id: 'summary', label: 'Summary' },
+    { id: 'projections', label: 'Projections' },
+    { id: 'reports', label: 'Reports' },
   ];
 
   return (
-    <div className="border-b border-neutral-lighter mb-6 dark:border-neutral-dark">
-      <nav className="flex flex-wrap -mb-px">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-4 py-2 font-medium text-sm border-b-2 flex items-center",
-              activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-neutral-lighter"
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+    <div className="mb-6">
+      {/* Main Navigation */}
+      <div className="border-b border-neutral-lighter dark:border-neutral-dark">
+        <nav className="flex flex-wrap -mb-px">
+          {mainTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveMainTab(tab.id)}
+              className={cn(
+                "px-6 py-3 font-medium text-sm border-b-2 flex items-center",
+                activeMainTab === tab.id
+                  ? "border-primary text-primary bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-neutral-lighter"
+              )}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Sub Navigation for Lender/Investor Results */}
+      {showSubTabs && activeMainTab === 'lender-investor' && (
+        <div className="border-b border-neutral-lighter/50 dark:border-neutral-dark/50 bg-muted/30">
+          <nav className="flex flex-wrap -mb-px px-4">
+            {lenderSubTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveLenderSubTab?.(tab.id)}
+                className={cn(
+                  "px-4 py-2 font-medium text-xs border-b-2 transition-colors",
+                  activeLenderSubTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-neutral-lighter"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorIcon, Wand2 } from "lucide-react";
@@ -5,9 +6,10 @@ import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
 import { Link, useLocation } from "wouter";
-import { TabNavigation, Tab } from "@/components/calculator/TabNavigation";
+import { TabNavigation, MainTab, LenderSubTab } from "@/components/calculator/TabNavigation";
 import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
 import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
+import { BusinessParametersCard, BusinessParameters } from "@/components/calculator/BusinessParametersCard";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
@@ -27,7 +29,8 @@ import {
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<Tab>('input');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('input');
+  const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const today = new Date();
@@ -50,6 +53,15 @@ export default function Home() {
     { id: 1, name: "John Doe", investmentAmount: 40000 },
     { id: 2, name: "Jane Smith", investmentAmount: 60000 },
   ]);
+
+  const [businessParams, setBusinessParams] = useState<BusinessParameters>({
+    vehicleCount: 10,
+    averageDailyRate: 50,
+    occupancyRate: 75,
+    monthlyOperatingExpenses: 5000,
+    maintenanceCostPerVehicle: 200,
+    insuranceCostPerVehicle: 150
+  });
 
   const [calculationResults, setCalculationResults] = useState<{
     monthlyPayment: number;
@@ -83,7 +95,6 @@ export default function Home() {
     setInputsValid(isButtonEnabled);
   }, [loanParams, investors, validations]);
 
-
   const calculateMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/calculate", {
@@ -96,14 +107,12 @@ export default function Home() {
       const paymentSchedule = data.paymentSchedule.map((payment: any) => ({
         ...payment,
         date: new Date(payment.date),
-        payment: Number(payment.payment || payment.amount), // Usar payment primero, luego amount como fallback
+        payment: Number(payment.payment || payment.amount),
         principal: Number(payment.principal),
         interest: Number(payment.interest),
         balance: Number(payment.balance)
       }));
 
-      // --- INICIO DE LA CORRECCIÓN ---
-      // 1. Remodelar los datos de 'investorReturns' para que coincidan con lo que espera el frontend.
       const transformedInvestorReturns = data.investorReturns.map((investor: any) => {
         if (!Array.isArray(investor.monthlyReturns)) {
             return { ...investor, totalInterest: 0, totalReturn: investor.investmentAmount, monthlyReturns: [] };
@@ -123,20 +132,20 @@ export default function Home() {
           monthlyReturns: numericMonthlyReturns,
         };
       });
-      // --- FIN DE LA CORRECCIÓN ---
 
       return {
         loanId: data.loanId,
         monthlyPayment: data.monthlyPayment,
         totalInterest: data.totalInterest,
         paymentSchedule: paymentSchedule,
-        investorReturns: transformedInvestorReturns, // 2. Usar los datos transformados.
+        investorReturns: transformedInvestorReturns,
         endDate: new Date(data.endDate)
       };
     },
     onSuccess: (data) => {
       setCalculationResults(data);
-      setActiveTab('schedule');
+      setActiveMainTab('lender-investor');
+      setActiveLenderSubTab('schedule');
       setIsCalculating(false);
       toast({
         title: "Calculation Complete",
@@ -241,6 +250,116 @@ export default function Home() {
     });
   };
 
+  const renderMainTabContent = () => {
+    switch (activeMainTab) {
+      case 'input':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
+            <LoanParametersCard
+              loanParams={loanParams}
+              setLoanParams={setLoanParams}
+              isCalculating={calculateMutation.isPending}
+              onValidationChange={handleValidationChange}
+            />
+            <InvestorsCard
+              investors={investors}
+              setInvestors={setInvestors}
+              totalRequired={loanParams.totalAmount}
+              isCalculating={calculateMutation.isPending}
+            />
+            <BusinessParametersCard
+              businessParams={businessParams}
+              setBusinessParams={setBusinessParams}
+              isCalculating={calculateMutation.isPending}
+            />
+          </div>
+        );
+
+      case 'lender-investor':
+        if (!calculationResults) {
+          return (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground mb-4">No calculation results available.</p>
+              <p className="text-sm text-muted-foreground">Please complete the calculation in the Input Parameters tab first.</p>
+            </div>
+          );
+        }
+
+        switch (activeLenderSubTab) {
+          case 'schedule':
+            return (
+              <PaymentScheduleTab
+                loanAmount={loanParams.totalAmount}
+                monthlyPayment={calculationResults.monthlyPayment}
+                totalInterest={calculationResults.totalInterest}
+                paymentSchedule={calculationResults.paymentSchedule}
+              />
+            );
+          case 'investors':
+            return (
+              <InvestorReturnsTab
+                investorReturns={calculationResults.investorReturns}
+                paymentSchedule={calculationResults.paymentSchedule}
+              />
+            );
+          case 'summary':
+            return (
+              <SummaryTab
+                loanAmount={loanParams.totalAmount}
+                interestRate={loanParams.interestRate}
+                termMonths={loanParams.termMonths}
+                monthlyPayment={calculationResults.monthlyPayment}
+                totalInterest={calculationResults.totalInterest}
+                startDate={loanParams.startDate}
+                endDate={calculationResults.endDate}
+                investors={calculationResults.investorReturns}
+                paymentSchedule={calculationResults.paymentSchedule}
+                onExport={handleExportSummary}
+              />
+            );
+          case 'projections':
+            return (
+              <ProjectionsTab
+                loanAmount={loanParams.totalAmount}
+                interestRate={loanParams.interestRate}
+                termMonths={loanParams.termMonths}
+                monthlyPayment={calculationResults.monthlyPayment}
+                startDate={loanParams.startDate}
+              />
+            );
+          case 'reports':
+            return (
+              <ReportsTab
+                loanAmount={loanParams.totalAmount}
+                interestRate={loanParams.interestRate}
+                termMonths={loanParams.termMonths}
+                monthlyPayment={calculationResults.monthlyPayment}
+                totalInterest={calculationResults.totalInterest}
+                startDate={loanParams.startDate}
+                endDate={calculationResults.endDate}
+                investors={calculationResults.investorReturns}
+                paymentSchedule={calculationResults.paymentSchedule}
+              />
+            );
+          default:
+            return null;
+        }
+
+      case 'renter-operator':
+        return (
+          <div className="text-center py-20">
+            <h2 className="text-4xl font-bold mb-6 text-foreground">Renter's Projections</h2>
+            <p className="text-lg text-muted-foreground">
+              Coming Soon: Profitability analysis, ROI, and cash flow for the business operator.
+            </p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-neutral-900 text-foreground">
       <Header />
@@ -249,14 +368,16 @@ export default function Home() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Finance Calculator</h1>
           <div className="flex gap-3">
-            <Button
-              onClick={handleCalculate}
-              disabled={!inputsValid || calculateMutation.isPending}
-              className="px-6"
-            >
-              <CalculatorIcon className="h-5 w-5 mr-2" />
-              {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
-            </Button>
+            {activeMainTab === 'input' && (
+              <Button
+                onClick={handleCalculate}
+                disabled={!inputsValid || calculateMutation.isPending}
+                className="px-6"
+              >
+                <CalculatorIcon className="h-5 w-5 mr-2" />
+                {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={openWizard}
@@ -273,95 +394,17 @@ export default function Home() {
             </Button>
           </div>
         </div>
-        <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        <TabNavigation 
+          activeMainTab={activeMainTab} 
+          setActiveMainTab={setActiveMainTab}
+          activeLenderSubTab={activeLenderSubTab}
+          setActiveLenderSubTab={setActiveLenderSubTab}
+          showSubTabs={calculationResults !== null}
+        />
 
         <div className="tab-content min-h-[60vh]">
-          {activeTab === 'input' && (
-            <div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
-                <LoanParametersCard
-                  loanParams={loanParams}
-                  setLoanParams={setLoanParams}
-                  isCalculating={calculateMutation.isPending}
-                  onValidationChange={handleValidationChange}
-                />
-                <InvestorsCard
-                  investors={investors}
-                  setInvestors={setInvestors}
-                  totalRequired={loanParams.totalAmount}
-                  isCalculating={calculateMutation.isPending}
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'schedule' && calculationResults && (
-            <PaymentScheduleTab
-              loanAmount={loanParams.totalAmount}
-              monthlyPayment={calculationResults.monthlyPayment}
-              totalInterest={calculationResults.totalInterest}
-              paymentSchedule={calculationResults.paymentSchedule}
-            />
-          )}
-
-          {activeTab === 'investors' && calculationResults && (
-            <InvestorReturnsTab
-              investorReturns={calculationResults.investorReturns}
-              paymentSchedule={calculationResults.paymentSchedule}
-            />
-          )}
-
-          {activeTab === 'summary' && calculationResults && (
-            <SummaryTab
-              loanAmount={loanParams.totalAmount}
-              interestRate={loanParams.interestRate}
-              termMonths={loanParams.termMonths}
-              monthlyPayment={calculationResults.monthlyPayment}
-              totalInterest={calculationResults.totalInterest}
-              startDate={loanParams.startDate}
-              endDate={calculationResults.endDate}
-              investors={calculationResults.investorReturns}
-              paymentSchedule={calculationResults.paymentSchedule}
-              onExport={handleExportSummary}
-            />
-          )}
-
-          {activeTab === 'projections' && calculationResults && (
-            <ProjectionsTab
-              loanAmount={loanParams.totalAmount}
-              interestRate={loanParams.interestRate}
-              termMonths={loanParams.termMonths}
-              monthlyPayment={calculationResults.monthlyPayment}
-              startDate={loanParams.startDate}
-            />
-          )}
-
-          {activeTab === 'banking' && calculationResults && (
-            <BankerReportsTab
-              loanAmount={loanParams.totalAmount}
-              interestRate={loanParams.interestRate}
-              termMonths={loanParams.termMonths}
-              monthlyPayment={calculationResults.monthlyPayment}
-              totalInterest={calculationResults.totalInterest}
-              startDate={loanParams.startDate}
-              endDate={calculationResults.endDate}
-              investors={calculationResults.investorReturns}
-            />
-          )}
-
-          {activeTab === 'reports' && calculationResults && (
-            <ReportsTab
-              loanAmount={loanParams.totalAmount}
-              interestRate={loanParams.interestRate}
-              termMonths={loanParams.termMonths}
-              monthlyPayment={calculationResults.monthlyPayment}
-              totalInterest={calculationResults.totalInterest}
-              startDate={loanParams.startDate}
-              endDate={calculationResults.endDate}
-              investors={calculationResults.investorReturns}
-              paymentSchedule={calculationResults.paymentSchedule}
-            />
-          )}
+          {renderMainTabContent()}
         </div>
       </main>
 
