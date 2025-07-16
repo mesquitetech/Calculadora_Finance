@@ -96,6 +96,24 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
+// Define user settings table for persistent configuration
+export const userSettings = pgTable("user_settings", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().unique(),
+  investors: text("investors").notNull(), // JSON string
+  businessParams: text("business_params").notNull(), // JSON string
+  renterConfig: text("renter_config"), // JSON string
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
+  sessionId: true,
+  investors: true,
+  businessParams: true,
+  renterConfig: true,
+});
+
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -108,3 +126,6 @@ export type Investor = typeof investors.$inferSelect;
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
+export type UserSettings = typeof userSettings.$inferSelect;

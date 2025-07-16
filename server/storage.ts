@@ -7,10 +7,13 @@ import {
   InsertInvestor,
   Payment,
   InsertPayment,
+  UserSettings,
+  InsertUserSettings,
   users,
   loans,
   investors,
-  payments
+  payments,
+  userSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -37,6 +40,10 @@ export interface IStorage {
   getPaymentsByLoanId(loanId: number): Promise<Payment[]>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   deletePaymentsByLoanId(loanId: number): Promise<void>;
+
+  // User Settings operations
+  getUserSettings(sessionId: string): Promise<UserSettings | undefined>;
+  createOrUpdateUserSettings(settings: InsertUserSettings): Promise<UserSettings>;
 }
 
 
@@ -46,11 +53,13 @@ export class MemStorage implements IStorage {
   private loans: Map<number, Loan> = new Map();
   private investors: Map<number, Investor> = new Map();
   private payments: Map<number, Payment> = new Map();
+  private userSettings: Map<number, UserSettings> = new Map();
 
   private userId: number = 1;
   private loanId: number = 1;
   private investorId: number = 1;
   private paymentId: number = 1;
+  private userSettingsId: number = 1;
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
@@ -143,6 +152,36 @@ export class MemStorage implements IStorage {
           this.payments.delete(payment.id);
       }
   }
+
+  // User Settings methods
+  async getUserSettings(sessionId: string): Promise<UserSettings | undefined> {
+    return Array.from(this.userSettings.values()).find(settings => settings.sessionId === sessionId);
+  }
+
+  async createOrUpdateUserSettings(insertSettings: InsertUserSettings): Promise<UserSettings> {
+    const existing = await this.getUserSettings(insertSettings.sessionId);
+    const now = new Date();
+    
+    if (existing) {
+      const updated: UserSettings = {
+        ...existing,
+        ...insertSettings,
+        updatedAt: now
+      };
+      this.userSettings.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = this.userSettingsId++;
+      const settings: UserSettings = {
+        ...insertSettings,
+        id,
+        createdAt: now,
+        updatedAt: now
+      };
+      this.userSettings.set(id, settings);
+      return settings;
+    }
+  }
 }
 
 // Database storage implementation (for production)
@@ -215,6 +254,26 @@ export class DatabaseStorage implements IStorage {
 
   async deletePaymentsByLoanId(loanId: number): Promise<void> {
     await db.delete(payments).where(eq(payments.loanId, loanId));
+  }
+
+  // User Settings methods
+  async getUserSettings(sessionId: string): Promise<UserSettings | undefined> {
+    return await db.query.userSettings.findFirst({ where: eq(userSettings.sessionId, sessionId) });
+  }
+
+  async createOrUpdateUserSettings(insertSettings: InsertUserSettings): Promise<UserSettings> {
+    const existing = await this.getUserSettings(insertSettings.sessionId);
+    
+    if (existing) {
+      const [updated] = await db.update(userSettings)
+        .set({ ...insertSettings, updatedAt: new Date() })
+        .where(eq(userSettings.sessionId, insertSettings.sessionId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(userSettings).values(insertSettings).returning();
+      return created;
+    }
   }
 }
 

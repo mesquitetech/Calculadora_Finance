@@ -40,12 +40,47 @@ export default function Home() {
 
   // Interactive revenue state for renter/operator analysis
   const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
-  
+
   // Renter configuration state
   const [renterConfig, setRenterConfig] = useState<RenterConfig>({
     discountRate: 4.0,
     residualValueRate: 15
   });
+
+  // Generate or get session ID
+  const [sessionId] = useState(() => {
+    let id = localStorage.getItem('sessionId');
+    if (!id) {
+      id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('sessionId', id);
+    }
+    return id;
+  });
+
+  // Load settings from server on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch(`/api/user-settings/${sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.investors && data.investors.length >= 3) {
+            setInvestors(data.investors);
+          }
+          if (data.businessParams) {
+            setBusinessParams(data.businessParams);
+          }
+          if (data.renterConfig) {
+            setRenterConfig(data.renterConfig);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings from server:', error);
+      }
+    };
+
+    loadSettings();
+  }, [sessionId]);
 
   const today = new Date();
   const todayDate = new Date(
@@ -63,20 +98,12 @@ export default function Home() {
     paymentFrequency: 'monthly'
   });
 
-  const [investors, setInvestors] = useState<Investor[]>(() => {
-    const savedInvestors = localStorage.getItem('investors');
-    if (savedInvestors) {
-      try {
-        return JSON.parse(savedInvestors);
-      } catch (error) {
-        console.error('Error parsing saved investors:', error);
-      }
-    }
-    return [
-      { id: 1, name: "Investor 1", investmentAmount: 40000 },
-      { id: 2, name: "Investor 2", investmentAmount: 60000 },
-    ];
-  });
+  // Load investors from server storage
+  const [investors, setInvestors] = useState<Investor[]>([
+    { id: 1, name: "Investor 1", investmentAmount: 40000 },
+    { id: 2, name: "Investor 2", investmentAmount: 35000 },
+    { id: 3, name: "Investor 3", investmentAmount: 25000 }
+  ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>(() => {
     const savedBusinessParams = localStorage.getItem('businessParams');
