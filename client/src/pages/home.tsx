@@ -55,12 +55,9 @@ export default function Home() {
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    vehicleCount: 10,
-    averageDailyRate: 50,
-    occupancyRate: 75,
-    monthlyOperatingExpenses: 5000,
-    maintenanceCostPerVehicle: 200,
-    insuranceCostPerVehicle: 150
+    assetCost: 100000,
+    otherExpenses: 5000,
+    monthlyRevenue: 15000
   });
 
   const [calculationResults, setCalculationResults] = useState<{
