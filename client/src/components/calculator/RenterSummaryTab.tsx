@@ -48,6 +48,7 @@ export function RenterSummaryTab({
   
   // Calculate financial metrics
   const initialInvestment = assetCost - loanAmount; // Down payment
+  const totalAssetCost = assetCost; // Total cost of the asset (including down payment)
   const annualCashFlow = netMonthlyCashFlow * 12;
   
   // Calculate residual value at end of loan term
@@ -60,17 +61,15 @@ export function RenterSummaryTab({
     cashFlows[cashFlows.length - 1] += residualValue; // Add residual value to final year
   }
   
-  // Calculate NPV using configurable discount rate
+  // Calculate NPV using configurable discount rate (based on down payment)
   const npv = calculateNPV(initialInvestment, cashFlows, discountRate);
   
-  // Calculate IRR
+  // Calculate IRR (based on down payment)
   const irr = calculateIRR(-initialInvestment, cashFlows);
   
-  // Calculate payback period (in months)
-  const paybackPeriod = initialInvestment > 0 && netMonthlyCashFlow > 0 
-    ? initialInvestment / netMonthlyCashFlow 
-    : initialInvestment === 0 
-    ? 0 // No initial investment to recover
+  // Calculate payback period based on total asset cost and positive monthly cash flow
+  const paybackPeriod = netMonthlyCashFlow > 0 
+    ? totalAssetCost / netMonthlyCashFlow 
     : Infinity; // Negative cash flow means never recovers
   
   // Calculate total return over loan term
@@ -190,15 +189,16 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Payback Period</CardTitle>
-            <p className="text-sm text-muted-foreground">Time to recover investment</p>
+            <p className="text-sm text-muted-foreground">Time to recover total asset cost</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {initialInvestment === 0 
-                ? 'No Down Payment' 
-                : paybackPeriod === Infinity || paybackPeriod <= 0 
+              {paybackPeriod === Infinity || paybackPeriod <= 0 
                 ? 'Never' 
                 : `${Math.ceil(paybackPeriod)} months`}
+            </div>
+            <div className="text-sm text-muted-foreground mt-2">
+              Time to recover total asset cost of {formatCurrency(totalAssetCost)}
             </div>
           </CardContent>
         </Card>
