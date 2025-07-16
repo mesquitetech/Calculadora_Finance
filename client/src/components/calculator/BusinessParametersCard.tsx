@@ -6,7 +6,6 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 export interface BusinessParameters {
   assetCost: number;
   otherExpenses: number;
-  monthlyRevenue: number;
 }
 
 interface BusinessParametersCardProps {
@@ -29,10 +28,6 @@ export function BusinessParametersCard({
     setBusinessParams(prev => ({ ...prev, otherExpenses: value }));
   };
 
-  const handleMonthlyRevenueChange = (value: number) => {
-    setBusinessParams(prev => ({ ...prev, monthlyRevenue: value }));
-  };
-
   return (
     <Card className="col-span-1">
       <CardContent className="pt-6">
@@ -53,7 +48,7 @@ export function BusinessParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="other-expenses">Other Expenses</Label>
+            <Label htmlFor="other-expenses">Other Monthly Expenses</Label>
             <CurrencyInput
               id="other-expenses"
               name="other-expenses"
@@ -63,21 +58,7 @@ export function BusinessParametersCard({
               max={1000000}
               disabled={isCalculating}
             />
-            <p className="text-xs text-muted-foreground mt-1">Additional monthly operating expenses</p>
-          </div>
-
-          <div className="form-group">
-            <Label htmlFor="monthly-revenue">Monthly Revenue</Label>
-            <CurrencyInput
-              id="monthly-revenue"
-              name="monthly-revenue"
-              value={businessParams.monthlyRevenue}
-              onChange={handleMonthlyRevenueChange}
-              min={0}
-              max={1000000}
-              disabled={isCalculating}
-            />
-            <p className="text-xs text-muted-foreground mt-1">Expected monthly revenue from the business</p>
+            <p className="text-xs text-muted-foreground mt-1">Additional monthly operating expenses (maintenance, insurance, etc.)</p>
           </div>
         </div>
       </CardContent>

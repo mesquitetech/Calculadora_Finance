@@ -6,7 +6,7 @@ import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
 import { Link, useLocation } from "wouter";
-import { TabNavigation, MainTab, LenderSubTab } from "@/components/calculator/TabNavigation";
+import { TabNavigation, MainTab, LenderSubTab, RenterSubTab } from "@/components/calculator/TabNavigation";
 import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
 import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
 import { BusinessParametersCard, BusinessParameters } from "@/components/calculator/BusinessParametersCard";
@@ -17,6 +17,10 @@ import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { SetupWizard } from "@/components/calculator/SetupWizard";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
+import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
+import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
+import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
+import { RenterMetricsExplainedTab } from "@/components/calculator/RenterMetricsExplainedTab";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,7 +35,11 @@ import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 export default function Home() {
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('input');
   const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
+  const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('summary');
   const [wizardOpen, setWizardOpen] = useState(false);
+  
+  // Interactive revenue state for renter/operator analysis
+  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
 
   const today = new Date();
   const todayDate = new Date(
@@ -56,8 +64,7 @@ export default function Home() {
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
     assetCost: 100000,
-    otherExpenses: 5000,
-    monthlyRevenue: 15000
+    otherExpenses: 5000
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -91,6 +98,14 @@ export default function Home() {
 
     setInputsValid(isButtonEnabled);
   }, [loanParams, investors, validations]);
+
+  // Set break-even revenue when calculation results become available
+  useEffect(() => {
+    if (calculationResults?.monthlyPayment) {
+      const breakEvenRevenue = calculationResults.monthlyPayment + businessParams.otherExpenses;
+      setInteractiveRevenue(breakEvenRevenue);
+    }
+  }, [calculationResults, businessParams.otherExpenses]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
@@ -343,14 +358,56 @@ export default function Home() {
         }
 
       case 'renter-operator':
-        return (
-          <div className="text-center py-20">
-            <h2 className="text-4xl font-bold mb-6 text-foreground">Renter's Projections</h2>
-            <p className="text-lg text-muted-foreground">
-              Coming Soon: Profitability analysis, ROI, and cash flow for the business operator.
-            </p>
-          </div>
-        );
+        if (!calculationResults) {
+          return (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground mb-4">No calculation results available.</p>
+              <p className="text-sm text-muted-foreground">Please complete the calculation in the Input Parameters tab first.</p>
+            </div>
+          );
+        }
+
+        switch (activeRenterSubTab) {
+          case 'summary':
+            return (
+              <RenterSummaryTab
+                loanAmount={loanParams.totalAmount}
+                monthlyPayment={calculationResults.monthlyPayment}
+                termMonths={loanParams.termMonths}
+                interestRate={loanParams.interestRate}
+                otherExpenses={businessParams.otherExpenses}
+                monthlyRevenue={interactiveRevenue}
+                setMonthlyRevenue={setInteractiveRevenue}
+                assetCost={businessParams.assetCost}
+              />
+            );
+          case 'cash-flow':
+            return (
+              <RenterCashFlowTab
+                loanAmount={loanParams.totalAmount}
+                monthlyPayment={calculationResults.monthlyPayment}
+                termMonths={loanParams.termMonths}
+                otherExpenses={businessParams.otherExpenses}
+                monthlyRevenue={interactiveRevenue}
+              />
+            );
+          case 'income-statement':
+            return (
+              <RenterIncomeStatementTab
+                loanAmount={loanParams.totalAmount}
+                monthlyPayment={calculationResults.monthlyPayment}
+                termMonths={loanParams.termMonths}
+                interestRate={loanParams.interestRate}
+                otherExpenses={businessParams.otherExpenses}
+                monthlyRevenue={interactiveRevenue}
+                assetCost={businessParams.assetCost}
+              />
+            );
+          case 'metrics-explained':
+            return <RenterMetricsExplainedTab />;
+          default:
+            return null;
+        }
 
       default:
         return null;
@@ -397,6 +454,8 @@ export default function Home() {
           setActiveMainTab={setActiveMainTab}
           activeLenderSubTab={activeLenderSubTab}
           setActiveLenderSubTab={setActiveLenderSubTab}
+          activeRenterSubTab={activeRenterSubTab}
+          setActiveRenterSubTab={setActiveRenterSubTab}
           showSubTabs={calculationResults !== null}
         />
 
