@@ -99,8 +99,7 @@ export function InvestorsCard({
               key={investor.id} 
               className="investor-entry bg-muted rounded-md p-3"
             >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium">Investor {index + 1}</h3>
+              <div className="flex justify-end items-center mb-2">
                 <Button
                     variant="ghost"
                     size="sm"
