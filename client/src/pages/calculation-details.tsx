@@ -371,9 +371,12 @@ export default function CalculationDetails() {
                 <RenterSummaryTab
                   loanAmount={data.amount}
                   monthlyPayment={data.monthlyPayment}
-                  businessParams={data.businessParams}
-                  interactiveRevenue={interactiveRevenue}
-                  setInteractiveRevenue={setInteractiveRevenue}
+                  termMonths={data.termMonths}
+                  interestRate={data.interestRate}
+                  otherExpenses={data.businessParams.monthlyExpenses}
+                  monthlyRevenue={interactiveRevenue}
+                  setMonthlyRevenue={setInteractiveRevenue}
+                  assetCost={data.businessParams.assetCost + data.businessParams.otherExpenses}
                 />
               </TabsContent>
 
@@ -381,9 +384,10 @@ export default function CalculationDetails() {
                 <RenterCashFlowTab
                   loanAmount={data.amount}
                   monthlyPayment={data.monthlyPayment}
-                  businessParams={data.businessParams}
-                  interactiveRevenue={interactiveRevenue}
-                  setInteractiveRevenue={setInteractiveRevenue}
+                  termMonths={data.termMonths}
+                  otherExpenses={data.businessParams.monthlyExpenses}
+                  monthlyRevenue={interactiveRevenue}
+                  setMonthlyRevenue={setInteractiveRevenue}
                 />
               </TabsContent>
 
@@ -391,9 +395,12 @@ export default function CalculationDetails() {
                 <RenterIncomeStatementTab
                   loanAmount={data.amount}
                   monthlyPayment={data.monthlyPayment}
-                  businessParams={data.businessParams}
-                  interactiveRevenue={interactiveRevenue}
-                  setInteractiveRevenue={setInteractiveRevenue}
+                  termMonths={data.termMonths}
+                  interestRate={data.interestRate}
+                  otherExpenses={data.businessParams.monthlyExpenses}
+                  monthlyRevenue={interactiveRevenue}
+                  setMonthlyRevenue={setInteractiveRevenue}
+                  assetCost={data.businessParams.assetCost + data.businessParams.otherExpenses}
                 />
               </TabsContent>
             </Tabs>
