@@ -60,7 +60,7 @@ export function BusinessParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="other-expenses">Other Monthly Expenses</Label>
+            <Label htmlFor="other-expenses">Monthly Expenses</Label>
             <CurrencyInput
               id="other-expenses"
               name="other-expenses"

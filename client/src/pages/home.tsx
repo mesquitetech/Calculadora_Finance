@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorIcon, Wand2 } from "lucide-react";
@@ -37,7 +36,7 @@ export default function Home() {
   const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
   const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('summary');
   const [wizardOpen, setWizardOpen] = useState(false);
-  
+
   // Interactive revenue state for renter/operator analysis
   const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
 
@@ -63,8 +62,8 @@ export default function Home() {
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    assetCost: 100000,
-    otherExpenses: 5000
+    assetCost: 0,
+    otherExpenses: 0,
   });
 
   const [calculationResults, setCalculationResults] = useState<{
