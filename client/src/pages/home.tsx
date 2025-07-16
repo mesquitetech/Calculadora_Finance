@@ -63,15 +63,35 @@ export default function Home() {
     paymentFrequency: 'monthly'
   });
 
-  const [investors, setInvestors] = useState<Investor[]>([
-    { id: 1, name: "Investor 1", investmentAmount: 40000 },
-    { id: 2, name: "Investor 2", investmentAmount: 60000 },
-  ]);
+  const [investors, setInvestors] = useState<Investor[]>(() => {
+    const savedInvestors = localStorage.getItem('investors');
+    if (savedInvestors) {
+      try {
+        return JSON.parse(savedInvestors);
+      } catch (error) {
+        console.error('Error parsing saved investors:', error);
+      }
+    }
+    return [
+      { id: 1, name: "Investor 1", investmentAmount: 40000 },
+      { id: 2, name: "Investor 2", investmentAmount: 60000 },
+    ];
+  });
 
-  const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    assetCost: 0,
-    otherExpenses: 0,
-    monthlyExpenses: 0,
+  const [businessParams, setBusinessParams] = useState<BusinessParameters>(() => {
+    const savedBusinessParams = localStorage.getItem('businessParams');
+    if (savedBusinessParams) {
+      try {
+        return JSON.parse(savedBusinessParams);
+      } catch (error) {
+        console.error('Error parsing saved business parameters:', error);
+      }
+    }
+    return {
+      assetCost: 0,
+      otherExpenses: 0,
+      monthlyExpenses: 0,
+    };
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -113,6 +133,16 @@ export default function Home() {
       setInteractiveRevenue(breakEvenRevenue);
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
+
+  // Save investors to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('investors', JSON.stringify(investors));
+  }, [investors]);
+
+  // Save business parameters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('businessParams', JSON.stringify(businessParams));
+  }, [businessParams]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {

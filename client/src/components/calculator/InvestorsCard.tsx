@@ -100,13 +100,10 @@ export function InvestorsCard({
           {investors.map((investor, index) => (
             <div 
               key={investor.id} 
-              className="investor-entry bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200 hover:border-blue-300 transition-colors duration-200"
+              className="investor-entry rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors duration-200"
             >
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-2">
-                    <span className="text-white text-xs font-bold">{index + 1}</span>
-                  </div>
                   <span className="text-sm font-medium text-gray-700">Investor {index + 1}</span>
                 </div>
                 <Button
@@ -127,7 +124,7 @@ export function InvestorsCard({
                     placeholder={`Investor ${index + 1}`}
                     disabled={isCalculating}
                     required
-                    className="text-sm h-9 border-blue-200 focus:border-blue-400"
+                    className="text-sm h-9"
                   />
                 </div>
                 <div className="form-group">
@@ -137,7 +134,7 @@ export function InvestorsCard({
                     min={0}
                     disabled={isCalculating}
                     required
-                    className="text-sm h-9 border-blue-200 focus:border-blue-400"
+                    className="text-sm h-9"
                   />
                 </div>
               </div>
@@ -151,13 +148,13 @@ export function InvestorsCard({
             variant="secondary"
             size="sm"
             disabled={isCalculating}
-            className="w-full h-10 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
+            className="w-full h-10"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Investor
           </Button>
 
-          <div className="bg-white rounded-lg p-3 border-2 border-dashed border-blue-200">
+          <div className="bg-white rounded-lg p-3 border-2 border-dashed border-gray-200">
             <div className="text-sm space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Investment:</span>
@@ -169,7 +166,7 @@ export function InvestorsCard({
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Required:</span>
-                <span className="font-bold text-lg text-blue-600">
+                <span className="font-bold text-lg text-gray-900">
                   {formatCurrency(totalRequired)}
                 </span>
               </div>
