@@ -58,8 +58,8 @@ export default function Home() {
   });
 
   const [investors, setInvestors] = useState<Investor[]>([
-    { id: 1, name: "John Doe", investmentAmount: 40000 },
-    { id: 2, name: "Jane Smith", investmentAmount: 60000 },
+    { id: 1, name: "Investor 1", investmentAmount: 40000 },
+    { id: 2, name: "Investor 2", investmentAmount: 60000 },
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
