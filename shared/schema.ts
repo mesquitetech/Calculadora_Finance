@@ -76,34 +76,6 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
   balance: true,
 });
 
-// Define Relations
-export const loansRelations = relations(loans, ({ many, one }) => ({
-  investors: many(investors),
-  payments: many(payments),
-  businessParameters: one(businessParameters),
-}));
-
-export const investorsRelations = relations(investors, ({ one }) => ({
-  loan: one(loans, {
-    fields: [investors.loanId],
-    references: [loans.id],
-  }),
-}));
-
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  loan: one(loans, {
-    fields: [payments.loanId],
-    references: [loans.id],
-  }),
-}));
-
-export const businessParametersRelations = relations(businessParameters, ({ one }) => ({
-  loan: one(loans, {
-    fields: [businessParameters.loanId],
-    references: [loans.id],
-  }),
-}));
-
 // Define user settings table for persistent configuration
 export const userSettings = pgTable("user_settings", {
   id: serial("id").primaryKey(),
@@ -138,6 +110,34 @@ export const insertBusinessParametersSchema = createInsertSchema(businessParamet
   otherExpenses: true,
   monthlyExpenses: true,
 });
+
+// Define Relations
+export const loansRelations = relations(loans, ({ many, one }) => ({
+  investors: many(investors),
+  payments: many(payments),
+  businessParameters: one(businessParameters),
+}));
+
+export const investorsRelations = relations(investors, ({ one }) => ({
+  loan: one(loans, {
+    fields: [investors.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  loan: one(loans, {
+    fields: [payments.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const businessParametersRelations = relations(businessParameters, ({ one }) => ({
+  loan: one(loans, {
+    fields: [businessParameters.loanId],
+    references: [loans.id],
+  }),
+}));
 
 // Type definitions
 export type InsertUser = z.infer<typeof insertUserSchema>;
