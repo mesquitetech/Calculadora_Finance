@@ -83,7 +83,7 @@ export function InvestorsCard({
   const investmentDifference = totalRequired - totalInvestment;
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card className="col-span-1">
       <CardContent className="pt-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-foreground">Investors</h2>
