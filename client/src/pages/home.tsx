@@ -390,6 +390,7 @@ export default function Home() {
                 termMonths={loanParams.termMonths}
                 otherExpenses={businessParams.otherExpenses}
                 monthlyRevenue={interactiveRevenue}
+                setMonthlyRevenue={setInteractiveRevenue}
               />
             );
           case 'income-statement':
@@ -401,6 +402,7 @@ export default function Home() {
                 interestRate={loanParams.interestRate}
                 otherExpenses={businessParams.otherExpenses}
                 monthlyRevenue={interactiveRevenue}
+                setMonthlyRevenue={setInteractiveRevenue}
                 assetCost={businessParams.assetCost}
               />
             );

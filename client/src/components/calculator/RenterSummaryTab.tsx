@@ -49,8 +49,8 @@ export function RenterSummaryTab({
   // Generate cash flows for IRR calculation (simple annual cash flows)
   const cashFlows = Array(Math.ceil(termMonths / 12)).fill(annualCashFlow);
   
-  // Calculate NPV (using 7.5% discount rate as suggested)
-  const discountRate = 0.075;
+  // Calculate NPV (using 4% discount rate)
+  const discountRate = 0.04;
   const npv = calculateNPV(initialInvestment, cashFlows, discountRate);
   
   // Calculate IRR
@@ -69,48 +69,66 @@ export function RenterSummaryTab({
 
   return (
     <div className="space-y-6 p-6">
-      {/* Interactive Revenue Slider */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-center">Monthly Revenue Control</CardTitle>
-          <p className="text-sm text-muted-foreground text-center">
-            Adjust the slider to see how different revenue levels affect your investment returns
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Monthly Revenue:</span>
-              <span className="text-lg font-bold text-primary">{formatCurrency(monthlyRevenue)}</span>
+      {/* Interactive Revenue Control - Fixed Position */}
+      <div className="sticky top-4 z-10 mb-6">
+        <Card className="bg-background/95 backdrop-blur-sm border-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-bold text-center">Monthly Revenue Control</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Monthly Revenue:</span>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      value={monthlyRevenue}
+                      onChange={(e) => setMonthlyRevenue(Number(e.target.value) || 0)}
+                      className="w-24 px-2 py-1 text-sm border rounded text-right"
+                      min="0"
+                      step="100"
+                    />
+                    <span className="text-sm text-muted-foreground">USD</span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Slider
+                    value={[monthlyRevenue]}
+                    onValueChange={handleRevenueChange}
+                    min={0}
+                    max={breakEvenRevenue * 3}
+                    step={100}
+                    className="w-full"
+                  />
+                  {/* Breakeven marker */}
+                  <div 
+                    className="absolute top-0 w-0.5 h-6 bg-orange-500 pointer-events-none"
+                    style={{
+                      left: `${(breakEvenRevenue / (breakEvenRevenue * 3)) * 100}%`,
+                      transform: 'translateX(-50%)'
+                    }}
+                  >
+                    <div className="absolute -top-6 -left-8 text-xs text-orange-600 font-medium whitespace-nowrap">
+                      Break-even
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>$0</span>
+                  <span>{formatCurrency(breakEvenRevenue * 3)}</span>
+                </div>
+              </div>
+              <div className="text-center min-w-[120px]">
+                <p className="text-xs text-muted-foreground">Net Cash Flow</p>
+                <p className={`text-lg font-bold ${netMonthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(netMonthlyCashFlow)}
+                </p>
+              </div>
             </div>
-            <Slider
-              value={[monthlyRevenue]}
-              onValueChange={handleRevenueChange}
-              min={0}
-              max={breakEvenRevenue * 3} // Allow up to 3x break-even
-              step={100}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>$0</span>
-              <span className="text-orange-600 font-medium">
-                Break-even: {formatCurrency(breakEvenRevenue)}
-              </span>
-              <span>{formatCurrency(breakEvenRevenue * 3)}</span>
-            </div>
-          </div>
-          
-          {/* Cash Flow Indicator */}
-          <div className="flex items-center justify-center space-x-4 p-4 bg-muted rounded-lg">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Net Monthly Cash Flow</p>
-              <p className={`text-2xl font-bold ${netMonthlyCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(netMonthlyCashFlow)}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Key Financial Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -132,7 +150,7 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Net Present Value (NPV)</CardTitle>
-            <p className="text-sm text-muted-foreground">At 7.5% discount rate</p>
+            <p className="text-sm text-muted-foreground">At 4% discount rate</p>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${npv >= 0 ? 'text-green-600' : 'text-red-600'}`}>
