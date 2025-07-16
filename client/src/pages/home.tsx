@@ -64,6 +64,7 @@ export default function Home() {
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
     assetCost: 0,
     otherExpenses: 0,
+    monthlyExpenses: 0,
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -101,10 +102,10 @@ export default function Home() {
   // Set break-even revenue when calculation results become available
   useEffect(() => {
     if (calculationResults?.monthlyPayment) {
-      const breakEvenRevenue = calculationResults.monthlyPayment + businessParams.otherExpenses;
+      const breakEvenRevenue = calculationResults.monthlyPayment + businessParams.monthlyExpenses;
       setInteractiveRevenue(breakEvenRevenue);
     }
-  }, [calculationResults, businessParams.otherExpenses]);
+  }, [calculationResults, businessParams.monthlyExpenses]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
@@ -375,10 +376,10 @@ export default function Home() {
                 monthlyPayment={calculationResults.monthlyPayment}
                 termMonths={loanParams.termMonths}
                 interestRate={loanParams.interestRate}
-                otherExpenses={businessParams.otherExpenses}
+                otherExpenses={businessParams.monthlyExpenses}
                 monthlyRevenue={interactiveRevenue}
                 setMonthlyRevenue={setInteractiveRevenue}
-                assetCost={businessParams.assetCost}
+                assetCost={businessParams.assetCost + businessParams.otherExpenses}
               />
             );
           case 'cash-flow':
@@ -387,7 +388,7 @@ export default function Home() {
                 loanAmount={loanParams.totalAmount}
                 monthlyPayment={calculationResults.monthlyPayment}
                 termMonths={loanParams.termMonths}
-                otherExpenses={businessParams.otherExpenses}
+                otherExpenses={businessParams.monthlyExpenses}
                 monthlyRevenue={interactiveRevenue}
                 setMonthlyRevenue={setInteractiveRevenue}
               />
@@ -399,10 +400,10 @@ export default function Home() {
                 monthlyPayment={calculationResults.monthlyPayment}
                 termMonths={loanParams.termMonths}
                 interestRate={loanParams.interestRate}
-                otherExpenses={businessParams.otherExpenses}
+                otherExpenses={businessParams.monthlyExpenses}
                 monthlyRevenue={interactiveRevenue}
                 setMonthlyRevenue={setInteractiveRevenue}
-                assetCost={businessParams.assetCost}
+                assetCost={businessParams.assetCost + businessParams.otherExpenses}
               />
             );
           case 'metrics-explained':
