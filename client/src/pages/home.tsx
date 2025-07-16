@@ -283,6 +283,7 @@ export default function Home() {
               businessParams={businessParams}
               setBusinessParams={setBusinessParams}
               isCalculating={calculateMutation.isPending}
+              loanAmount={loanParams.totalAmount}
             />
           </div>
         );

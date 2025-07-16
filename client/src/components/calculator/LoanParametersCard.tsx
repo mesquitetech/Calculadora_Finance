@@ -195,6 +195,7 @@ export function LoanParametersCard({
             />
           </div>
 
+          {/* Payment Frequency - Temporarily disabled
           <div className="form-group">
             <Label htmlFor="payment-frequency">Payment Frequency</Label>
             <Select
@@ -211,6 +212,7 @@ export function LoanParametersCard({
               </SelectContent>
             </Select>
           </div>
+          */}
         </div>
       </CardContent>
     </Card>

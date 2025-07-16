@@ -84,58 +84,52 @@ export function InvestorsCard({
 
   return (
     <Card className="col-span-1">
-      <CardContent className="pt-6">
-        <div className="flex justify-between items-center mb-4">
+      <CardContent className="pt-4">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-lg font-bold text-foreground">Investors</h2>
-          <div className="text-sm text-muted-foreground flex items-center">
-            <AlertCircle className="h-4 w-4 mr-1" />
-            <span>1-20 investors allowed</span>
+          <div className="text-xs text-muted-foreground flex items-center">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            <span>1-20 allowed</span>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2 max-h-64 overflow-y-auto">
           {investors.map((investor, index) => (
             <div 
               key={investor.id} 
-              className="investor-entry bg-muted rounded-md p-4"
+              className="investor-entry bg-muted rounded-md p-3"
             >
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium">Investor {index + 1}</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">Investor {index + 1}</h3>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeInvestor(investor.id)}
                     disabled={investors.length <= 1 || isCalculating}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                   >
-                  <Trash className="h-4 w-4" />
+                  <Trash className="h-3 w-3" />
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="form-group">
-                  <Label className="mb-1">
-                    Investor Name
-                    <span className="text-destructive ml-1">*</span>
-                  </Label>
                   <Input
                     value={investor.name}
                     onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
-                    placeholder="Investor name"
+                    placeholder={`Investor ${index + 1}`}
                     disabled={isCalculating}
                     required
+                    className="text-sm h-8"
                   />
                 </div>
                 <div className="form-group">
-                  <Label className="mb-1">
-                    Investment Amount ($)
-                    <span className="text-destructive ml-1">*</span>
-                  </Label>
                   <CurrencyInput
                     value={investor.investmentAmount}
                     onChange={(value) => updateInvestor(investor.id, 'investmentAmount', value)}
                     min={0}
                     disabled={isCalculating}
                     required
+                    className="text-sm h-8"
                   />
                 </div>
               </div>
@@ -143,28 +137,30 @@ export function InvestorsCard({
           ))}
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center mt-4 space-y-3 md:space-y-0">
+        <div className="mt-3 space-y-2">
           <Button
             onClick={addInvestor}
             variant="secondary"
+            size="sm"
             disabled={isCalculating}
+            className="w-full h-8"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-3 w-3 mr-1" />
             Add Investor
           </Button>
 
-          <div className="flex items-center text-sm">
-            <div className="mr-4">
-              <span className="font-medium">Total Investment:</span>
-              <span className={`ml-1 font-bold ${
+          <div className="text-xs space-y-1">
+            <div className="flex justify-between">
+              <span>Total Investment:</span>
+              <span className={`font-bold ${
                 Math.abs(investmentDifference) < 0.01 ? "text-green-600" : ""
               }`}>
                 {formatCurrency(totalInvestment)}
               </span>
             </div>
-            <div>
-              <span className="font-medium">Required Amount:</span>
-              <span className="ml-1 font-bold">
+            <div className="flex justify-between">
+              <span>Required:</span>
+              <span className="font-bold">
                 {formatCurrency(totalRequired)}
               </span>
             </div>
@@ -172,16 +168,16 @@ export function InvestorsCard({
         </div>
 
         {error && (
-          <Alert variant="destructive" className="mt-3">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="mt-2 py-2">
+            <AlertCircle className="h-3 w-3" />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
           </Alert>
         )}
 
         {!hasMinInvestors && (
-          <Alert className="mt-3 bg-amber-50 text-amber-800 border-amber-200">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Please add at least 1 investor.</AlertDescription>
+          <Alert className="mt-2 py-2 bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="h-3 w-3" />
+            <AlertDescription className="text-xs">Please add at least 1 investor.</AlertDescription>
           </Alert>
         )}
       </CardContent>

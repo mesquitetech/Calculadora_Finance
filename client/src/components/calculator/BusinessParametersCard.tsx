@@ -12,13 +12,25 @@ interface BusinessParametersCardProps {
   businessParams: BusinessParameters;
   setBusinessParams: React.Dispatch<React.SetStateAction<BusinessParameters>>;
   isCalculating: boolean;
+  loanAmount?: number;
 }
 
 export function BusinessParametersCard({
   businessParams,
   setBusinessParams,
-  isCalculating
+  isCalculating,
+  loanAmount
 }: BusinessParametersCardProps) {
+  
+  // Sync loan amount to asset cost automatically
+  React.useEffect(() => {
+    if (loanAmount && loanAmount > 0) {
+      setBusinessParams(prev => ({
+        ...prev,
+        assetCost: loanAmount
+      }));
+    }
+  }, [loanAmount, setBusinessParams]);
 
   const handleAssetCostChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, assetCost: value }));
