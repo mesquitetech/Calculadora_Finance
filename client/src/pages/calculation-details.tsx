@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { formatCurrency, formatDate, formatPercentage } from "@/lib/finance";
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
-import { BusinessParameters } from "@/components/calculator/BusinessParametersCard"; 
+ 
 
 interface InvestorReturn {
   investorId: number;
@@ -54,7 +54,11 @@ interface CalculationDetails {
   paymentSchedule: PaymentScheduleEntry[];
   investorReturns: InvestorReturn[];
   endDate: string;
-  businessParams?: BusinessParameters;
+  businessParams?: {
+    assetCost: number;
+    otherExpenses: number;
+    monthlyExpenses: number;
+  };
 }
 
 export default function CalculationDetails() {
@@ -247,6 +251,22 @@ export default function CalculationDetails() {
               <span className="text-muted-foreground">Total Amount Paid:</span>
               <span className="font-medium">{formatCurrency(data.amount + data.totalInterest)}</span>
             </div>
+            {data.businessParams && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Asset Cost:</span>
+                  <span className="font-medium">{formatCurrency(data.businessParams.assetCost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Other Expenses:</span>
+                  <span className="font-medium">{formatCurrency(data.businessParams.otherExpenses)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Monthly Expenses:</span>
+                  <span className="font-medium">{formatCurrency(data.businessParams.monthlyExpenses)}</span>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
