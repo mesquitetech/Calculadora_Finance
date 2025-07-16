@@ -30,6 +30,18 @@ export function InvestorsCard({
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Initialize with minimum 3 investors if empty
+  useEffect(() => {
+    if (investors.length === 0) {
+      const defaultInvestors = [
+        { id: 1, name: "Primary Investor", investmentAmount: 40000 },
+        { id: 2, name: "Secondary Investor", investmentAmount: 350000 },
+        { id: 3, name: "Tertiary Investor", investmentAmount: 25000 }
+      ];
+      setInvestors(defaultInvestors);
+    }
+  }, [investors.length, setInvestors]);
+
   // Calculate total investment whenever investors change
   useEffect(() => {
     const total = investors.reduce(
@@ -46,25 +58,42 @@ export function InvestorsCard({
     }
   }, [investors, totalRequired]);
 
-  // CORREGIDO: Se actualiza la función para asignar un nombre por defecto
+  // Function to add a new investor with better default names
   const addInvestor = () => {
     const newId = investors.length > 0
       ? Math.max(...investors.map(i => i.id)) + 1
       : 1;
 
-    // El número del nuevo inversor será el tamaño actual de la lista + 1
     const newInvestorNumber = investors.length + 1;
+    
+    // Better default names based on position
+    const getDefaultName = (num: number) => {
+      const names = [
+        "Primary Investor",
+        "Secondary Investor", 
+        "Tertiary Investor",
+        "Additional Investor",
+        "Strategic Partner",
+        "Investment Partner",
+        "Capital Partner",
+        "Financial Backer",
+        "Co-Investor",
+        "Funding Partner"
+      ];
+      return names[num - 1] || `Investment Partner ${num}`;
+    };
 
     setInvestors([
       ...investors,
-      // Se asigna el nombre por defecto, por ejemplo "Investor 4"
-      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0 }
+      { id: newId, name: getDefaultName(newInvestorNumber), investmentAmount: 0 }
     ]);
   };
 
-  // Handle removing an investor
+  // Handle removing an investor (minimum 3 required)
   const removeInvestor = (id: number) => {
-    setInvestors(investors.filter(investor => investor.id !== id));
+    if (investors.length > 3) {
+      setInvestors(investors.filter(investor => investor.id !== id));
+    }
   };
 
   // Handle updating investor data
@@ -76,8 +105,8 @@ export function InvestorsCard({
     );
   };
 
-  // Check if we have at least 1 investor
-  const hasMinInvestors = investors.length >= 1;
+  // Check if we have at least 3 investors
+  const hasMinInvestors = investors.length >= 3;
 
   // Format investment difference for display
   const investmentDifference = totalRequired - totalInvestment;
@@ -89,7 +118,7 @@ export function InvestorsCard({
           <h2 className="text-lg font-bold text-foreground">Investors</h2>
           <div className="text-xs text-muted-foreground flex items-center">
             <AlertCircle className="h-3 w-3 mr-1" />
-            <span>1-20 allowed</span>
+            <span>3-20 allowed</span>
           </div>
         </div>
 
@@ -99,12 +128,17 @@ export function InvestorsCard({
               key={investor.id} 
               className="investor-entry bg-muted rounded-md p-3"
             >
-              <div className="flex justify-end items-center mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">
+                    Investor {index + 1}
+                  </span>
+                </div>
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeInvestor(investor.id)}
-                    disabled={investors.length <= 1 || isCalculating}
+                    disabled={investors.length <= 3 || isCalculating}
                     className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                   >
                   <Trash className="h-3 w-3" />
@@ -176,7 +210,7 @@ export function InvestorsCard({
         {!hasMinInvestors && (
           <Alert className="mt-2 py-2 bg-amber-50 text-amber-800 border-amber-200">
             <AlertCircle className="h-3 w-3" />
-            <AlertDescription className="text-xs">Please add at least 1 investor.</AlertDescription>
+            <AlertDescription className="text-xs">Please add at least 3 investors.</AlertDescription>
           </Alert>
         )}
       </CardContent>
