@@ -28,8 +28,9 @@ export function CurrencyInput({
 
   useEffect(() => {
     if (!isFocused) {
-
-      const formatted = value.toLocaleString("en-US", {
+      // Handle undefined or null values
+      const safeValue = value || 0;
+      const formatted = safeValue.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
@@ -38,7 +39,9 @@ export function CurrencyInput({
   }, [value, isFocused]); 
   const handleFocus = () => {
     setIsFocused(true);
- setDisplayValue(value.toString());
+    // Handle undefined or null values
+    const safeValue = value || 0;
+    setDisplayValue(safeValue.toString());
   };
 
   const handleBlur = () => {
