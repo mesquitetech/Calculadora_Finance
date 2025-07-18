@@ -331,7 +331,7 @@ export default function Home() {
         return (
           <div className="px-6">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              <div className="transform transition-all duration-300 hover:scale-105">
+              <div>
                 <LoanParametersCard
                   loanParams={loanParams}
                   setLoanParams={setLoanParams}
@@ -339,7 +339,7 @@ export default function Home() {
                   onValidationChange={handleValidationChange}
                 />
               </div>
-              <div className="transform transition-all duration-300 hover:scale-105">
+              <div>
                 <InvestorsCard
                   investors={investors}
                   setInvestors={setInvestors}
@@ -347,7 +347,7 @@ export default function Home() {
                   isCalculating={calculateMutation.isPending}
                 />
               </div>
-              <div className="transform transition-all duration-300 hover:scale-105">
+              <div>
                 <BusinessParametersCard
                   businessParams={businessParams}
                   setBusinessParams={setBusinessParams}
