@@ -41,11 +41,6 @@ export function RenterSummaryTab({
   // Calculate net monthly cash flow
   const netMonthlyCashFlow = monthlyRevenue - monthlyPayment - otherExpenses;
   
-  // Calculate total expenses over loan term
-  const totalLoanPayments = monthlyPayment * termMonths;
-  const totalOperatingExpenses = otherExpenses * termMonths;
-  const totalRevenue = (monthlyRevenue * termMonths) + residualValue;
-  
   // Calculate financial metrics
   const initialInvestment = assetCost - loanAmount; // Down payment
   const totalAssetCost = assetCost; // Total cost of the asset (including down payment)
@@ -53,6 +48,11 @@ export function RenterSummaryTab({
   
   // Calculate residual value at end of loan term
   const residualValue = assetCost * residualValueRate;
+  
+  // Calculate total expenses over loan term
+  const totalLoanPayments = monthlyPayment * termMonths;
+  const totalOperatingExpenses = otherExpenses * termMonths;
+  const totalRevenue = (monthlyRevenue * termMonths) + residualValue;
   
   // Generate cash flows for IRR calculation (including residual value in final year)
   const numYears = Math.ceil(termMonths / 12);
