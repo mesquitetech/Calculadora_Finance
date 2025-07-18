@@ -31,6 +31,7 @@ export function InvestorsCard({
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('amount');
+  const [percentageInputs, setPercentageInputs] = useState<{[key: number]: string}>({});
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -67,6 +68,12 @@ export function InvestorsCard({
   // Handle removing an investor
   const removeInvestor = (id: number) => {
     setInvestors(investors.filter(investor => investor.id !== id));
+    // Clean up percentage input state
+    setPercentageInputs(prev => {
+      const newInputs = { ...prev };
+      delete newInputs[id];
+      return newInputs;
+    });
   };
 
   // Handle updating investor data
@@ -78,14 +85,36 @@ export function InvestorsCard({
     );
   };
 
-  // Handle percentage input
-  const updateInvestorPercentage = (id: number, percentage: number) => {
-    const amount = (percentage / 100) * totalRequired;
-    setInvestors(
-      investors.map(investor => 
-        investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
-      )
-    );
+  // Handle percentage input with local state for free typing
+  const handlePercentageInputChange = (id: number, value: string) => {
+    setPercentageInputs(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handlePercentageInputBlur = (id: number) => {
+    const value = percentageInputs[id];
+    if (value !== undefined) {
+      const percentage = parseFloat(value) || 0;
+      const amount = (percentage / 100) * totalRequired;
+      setInvestors(
+        investors.map(investor => 
+          investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
+        )
+      );
+    }
+  };
+
+  const handlePercentageInputKeyDown = (id: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handlePercentageInputBlur(id);
+    }
+  };
+
+  // Get display value for percentage input
+  const getPercentageDisplayValue = (investor: Investor) => {
+    if (percentageInputs[investor.id] !== undefined) {
+      return percentageInputs[investor.id];
+    }
+    return ((investor.investmentAmount / totalRequired) * 100).toFixed(2);
   };
 
   // Check if we have at least 1 investor
@@ -161,8 +190,10 @@ export function InvestorsCard({
                     <div className="relative">
                       <Input
                         type="number"
-                        value={((investor.investmentAmount / totalRequired) * 100).toFixed(2)}
-                        onChange={(e) => updateInvestorPercentage(investor.id, parseFloat(e.target.value) || 0)}
+                        value={getPercentageDisplayValue(investor)}
+                        onChange={(e) => handlePercentageInputChange(investor.id, e.target.value)}
+                        onBlur={() => handlePercentageInputBlur(investor.id)}
+                        onKeyDown={(e) => handlePercentageInputKeyDown(investor.id, e)}
                         min={0}
                         max={100}
                         step={0.01}
