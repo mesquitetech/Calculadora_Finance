@@ -1,6 +1,3 @@
-
-"use client"
-
 import * as React from "react"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
@@ -15,33 +12,40 @@ import {
 } from "@/components/ui/popover"
 
 interface DatePickerProps {
-  date: Date | undefined
-  setDate: (date: Date | undefined) => void
-  placeholder?: string
+  date?: Date
+  onSelect?: (date: Date | undefined) => void
   disabled?: boolean
+  placeholder?: string
+  className?: string
 }
 
-export function DatePicker({ 
-  date, 
-  setDate, 
+export function DatePicker({
+  date,
+  onSelect,
+  disabled,
   placeholder = "Pick a date",
-  disabled = false 
+  className
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = React.useCallback((selectedDate: Date | undefined) => {
-    setDate(selectedDate)
+    onSelect?.(selectedDate)
     setOpen(false)
-  }, [setDate])
+  }, [onSelect])
+
+  const handleOpenChange = React.useCallback((newOpen: boolean) => {
+    setOpen(newOpen)
+  }, [])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
+            className
           )}
           disabled={disabled}
         >
@@ -55,7 +59,6 @@ export function DatePicker({
           selected={date}
           onSelect={handleSelect}
           initialFocus
-          disabled={disabled}
         />
       </PopoverContent>
     </Popover>
