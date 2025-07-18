@@ -12,6 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 
 interface LoanParams {
+  loanName: string;
   amount: number;
   interestRate: number;
   termMonths: number;
@@ -37,6 +38,7 @@ export default function Home() {
   const [_, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [loanParams, setLoanParams] = useState<LoanParams>({
+    loanName: '',
     amount: 100000,
     interestRate: 5.5,
     termMonths: 24,

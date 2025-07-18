@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 export interface LoanParameters {
   loanName: string,
-  totalAmount: number;
+  amount: number;
   interestRate: number;
   termMonths: number;
   startDate: Date;
@@ -25,31 +25,30 @@ export interface LoanParameters {
 interface LoanParametersCardProps {
   loanParams: LoanParameters;
   setLoanParams: React.Dispatch<React.SetStateAction<LoanParameters>>;
-  isCalculating: boolean;
-  onValidationChange: (validations: { isLoanNameValid: boolean; isTermValid: boolean }) => void;
 }
 
 export function LoanParametersCard({
   loanParams,
-  setLoanParams,
-  isCalculating,
-  onValidationChange
+  setLoanParams
 }: LoanParametersCardProps) {
   const [loanNameError, setLoanNameError] = useState('');
   const [termError, setTermError] = useState('');
 
   useEffect(() => {
     // Validación del nombre del préstamo
-    const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
-    if (loanParams.loanName.length > 0 && !isLoanNameValid) {
-      setLoanNameError(loanParams.loanName.length < 3 ? 'Loan name must be at least 3 characters long.' : 'Loan name must be shorter than 60 characters.');
+    if (loanParams.loanName && loanParams.loanName.length > 0) {
+      const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+      if (!isLoanNameValid) {
+        setLoanNameError(loanParams.loanName.length < 3 ? 'Loan name must be at least 3 characters long.' : 'Loan name must be shorter than 60 characters.');
+      } else {
+        setLoanNameError('');
+      }
     } else {
       setLoanNameError('');
     }
 
     // Validación del plazo del préstamo
     const { termMonths, paymentFrequency } = loanParams;
-    let isTermValid = true;
     let termErrorMessage = '';
     const monthsPerPeriod = {
       'monthly': 1,
@@ -59,15 +58,11 @@ export function LoanParametersCard({
     }[paymentFrequency];
 
     if (termMonths > 0 && termMonths % monthsPerPeriod !== 0) {
-      isTermValid = false;
       termErrorMessage = `For ${paymentFrequency} payments, term must be a multiple of ${monthsPerPeriod}.`;
     }
     setTermError(termErrorMessage);
 
-    // Notificar al componente padre del estado de ambas validaciones
-    onValidationChange({ isLoanNameValid, isTermValid });
-
-  }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, onValidationChange]);
+  }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency]);
 
   // Manejadores de eventos individuales para mantener la lógica original
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,7 +70,7 @@ export function LoanParametersCard({
   };
 
   const handleAmountChange = (value: number) => {
-    setLoanParams(prev => ({ ...prev, totalAmount: value }));
+    setLoanParams(prev => ({ ...prev, amount: value }));
   };
 
   const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,9 +115,8 @@ export function LoanParametersCard({
               id="loan-name"
               name="loan-name"
               type="text"
-              value={loanParams.loanName}
+              value={loanParams.loanName || ''}
               onChange={handleTitleChange}
-              disabled={isCalculating}
               required
               className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
             />
@@ -134,11 +128,10 @@ export function LoanParametersCard({
             <CurrencyInput
               id="total-amount"
               name="total-amount"
-              value={loanParams.totalAmount}
+              value={loanParams.amount}
               onChange={handleAmountChange}
               min={1000}
               max={100000000}
-              disabled={isCalculating}
               required
             />
             <p className="text-xs text-muted-foreground mt-1">Minimum required amount: $1,000 Maximum: $100,000,000</p>
@@ -158,7 +151,6 @@ export function LoanParametersCard({
                 step={0.01}
                 className="pr-12"
                 placeholder="0.00"
-                disabled={isCalculating}
                 required
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -179,7 +171,6 @@ export function LoanParametersCard({
               min={1}
               max={1200}
               placeholder="Enter loan term in months"
-              disabled={isCalculating}
               required
               className={cn(termError && "border-red-500")}
             />
@@ -191,7 +182,6 @@ export function LoanParametersCard({
             <DatePicker
               date={loanParams.startDate}
               setDate={handleStartDateChange}
-              disabled={isCalculating}
             />
           </div>
 
