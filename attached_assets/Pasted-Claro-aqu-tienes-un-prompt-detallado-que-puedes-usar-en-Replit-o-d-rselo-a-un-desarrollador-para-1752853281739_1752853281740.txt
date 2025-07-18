@@ -1,0 +1,95 @@
+Claro, aquí tienes un prompt detallado que puedes usar en Replit (o dárselo a un desarrollador) para rediseñar la interfaz de tu "Calculadora de Financiación de Inversiones", centrándose en el flujo, la estructura y el estilo visual, pero sin incluir la parte de visualización de datos (gráficos y resultados).
+
+Prompt para Rediseño de UI en Replit: Calculadora de Financiación
+Objetivo Principal:
+
+Transformar una calculadora financiera de una sola página con tres columnas en un asistente moderno y guiado (wizard) de varios pasos. El objetivo es mejorar la claridad, la usabilidad y la estética visual, haciendo que el proceso de introducción de datos sea más intuitivo y menos abrumador para el usuario.
+
+1. Estructura y Flujo de Usuario (Layout y HTML)
+En lugar de mostrar todas las secciones a la vez, la aplicación se dividirá en pasos secuenciales. Solo un paso será visible a la vez.
+
+Contenedor Principal: Un contenedor centrado en la página con un ancho máximo (ej. 800px) para mantener todo ordenado.
+
+Encabezado del Asistente: En la parte superior, mostrar el progreso. Puede ser un texto simple como "Paso 1 de 3: Parámetros del Préstamo" o una barra de progreso visual.
+
+Secciones de Pasos:
+
+Paso 1: Parámetros del Préstamo (Loan Parameters).
+
+Paso 2: Parámetros del Negocio (Business Parameters).
+
+Paso 3: Añadir Inversores (Investors).
+
+Navegación:
+
+Botones "Atrás" y "Siguiente" en la parte inferior de cada paso para moverse entre ellos.
+
+El botón "Atrás" estará deshabilitado en el primer paso.
+
+En el último paso, el botón "Siguiente" se reemplazará por un botón de acción principal: "Calcular Inversión".
+
+2. Estilo Visual y UI (CSS)
+Adoptar una estética limpia, espaciosa y profesional.
+
+Paleta de Colores:
+
+Fondo de la página: Gris muy claro (#F7F8FA).
+
+Tarjeta del Asistente: Blanco puro (#FFFFFF).
+
+Color de Acento Principal: Azul vibrante (#3B82F6) o un verde azulado para botones principales, enlaces y estados activos.
+
+Texto Principal: Gris oscuro (#1A202C).
+
+Texto Secundario/Etiquetas: Gris medio (#6B7280).
+
+Bordes: Gris claro (#E5E7EB).
+
+Tipografía:
+
+Fuente: Usar "Inter" de Google Fonts para toda la interfaz.
+
+Títulos de Paso (ej. "Loan Parameters"): font-weight: 600 (Semi-Bold), font-size: 24px.
+
+Etiquetas de Campos (ej. "Total Loan Amount"): font-weight: 500 (Medium), font-size: 14px.
+
+Texto dentro de los campos: font-weight: 400 (Regular), font-size: 16px.
+
+Estilo de la Tarjeta/Contenedor:
+
+Fondo blanco.
+
+Bordes redondeados (border-radius: 12px).
+
+Sombra de caja sutil y suave (box-shadow: 0 4px 12px rgba(0,0,0,0.05)).
+
+Amplio espaciado interno (padding: 32px).
+
+Estilo de los Formularios:
+
+Campos de Texto (Inputs):
+
+Bordes redondeados (border-radius: 8px).
+
+Un borde sólido de 1px (border: 1px solid #D1D5DB).
+
+Al hacer clic (focus), el borde cambia al color de acento principal.
+
+Espaciado interno generoso (padding: 12px).
+
+Botones:
+
+Botón Principal ("Siguiente", "Calcular"): Fondo con el color de acento, texto blanco, sin borde, bordes redondeados.
+
+Botón Secundario ("Atrás"): Fondo transparente, texto oscuro, con un borde sólido.
+
+3. Funcionalidad (JavaScript)
+Implementar la lógica para mostrar y ocultar las secciones de cada paso.
+
+Al cargar la página, solo el "Paso 1" es visible.
+
+Al hacer clic en "Siguiente", se oculta el paso actual y se muestra el siguiente.
+
+Al hacer clic en "Atrás", se oculta el paso actual y se muestra el anterior.
+
+Gestionar el estado de los botones de navegación (habilitar/deshabilitar).
