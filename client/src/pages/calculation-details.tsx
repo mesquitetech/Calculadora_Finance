@@ -330,7 +330,7 @@ export default function CalculationDetails() {
             </TabsContent>
 
             <TabsContent value="banking">
-                {data && <ReportsTab
+                {data && <BankerReportsTab
                     loanAmount={data.amount}
                     interestRate={data.interestRate}
                     termMonths={data.termMonths}
@@ -339,12 +339,11 @@ export default function CalculationDetails() {
                     startDate={startDate}
                     endDate={endDate}
                     investors={data.investorReturns}
-                    paymentSchedule={formattedPaymentSchedule}
                 />}
             </TabsContent>
 
             <TabsContent value="reports">
-              {data && <BankerReportsTab
+              {data && <ReportsTab
                 loanAmount={data.amount}
                 interestRate={data.interestRate}
                 termMonths={data.termMonths}
@@ -353,6 +352,7 @@ export default function CalculationDetails() {
                 startDate={startDate}
                 endDate={endDate}
                 investors={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule}
               />}
             </TabsContent>
           </Tabs>
