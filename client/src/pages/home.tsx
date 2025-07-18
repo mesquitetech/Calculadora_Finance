@@ -499,9 +499,6 @@ export default function Home() {
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center space-x-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Finance Calculator
-            </h1>
             {activeMainTab === 'renter-operator' && (
               <RenterConfigModal
                 config={renterConfig}

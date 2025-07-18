@@ -64,6 +64,7 @@ export function EditCalculationModal({
   isSaving,
 }: EditCalculationModalProps) {
   const [editedData, setEditedData] = useState<EditableData | null>(null);
+  const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('amount');
   const { toast } = useToast();
 
   // --- INICIO DE LA CORRECCIÓN ---
@@ -193,6 +194,16 @@ export function EditCalculationModal({
     }
   };
 
+  const handleInvestorPercentageChange = (id: number | string, percentage: number) => {
+    if (editedData) {
+      const amount = (percentage / 100) * editedData.loanParams.amount;
+      const newInvestors = editedData.investors.map(inv =>
+        inv.id === id ? { ...inv, investmentAmount: amount } : inv
+      );
+      setEditedData({ ...editedData, investors: newInvestors });
+    }
+  };
+
   const handleSave = () => {
     if (editedData && isFormValid) {
       onSave(editedData);
@@ -259,6 +270,22 @@ export function EditCalculationModal({
 
             <fieldset className="border p-4 rounded-md">
                 <legend className="text-lg font-semibold px-2">Investors</legend>
+                <div className="flex justify-end mb-4">
+                  <div className="flex border rounded-md p-1">
+                    <button
+                      onClick={() => setInputMode('amount')}
+                      className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                    >
+                      Amount
+                    </button>
+                    <button
+                      onClick={() => setInputMode('percentage')}
+                      className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-4 pt-2">
                     {editedData.investors.map((investor, index) => (
                         <div key={investor.id} className="investor-entry bg-muted rounded-md p-3">
@@ -272,8 +299,23 @@ export function EditCalculationModal({
                                     <Input value={investor.name} onChange={(e) => handleInvestorChange(investor.id, 'name', e.target.value)} />
                                 </div>
                                 <div>
-                                    <Label>Amount</Label>
-                                    <CurrencyInput value={investor.investmentAmount} onChange={(value) => handleInvestorChange(investor.id, 'investmentAmount', value)} />
+                                    <Label>{inputMode === 'amount' ? 'Amount' : 'Percentage'}</Label>
+                                    {inputMode === 'amount' ? (
+                                      <CurrencyInput value={investor.investmentAmount} onChange={(value) => handleInvestorChange(investor.id, 'investmentAmount', value)} />
+                                    ) : (
+                                      <div className="relative">
+                                        <Input
+                                          type="number"
+                                          value={((investor.investmentAmount / editedData.loanParams.amount) * 100).toFixed(2)}
+                                          onChange={(e) => handleInvestorPercentageChange(investor.id, parseFloat(e.target.value) || 0)}
+                                          min={0}
+                                          max={100}
+                                          step={0.01}
+                                          className="pr-8"
+                                        />
+                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                                      </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

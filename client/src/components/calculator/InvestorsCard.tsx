@@ -12,6 +12,7 @@ export interface Investor {
   id: number;
   name: string;
   investmentAmount: number;
+  percentage?: number;
 }
 
 interface InvestorsCardProps {
@@ -29,6 +30,7 @@ export function InvestorsCard({
 }: InvestorsCardProps) {
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('amount');
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -76,6 +78,16 @@ export function InvestorsCard({
     );
   };
 
+  // Handle percentage input
+  const updateInvestorPercentage = (id: number, percentage: number) => {
+    const amount = (percentage / 100) * totalRequired;
+    setInvestors(
+      investors.map(investor => 
+        investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
+      )
+    );
+  };
+
   // Check if we have at least 1 investor
   const hasMinInvestors = investors.length >= 1;
 
@@ -83,16 +95,28 @@ export function InvestorsCard({
   const investmentDifference = totalRequired - totalInvestment;
 
   return (
-    <Card className="col-span-1 border-2 shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="col-span-1">
       <CardContent className="pt-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center">
-            <div className="w-2 h-6 bg-gradient-to-b from-green-500 to-blue-500 rounded-full mr-3"></div>
+          <h2 className="text-xl font-bold text-foreground">
             Investors
           </h2>
-          <div className="text-xs text-muted-foreground flex items-center bg-blue-50 px-2 py-1 rounded-full">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            <span>1-20 allowed</span>
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-muted-foreground">1-20 allowed</div>
+            <div className="flex border rounded-md p-1">
+              <button
+                onClick={() => setInputMode('amount')}
+                className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+              >
+                Amount
+              </button>
+              <button
+                onClick={() => setInputMode('percentage')}
+                className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+              >
+                %
+              </button>
+            </div>
           </div>
         </div>
 
@@ -100,42 +124,54 @@ export function InvestorsCard({
           {investors.map((investor, index) => (
             <div 
               key={investor.id} 
-              className="investor-entry rounded-lg p-4 border border-gray-200 hover:border-gray-300 transition-colors duration-200"
+              className="investor-entry rounded-lg p-3 border"
             >
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-700">Investor {index + 1}</span>
-                </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Investor {index + 1}</span>
                 <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeInvestor(investor.id)}
-                    disabled={investors.length <= 1 || isCalculating}
-                    className="text-muted-foreground hover:text-red-500 h-6 w-6 p-0 hover:bg-red-50"
-                  >
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeInvestor(investor.id)}
+                  disabled={investors.length <= 1 || isCalculating}
+                  className="text-muted-foreground hover:text-red-500 h-6 w-6 p-0"
+                >
                   <Trash className="h-3 w-3" />
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
+                <div>
                   <Input
                     value={investor.name}
                     onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
                     placeholder={`Investor ${index + 1}`}
                     disabled={isCalculating}
-                    required
                     className="text-sm h-9"
                   />
                 </div>
-                <div className="form-group">
-                  <CurrencyInput
-                    value={investor.investmentAmount}
-                    onChange={(value) => updateInvestor(investor.id, 'investmentAmount', value)}
-                    min={0}
-                    disabled={isCalculating}
-                    required
-                    className="text-sm h-9"
-                  />
+                <div>
+                  {inputMode === 'amount' ? (
+                    <CurrencyInput
+                      value={investor.investmentAmount}
+                      onChange={(value) => updateInvestor(investor.id, 'investmentAmount', value)}
+                      min={0}
+                      disabled={isCalculating}
+                      className="text-sm h-9"
+                    />
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={((investor.investmentAmount / totalRequired) * 100).toFixed(2)}
+                        onChange={(e) => updateInvestorPercentage(investor.id, parseFloat(e.target.value) || 0)}
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        disabled={isCalculating}
+                        className="text-sm h-9 pr-8"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -154,11 +190,11 @@ export function InvestorsCard({
             Add Investor
           </Button>
 
-          <div className="bg-white rounded-lg p-3 border-2 border-dashed border-gray-200">
+          <div className="bg-gray-50 rounded-lg p-3 border">
             <div className="text-sm space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Total Investment:</span>
-                <span className={`font-bold text-lg ${
+                <span className={`font-bold ${
                   Math.abs(investmentDifference) < 0.01 ? "text-green-600" : "text-gray-900"
                 }`}>
                   {formatCurrency(totalInvestment)}
@@ -166,12 +202,12 @@ export function InvestorsCard({
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Required:</span>
-                <span className="font-bold text-lg text-gray-900">
+                <span className="font-bold text-gray-900">
                   {formatCurrency(totalRequired)}
                 </span>
               </div>
               {Math.abs(investmentDifference) >= 0.01 && (
-                <div className="flex justify-between items-center pt-1 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-1 border-t">
                   <span className="font-medium text-orange-600">Difference:</span>
                   <span className="font-bold text-orange-600">
                     {investmentDifference > 0 ? "+" : ""}{formatCurrency(investmentDifference)}

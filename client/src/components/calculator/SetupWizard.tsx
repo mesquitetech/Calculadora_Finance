@@ -73,6 +73,9 @@ export function SetupWizard({
         ]
   );
 
+  // State for input mode
+  const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('amount');
+
   // Validation logic
   const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
   const isLoanAmountValid = loanParams.totalAmount >= 1000;
@@ -142,6 +145,15 @@ export function SetupWizard({
     setInvestors(prev =>
       prev.map(investor =>
         investor.id === id ? { ...investor, [key]: value } : investor
+      )
+    );
+  };
+
+  const handleInvestorPercentageChange = (id: number, percentage: number) => {
+    const amount = (percentage / 100) * loanParams.totalAmount;
+    setInvestors(prev =>
+      prev.map(investor =>
+        investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
       )
     );
   };
@@ -406,6 +418,20 @@ export function SetupWizard({
               <p className="text-muted-foreground text-center max-w-md mt-2">
                 Add information about the investors contributing to this project.
               </p>
+              <div className="flex border rounded-md p-1 mt-4">
+                <button
+                  onClick={() => setInputMode('amount')}
+                  className={`px-3 py-1 text-sm rounded-sm ${inputMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                >
+                  Amount
+                </button>
+                <button
+                  onClick={() => setInputMode('percentage')}
+                  className={`px-3 py-1 text-sm rounded-sm ${inputMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                >
+                  Percentage
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
@@ -435,13 +461,31 @@ export function SetupWizard({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`investor-amount-${investor.id}`}>Investment Amount</Label>
-                    <CurrencyInput
-                      id={`investor-amount-${investor.id}`}
-                      value={investor.investmentAmount}
-                      onChange={(value) => handleInvestorChange(investor.id, 'investmentAmount', value)}
-                      placeholder="Investment amount"
-                    />
+                    <Label htmlFor={`investor-amount-${investor.id}`}>
+                      {inputMode === 'amount' ? 'Investment Amount' : 'Investment Percentage'}
+                    </Label>
+                    {inputMode === 'amount' ? (
+                      <CurrencyInput
+                        id={`investor-amount-${investor.id}`}
+                        value={investor.investmentAmount}
+                        onChange={(value) => handleInvestorChange(investor.id, 'investmentAmount', value)}
+                        placeholder="Investment amount"
+                      />
+                    ) : (
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={((investor.investmentAmount / loanParams.totalAmount) * 100).toFixed(2)}
+                          onChange={(e) => handleInvestorPercentageChange(investor.id, parseFloat(e.target.value) || 0)}
+                          min={0}
+                          max={100}
+                          step={0.01}
+                          placeholder="Percentage"
+                          className="pr-8"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
