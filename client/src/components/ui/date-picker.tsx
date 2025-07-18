@@ -30,9 +30,7 @@ export function DatePicker({
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = React.useCallback((selectedDate: Date | undefined) => {
-    if (setDate) {
-      setDate(selectedDate)
-    }
+    setDate(selectedDate)
     setOpen(false)
   }, [setDate])
 
