@@ -30,7 +30,7 @@ export function InvestorsCard({
 }: InvestorsCardProps) {
   const [totalInvestment, setTotalInvestment] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('amount');
+  const [inputMode, setInputMode<'amount' | 'percentage'>('amount');
 
   // Calculate total investment whenever investors change
   useEffect(() => {

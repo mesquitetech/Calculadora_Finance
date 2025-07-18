@@ -110,8 +110,8 @@ export function LoanParametersCard({
   };
 
   return (
-    <Card className="col-span-1">
-      <CardContent className="pt-6">
+    <div className="space-y-6">
+      
         <h2 className="text-lg font-bold mb-4 text-foreground">Loan Parameters</h2>
         <div className="space-y-4">
           <div className="form-group">
@@ -214,7 +214,7 @@ export function LoanParametersCard({
           </div>
           */}
         </div>
-      </CardContent>
-    </Card>
+      
+    </div>
   );
 }
