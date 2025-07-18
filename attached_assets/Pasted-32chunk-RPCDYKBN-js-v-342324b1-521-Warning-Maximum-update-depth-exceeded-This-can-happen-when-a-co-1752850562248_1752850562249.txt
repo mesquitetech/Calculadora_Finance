@@ -1,0 +1,78 @@
+32chunk-RPCDYKBN.js?v=342324b1:521 Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DUKRHYBV.js?v=342324b1:1927:13
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=342324b1:113:13
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at Popper (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DUKRHYBV.js?v=342324b1:1919:11)
+    at Popover (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=342324b1:62:5)
+    at DatePicker (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/date-picker.tsx:28:3)
+    at div
+    at div
+    at div
+    at _c9 (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at LoanParametersCard (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/calculator/LoanParametersCard.tsx:26:3)
+    at div
+    at div
+    at div
+    at div
+    at main
+    at div
+    at Home (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/pages/home.tsx:45:45)
+    at Route (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=342324b1:338:16)
+    at Switch (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=342324b1:394:17)
+    at Router
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at TooltipProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=342324b1:61:5)
+    at ThemeProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/calculator/ThemeProvider.tsx:25:3)
+    at QueryClientProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=342324b1:2875:3)
+    at App
+printWarning @ chunk-RPCDYKBN.js?v=342324b1:521Understand this error
+2214chunk-RPCDYKBN.js?v=342324b1:521 Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DUKRHYBV.js?v=342324b1:1927:13
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=342324b1:113:13
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at Popper (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-DUKRHYBV.js?v=342324b1:1919:11)
+    at Popover (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=342324b1:62:5)
+    at DatePicker (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/date-picker.tsx:28:3)
+    at div
+    at div
+    at div
+    at _c9 (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at LoanParametersCard (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/calculator/LoanParametersCard.tsx:26:3)
+    at div
+    at div
+    at div
+    at div
+    at main
+    at div
+    at Home (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/pages/home.tsx:45:45)
+    at Route (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=342324b1:338:16)
+    at Switch (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=342324b1:394:17)
+    at Router
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-54LY3QNH.js?v=342324b1:38:15)
+    at TooltipProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=342324b1:61:5)
+    at ThemeProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/calculator/ThemeProvider.tsx:25:3)
+    at QueryClientProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=342324b1:2875:3)
+    at App
+printWarning @ chunk-RPCDYKBN.js?v=342324b1:521
+error @ chunk-RPCDYKBN.js?v=342324b1:505
+checkForNestedUpdates @ chunk-RPCDYKBN.js?v=342324b1:19665
+scheduleUpdateOnFiber @ chunk-RPCDYKBN.js?v=342324b1:18533
+dispatchSetState @ chunk-RPCDYKBN.js?v=342324b1:12403
+(anonymous) @ chunk-DUKRHYBV.js?v=342324b1:1932
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=342324b1:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=342324b1:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=342324b1:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=342324b1:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=342324b1:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=342324b1:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=342324b1:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=342324b1:19328
+workLoop @ chunk-RPCDYKBN.js?v=342324b1:197
+flushWork @ chunk-RPCDYKBN.js?v=342324b1:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=342324b1:384Understand this error
