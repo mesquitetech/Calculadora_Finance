@@ -22,7 +22,7 @@ export function BusinessParametersCard({
   isCalculating,
   loanAmount
 }: BusinessParametersCardProps) {
-
+  
   // Sync loan amount to asset cost automatically
   React.useEffect(() => {
     if (loanAmount && loanAmount > 0) {
@@ -46,7 +46,7 @@ export function BusinessParametersCard({
   };
 
   return (
-    <div className="space-y-6">
+    <Card className="col-span-1">
       <CardContent className="pt-6">
         <h2 className="text-lg font-bold mb-4 text-foreground">Business Parameters</h2>
         <div className="space-y-4">
@@ -93,6 +93,6 @@ export function BusinessParametersCard({
           </div>
         </div>
       </CardContent>
-    </div>
+    </Card>
   );
 }
