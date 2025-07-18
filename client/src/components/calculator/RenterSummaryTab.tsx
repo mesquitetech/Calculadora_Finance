@@ -74,7 +74,8 @@ export function RenterSummaryTab({
   
   // Calculate total return over loan term
   const totalNetIncome = netMonthlyCashFlow * termMonths;
-  const roi = initialInvestment > 0 ? (totalNetIncome / initialInvestment) * 100 : 0;
+  const roi = initialInvestment > 0 ? (totalNetIncome / initialInvestment) * 100 : 
+    (totalNetIncome > 0 ? Infinity : 0); // Infinite ROI when no initial investment but positive returns
 
   const handleRevenueChange = (value: number[]) => {
     setMonthlyRevenue(value[0]);
@@ -216,8 +217,13 @@ export function RenterSummaryTab({
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(roi)}
+              {roi === Infinity ? '∞%' : formatPercentage(roi)}
             </div>
+            {roi === Infinity && (
+              <div className="text-sm text-muted-foreground mt-2">
+                Infinite ROI (no initial investment)
+              </div>
+            )}
           </CardContent>
         </Card>
 
