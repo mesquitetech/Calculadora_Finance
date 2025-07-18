@@ -7,9 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
-import { ReportsTab } from "@/components/calculator/ReportsTab";
-import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
-import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
+import { ProjectionsTab } from "@/components/calculator/ProjectionsTab';
+import { ReportsTab } from "@/components/calculator/ReportsTab';
+import { BankerReportsTab } from "@/components/calculator/BankerReportsTab';
 import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
 import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
 import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { formatCurrency, formatDate, formatPercentage } from "@/lib/finance";
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
- 
+
 
 interface InvestorReturn {
   investorId: number;
