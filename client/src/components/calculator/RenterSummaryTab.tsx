@@ -44,7 +44,7 @@ export function RenterSummaryTab({
   // Calculate total expenses over loan term
   const totalLoanPayments = monthlyPayment * termMonths;
   const totalOperatingExpenses = otherExpenses * termMonths;
-  const totalRevenue = monthlyRevenue * termMonths;
+  const totalRevenue = (monthlyRevenue * termMonths) + residualValue;
   
   // Calculate financial metrics
   const initialInvestment = assetCost - loanAmount; // Down payment
@@ -172,18 +172,7 @@ export function RenterSummaryTab({
           </CardContent>
         </Card>
 
-        {/* Internal Rate of Return */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Internal Rate of Return (IRR)</CardTitle>
-            <p className="text-sm text-muted-foreground">Annual return rate</p>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${irr >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(irr * 100)}
-            </div>
-          </CardContent>
-        </Card>
+        
 
         {/* Payback Period */}
         <Card>
@@ -207,11 +196,14 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Total Revenue (Loan Term)</CardTitle>
-            <p className="text-sm text-muted-foreground">Gross income over {termMonths} months</p>
+            <p className="text-sm text-muted-foreground">Gross income over {termMonths} months + residual value</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {formatDollarAmount(totalRevenue)}
+            </div>
+            <div className="text-sm text-muted-foreground mt-2">
+              Includes {formatCurrency(residualValue)} residual value
             </div>
           </CardContent>
         </Card>
