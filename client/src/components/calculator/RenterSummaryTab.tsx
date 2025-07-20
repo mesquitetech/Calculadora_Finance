@@ -35,34 +35,45 @@ export function RenterSummaryTab({
   residualValueRate = 0.15
 }: RenterSummaryTabProps) {
   
+  // Validate and sanitize all input values
+  const safeLoanAmount = typeof loanAmount === 'number' && !isNaN(loanAmount) ? loanAmount : 0;
+  const safeMonthlyPayment = typeof monthlyPayment === 'number' && !isNaN(monthlyPayment) ? monthlyPayment : 0;
+  const safeTermMonths = typeof termMonths === 'number' && !isNaN(termMonths) ? termMonths : 60;
+  const safeInterestRate = typeof interestRate === 'number' && !isNaN(interestRate) ? interestRate : 0;
+  const safeOtherExpenses = typeof otherExpenses === 'number' && !isNaN(otherExpenses) ? otherExpenses : 0;
+  const safeMonthlyRevenue = typeof monthlyRevenue === 'number' && !isNaN(monthlyRevenue) ? monthlyRevenue : 0;
+  const safeAssetCost = typeof assetCost === 'number' && !isNaN(assetCost) ? assetCost : 0;
+  const safeDiscountRate = typeof discountRate === 'number' && !isNaN(discountRate) ? discountRate : 0.04;
+  const safeResidualValueRate = typeof residualValueRate === 'number' && !isNaN(residualValueRate) ? residualValueRate : 0.15;
+  
   // Calculate break-even point (minimum revenue to cover expenses)
-  const breakEvenRevenue = monthlyPayment + otherExpenses;
+  const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
   
   // Calculate net monthly cash flow
-  const netMonthlyCashFlow = monthlyRevenue - monthlyPayment - otherExpenses;
+  const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
   
   // Calculate financial metrics
-  const initialInvestment = assetCost - loanAmount; // Down payment
-  const totalAssetCost = assetCost; // Total cost of the asset (including down payment)
+  const initialInvestment = safeAssetCost - safeLoanAmount; // Down payment
+  const totalAssetCost = safeAssetCost; // Total cost of the asset (including down payment)
   const annualCashFlow = netMonthlyCashFlow * 12;
   
   // Calculate residual value at end of loan term
-  const residualValue = assetCost * residualValueRate;
+  const residualValue = safeAssetCost * safeResidualValueRate;
   
   // Calculate total expenses over loan term
-  const totalLoanPayments = monthlyPayment * termMonths;
-  const totalOperatingExpenses = otherExpenses * termMonths;
-  const totalRevenue = (monthlyRevenue * termMonths) + residualValue;
+  const totalLoanPayments = safeMonthlyPayment * safeTermMonths;
+  const totalOperatingExpenses = safeOtherExpenses * safeTermMonths;
+  const totalRevenue = (safeMonthlyRevenue * safeTermMonths) + residualValue;
   
   // Generate cash flows for IRR calculation (including residual value in final year)
-  const numYears = Math.ceil(termMonths / 12);
+  const numYears = Math.ceil(safeTermMonths / 12);
   const cashFlows = Array(numYears).fill(annualCashFlow);
   if (cashFlows.length > 0) {
     cashFlows[cashFlows.length - 1] += residualValue; // Add residual value to final year
   }
   
   // Calculate NPV using configurable discount rate (based on down payment)
-  const npv = calculateNPV(initialInvestment, cashFlows, discountRate);
+  const npv = calculateNPV(initialInvestment, cashFlows, safeDiscountRate);
   
   // Calculate IRR (based on down payment)
   const irr = calculateIRR(-initialInvestment, cashFlows);
@@ -73,12 +84,13 @@ export function RenterSummaryTab({
     : Infinity; // Negative cash flow means never recovers
   
   // Calculate total return over loan term
-  const totalNetIncome = netMonthlyCashFlow * termMonths;
+  const totalNetIncome = netMonthlyCashFlow * safeTermMonths;
   const roi = initialInvestment > 0 ? (totalNetIncome / initialInvestment) * 100 : 
     (totalNetIncome > 0 ? Infinity : 0); // Infinite ROI when no initial investment but positive returns
 
   const handleRevenueChange = (value: number[]) => {
-    setMonthlyRevenue(value[0]);
+    const newValue = typeof value[0] === 'number' && !isNaN(value[0]) ? value[0] : 0;
+    setMonthlyRevenue(newValue);
   };
 
   return (
@@ -97,8 +109,11 @@ export function RenterSummaryTab({
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
-                      value={monthlyRevenue}
-                      onChange={(e) => setMonthlyRevenue(Number(e.target.value) || 0)}
+                      value={safeMonthlyRevenue}
+                      onChange={(e) => {
+                        const newValue = Number(e.target.value);
+                        setMonthlyRevenue(isNaN(newValue) ? 0 : newValue);
+                      }}
                       className="w-24 px-2 py-1 text-sm border rounded text-right"
                       min="0"
                       step="100"
@@ -108,7 +123,7 @@ export function RenterSummaryTab({
                 </div>
                 <div className="relative">
                   <Slider
-                    value={[monthlyRevenue]}
+                    value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
                     min={0}
                     max={breakEvenRevenue * 3}
@@ -164,7 +179,7 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Net Present Value (NPV)</CardTitle>
-            <p className="text-sm text-muted-foreground">At {(discountRate * 100).toFixed(1)}% discount rate</p>
+            <p className="text-sm text-muted-foreground">At {(safeDiscountRate * 100).toFixed(1)}% discount rate</p>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${npv >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -231,7 +246,7 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Residual Value</CardTitle>
-            <p className="text-sm text-muted-foreground">Asset value at loan end ({(residualValueRate * 100).toFixed(0)}%)</p>
+            <p className="text-sm text-muted-foreground">Asset value at loan end ({(safeResidualValueRate * 100).toFixed(0)}%)</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">

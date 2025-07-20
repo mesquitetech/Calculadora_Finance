@@ -443,16 +443,20 @@ export default function Home() {
           case 'summary':
             return (
               <RenterSummaryTab
-                loanAmount={loanParams.totalAmount}
-                monthlyPayment={calculationResults.monthlyPayment}
-                termMonths={loanParams.termMonths}
-                interestRate={loanParams.interestRate}
-                otherExpenses={businessParams.monthlyExpenses}
-                monthlyRevenue={interactiveRevenue}
+                loanAmount={typeof loanParams.totalAmount === 'number' && !isNaN(loanParams.totalAmount) ? loanParams.totalAmount : 0}
+                monthlyPayment={typeof calculationResults.monthlyPayment === 'number' && !isNaN(calculationResults.monthlyPayment) ? calculationResults.monthlyPayment : 0}
+                termMonths={typeof loanParams.termMonths === 'number' && !isNaN(loanParams.termMonths) ? loanParams.termMonths : 60}
+                interestRate={typeof loanParams.interestRate === 'number' && !isNaN(loanParams.interestRate) ? loanParams.interestRate : 0}
+                otherExpenses={typeof businessParams.monthlyExpenses === 'number' && !isNaN(businessParams.monthlyExpenses) ? businessParams.monthlyExpenses : 0}
+                monthlyRevenue={typeof interactiveRevenue === 'number' && !isNaN(interactiveRevenue) ? interactiveRevenue : 0}
                 setMonthlyRevenue={setInteractiveRevenue}
-                assetCost={businessParams.assetCost + businessParams.otherExpenses}
-                discountRate={renterConfig.discountRate / 100}
-                residualValueRate={renterConfig.residualValueRate / 100}
+                assetCost={(() => {
+                  const cost = (typeof businessParams.assetCost === 'number' && !isNaN(businessParams.assetCost) ? businessParams.assetCost : 0) + 
+                               (typeof businessParams.otherExpenses === 'number' && !isNaN(businessParams.otherExpenses) ? businessParams.otherExpenses : 0);
+                  return cost;
+                })()}
+                discountRate={typeof renterConfig.discountRate === 'number' && !isNaN(renterConfig.discountRate) ? renterConfig.discountRate / 100 : 0.04}
+                residualValueRate={typeof renterConfig.residualValueRate === 'number' && !isNaN(renterConfig.residualValueRate) ? renterConfig.residualValueRate / 100 : 0.15}
               />
             );
           case 'cash-flow':
