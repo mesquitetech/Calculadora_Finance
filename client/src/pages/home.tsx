@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { CalculatorIcon, Wand2 } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
@@ -137,9 +137,9 @@ export default function Home() {
     isTermValid: true,
   });
 
-  const handleValidationChange = (newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
+  const handleValidationChange = useCallback((newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
     setValidations(newValidations);
-  };
+  }, []);
 
   useEffect(() => {
     const isButtonEnabled =
