@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -70,44 +70,44 @@ export function LoanParametersCard({
   }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, onValidationChange]);
 
   // Manejadores de eventos individuales para mantener la lógica original
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLoanParams(prev => ({ ...prev, loanName: e.target.value }));
-  };
+  }, [setLoanParams]);
 
-  const handleAmountChange = (value: number) => {
+  const handleAmountChange = useCallback((value: number) => {
     setLoanParams(prev => ({ ...prev, totalAmount: value }));
-  };
+  }, [setLoanParams]);
 
-  const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInterestRateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value) && value >= 0 && value <= 999) {
       setLoanParams(prev => ({ ...prev, interestRate: value }));
     } else if (e.target.value === '') {
         setLoanParams(prev => ({...prev, interestRate: 0}));
     }
-  };
+  }, [setLoanParams]);
 
-  const handleTermMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTermMonthsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
      if (!isNaN(value) && value >= 1 && value <= 1200) {
       setLoanParams(prev => ({ ...prev, termMonths: value }));
     } else if (e.target.value === '') {
         setLoanParams(prev => ({...prev, termMonths: 0}));
     }
-  };
+  }, [setLoanParams]);
 
-  const handleStartDateChange = (date: Date | undefined) => {
+  const handleStartDateChange = useCallback((date: Date | undefined) => {
     if (date) {
       setLoanParams(prev => ({ ...prev, startDate: date }));
     }
-  };
+  }, [setLoanParams]);
 
-  const handleFrequencyChange = (value: string) => {
+  const handleFrequencyChange = useCallback((value: string) => {
     setLoanParams(prev => ({
       ...prev,
       paymentFrequency: value as "monthly" | "quarterly" | "semi-annual" | "annual"
     }));
-  };
+  }, [setLoanParams]);
 
   return (
     <Card className="col-span-1">
