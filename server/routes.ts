@@ -191,13 +191,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/user-settings/:sessionId - Obtener configuraciones del usuario
   app.get("/api/user-settings/:sessionId", async (req, res) => {
     try {
-      const sessionId = req.params.sessionId;
+      const { sessionId } = req.params;
+      console.log("Fetching user settings for sessionId:", sessionId);
+
       const settings = await storage.getUserSettings(sessionId);
-      
+
       if (!settings) {
-        return res.status(404).json({ message: "User settings not found" });
+        console.log("No settings found for sessionId:", sessionId);
+        // Return default empty settings instead of 404
+        return res.status(200).json({
+          investors: [],
+          businessParams: {},
+          renterConfig: null
+        });
       }
 
+      console.log("Found settings for sessionId:", sessionId);
       res.status(200).json({
         investors: JSON.parse(settings.investors),
         businessParams: JSON.parse(settings.businessParams),
@@ -213,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/user-settings", async (req, res) => {
     try {
       const { sessionId, investors, businessParams, renterConfig } = req.body;
-      
+
       if (!sessionId) {
         return res.status(400).json({ message: "Session ID is required" });
       }
@@ -226,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const settings = await storage.createOrUpdateUserSettings(settingsData);
-      
+
       res.status(200).json({ 
         message: "Settings saved successfully",
         settingsId: settings.id 
