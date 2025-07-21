@@ -24,7 +24,7 @@ export function BusinessParametersCard({
 }: BusinessParametersCardProps) {
   
   // Check if asset cost is less than loan amount
-  const assetCostError = loanAmount && businessParams.assetCost > 0 && businessParams.assetCost < loanAmount;
+  const assetCostError = loanAmount && businessParams.assetCost >= 0 && businessParams.assetCost < loanAmount;
   
   const handleAssetCostChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, assetCost: value }));
