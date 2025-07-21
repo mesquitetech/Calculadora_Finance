@@ -111,7 +111,7 @@ export function RenterCashFlowTab({
                   <Slider
                     value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
-                    min={0}
+                    min={breakEvenRevenue}
                     max={breakEvenRevenue * 3}
                     step={100}
                     className="w-full opacity-70"

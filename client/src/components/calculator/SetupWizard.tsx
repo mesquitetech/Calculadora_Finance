@@ -476,7 +476,12 @@ export function SetupWizard({
                         <Input
                           type="number"
                           value={((investor.investmentAmount / loanParams.totalAmount) * 100).toFixed(2)}
-                          onChange={(e) => handleInvestorPercentageChange(investor.id, parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value) && value >= 0 && value <= 100) {
+                              handleInvestorPercentageChange(investor.id, value);
+                            }
+                          }}
                           min={0}
                           max={100}
                           step={0.01}

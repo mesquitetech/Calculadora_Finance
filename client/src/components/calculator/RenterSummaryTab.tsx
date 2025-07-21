@@ -216,8 +216,13 @@ export function RenterSummaryTab({
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${npv >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatDollarAmount(npv)}
+              {isNaN(npv) || npv === Infinity ? formatDollarAmount(0) : formatDollarAmount(npv)}
             </div>
+            {(isNaN(npv) || npv === Infinity || initialInvestment === 0) && (
+              <div className="text-sm text-muted-foreground mt-2">
+                No initial investment
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -281,8 +286,13 @@ export function RenterSummaryTab({
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${tirValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {tirValue.toFixed(2)}%
+              {isNaN(tirValue) || tirValue === Infinity ? '0.00' : tirValue.toFixed(2)}%
             </div>
+            {(isNaN(tirValue) || tirValue === Infinity || initialInvestment === 0) && (
+              <div className="text-sm text-muted-foreground mt-2">
+                No initial investment
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -337,21 +347,28 @@ export function RenterSummaryTab({
         </CardContent>
       </Card>
 
-      {/* Residual Value Information */}
+      {/* Total Revenue with Residual Value */}
       <Card className="border-dashed border-2 border-muted-foreground/30">
         <CardHeader>
-          <CardTitle className="text-muted-foreground">Additional Asset Information</CardTitle>
+          <CardTitle className="text-muted-foreground">Total Revenue with Residual Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>
-              <span className="font-medium">Residual Value at Loan End:</span> {formatCurrency(residualValue)}
-            </p>
-            <p className="text-xs">
+          <div className="text-sm space-y-2">
+            <div className="flex justify-between">
+              <span>Total Operational Revenue:</span>
+              <span className="font-medium">{formatCurrency(totalRevenue)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Residual Value at Loan End:</span>
+              <span className="font-medium">{formatCurrency(residualValue)}</span>
+            </div>
+            <div className="border-t pt-2 flex justify-between">
+              <span className="font-semibold">Total Revenue (Including Residual):</span>
+              <span className="font-bold text-green-600">{formatCurrency(totalRevenue + residualValue)}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
               * The residual value represents the estimated asset value at the end of the loan term 
-              ({(safeResidualValueRate * 100).toFixed(0)}% of original asset cost). This value is not 
-              included in the total revenue calculation above, as it represents potential asset value 
-              rather than operational income.
+              ({(safeResidualValueRate * 100).toFixed(0)}% of original asset cost).
             </p>
           </div>
         </CardContent>

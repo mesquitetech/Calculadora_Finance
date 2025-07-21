@@ -161,6 +161,17 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
+  // Prevent asset cost from resetting when switching tabs
+  useEffect(() => {
+    const savedBusinessParams = localStorage.getItem('businessParams');
+    if (savedBusinessParams) {
+      const parsed = JSON.parse(savedBusinessParams);
+      if (parsed.assetCost !== businessParams.assetCost) {
+        setBusinessParams(prev => ({ ...prev, assetCost: parsed.assetCost }));
+      }
+    }
+  }, [activeTab]);
+
   // Save investors to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('investors', JSON.stringify(investors));
