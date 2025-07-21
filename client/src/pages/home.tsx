@@ -111,7 +111,7 @@ export default function Home() {
       try {
         const parsed = JSON.parse(savedBusinessParams);
         return {
-          assetCost: (parsed.assetCost && parsed.assetCost > 0) ? parsed.assetCost : 100000,
+          assetCost: parsed.assetCost || 100000,
           otherExpenses: parsed.otherExpenses || 0,
           monthlyExpenses: parsed.monthlyExpenses || 0,
         };
@@ -166,9 +166,10 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-  // Only sync asset cost with loan amount when asset cost is exactly 0 (not set)
+  // Initialize asset cost to match loan amount on first load
   useEffect(() => {
-    if (loanParams.totalAmount > 0 && businessParams.assetCost === 0) {
+    const savedBusinessParams = localStorage.getItem('businessParams');
+    if (!savedBusinessParams && loanParams.totalAmount > 0) {
       setBusinessParams(prev => ({ 
         ...prev, 
         assetCost: loanParams.totalAmount
