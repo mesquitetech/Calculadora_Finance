@@ -32,9 +32,9 @@ export function RenterCashFlowTab({
   // Calculate break-even point (minimum revenue to cover expenses)
   const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
 
-  // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
+  // Initialize monthlyRevenue with break-even only if it's currently 0
   React.useEffect(() => {
-    if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
+    if (safeMonthlyRevenue === 0) {
       setMonthlyRevenue(breakEvenRevenue);
     }
   }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
@@ -97,10 +97,10 @@ export function RenterCashFlowTab({
                         setMonthlyRevenue(isNaN(newValue) ? 0 : newValue);
                       }}
                       onBlur={(e) => {
-                        // Validate only when leaving the field
+                        // Validate only that it's not negative
                         const newValue = Number(e.target.value);
-                        if (isNaN(newValue) || newValue < breakEvenRevenue) {
-                          setMonthlyRevenue(breakEvenRevenue);
+                        if (isNaN(newValue) || newValue < 0) {
+                          setMonthlyRevenue(0);
                         }
                       }}
                       className="w-24 px-2 py-1 text-sm border rounded text-right"
@@ -114,7 +114,7 @@ export function RenterCashFlowTab({
                     value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
                     min={0}
-                    max={breakEvenRevenue * 3}
+                    max={50000}
                     step={100}
                     className="w-full opacity-70"
                   />
@@ -122,7 +122,7 @@ export function RenterCashFlowTab({
                   <div 
                     className="absolute top-0 w-0.5 h-6 bg-orange-500 pointer-events-none"
                     style={{
-                      left: `${(breakEvenRevenue / (breakEvenRevenue * 3)) * 100}%`,
+                      left: `${(breakEvenRevenue / 50000) * 100}%`,
                       transform: 'translateX(-50%)'
                     }}
                   >
@@ -133,7 +133,7 @@ export function RenterCashFlowTab({
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>$0</span>
-                  <span>{formatCurrency(breakEvenRevenue * 3)}</span>
+                  <span>$50,000</span>
                 </div>
               </div>
               <div className="text-center min-w-[120px]">
