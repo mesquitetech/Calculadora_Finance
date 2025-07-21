@@ -149,7 +149,7 @@ export default function Home() {
   useEffect(() => {
     // Check if asset cost is valid (not less than loan amount)
     const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
-    
+
     const isButtonEnabled =
       validations.isLoanNameValid &&
       validations.isTermValid &&
@@ -170,7 +170,7 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-  
+
 
   // Save investors to localStorage whenever they change
   useEffect(() => {
