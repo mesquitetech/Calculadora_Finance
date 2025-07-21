@@ -22,7 +22,6 @@ import {
   PaymentScheduleEntry,
   InvestorReturn
 } from "@/lib/finance";
-import { calculateIRR } from "@/lib/financialMetrics";
 
 interface SummaryTabProps {
   loanAmount: number;
@@ -69,27 +68,6 @@ export function SummaryTab({
   const avgInvestment = investors.length > 0
     ? loanAmount / investors.length
     : 0;
-
-  // Calculate IRR (Internal Rate of Return)
-  const calculateLoanIRR = () => {
-    // Create cash flow array starting with negative down payment (loan amount)
-    const cashFlows = [-loanAmount];
-    
-    // Add monthly net cash flows (for simplicity, assuming the loan generates net positive cash flow)
-    // In a real scenario, this would be monthly revenue minus all expenses
-    // For this calculation, we'll use the monthly payment as the cash inflow
-    for (let i = 0; i < termMonths; i++) {
-      cashFlows.push(monthlyPayment);
-    }
-    
-    // Calculate monthly IRR and convert to annual rate
-    const monthlyIRR = calculateIRR(loanAmount, cashFlows.slice(1));
-    const annualIRR = isNaN(monthlyIRR) ? 0 : (Math.pow(1 + monthlyIRR, 12) - 1) * 100;
-    
-    return annualIRR;
-  };
-
-  const irrValue = calculateLoanIRR();
 
   // Format tooltip for the pie chart
   const renderCustomPieTooltip = ({ active, payload }: any) => {
@@ -162,12 +140,6 @@ export function SummaryTab({
               <dt className="text-sm font-medium text-muted-foreground">End Date</dt>
               <dd className="mt-1 text-lg font-semibold text-foreground">
                 {formatDate(endDate)}
-              </dd>
-            </div>
-            <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-muted-foreground">Internal Rate of Return (IRR)</dt>
-              <dd className="mt-1 text-lg font-semibold text-blue-600">
-                {irrValue.toFixed(2)}%
               </dd>
             </div>
           </dl>

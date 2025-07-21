@@ -34,7 +34,7 @@ export function RenterSummaryTab({
   discountRate = 0.04,
   residualValueRate = 0.15
 }: RenterSummaryTabProps) {
-  
+
   // Validate and sanitize all input values
   const safeLoanAmount = typeof loanAmount === 'number' && !isNaN(loanAmount) ? loanAmount : 0;
   const safeMonthlyPayment = typeof monthlyPayment === 'number' && !isNaN(monthlyPayment) ? monthlyPayment : 0;
@@ -45,51 +45,51 @@ export function RenterSummaryTab({
   const safeAssetCost = typeof assetCost === 'number' && !isNaN(assetCost) ? assetCost : 0;
   const safeDiscountRate = typeof discountRate === 'number' && !isNaN(discountRate) ? discountRate : 0.04;
   const safeResidualValueRate = typeof residualValueRate === 'number' && !isNaN(residualValueRate) ? residualValueRate : 0.15;
-  
+
   // Calculate break-even point (minimum revenue to cover expenses)
   const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
-  
+
   // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
   React.useEffect(() => {
     if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
       setMonthlyRevenue(breakEvenRevenue);
     }
   }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
-  
+
   // Calculate net monthly cash flow
   const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
-  
+
   // Calculate financial metrics
   const initialInvestment = safeAssetCost - safeLoanAmount; // Down payment
   const totalAssetCost = safeAssetCost; // Total cost of the asset (including down payment)
   const annualCashFlow = netMonthlyCashFlow * 12;
-  
+
   // Calculate residual value at end of loan term
   const residualValue = safeAssetCost * safeResidualValueRate;
-  
+
   // Calculate total expenses over loan term
   const totalLoanPayments = safeMonthlyPayment * safeTermMonths;
   const totalOperatingExpenses = safeOtherExpenses * safeTermMonths;
   const totalRevenue = (safeMonthlyRevenue * safeTermMonths) + residualValue;
-  
+
   // Generate cash flows for IRR calculation (including residual value in final year)
   const numYears = Math.ceil(safeTermMonths / 12);
   const cashFlows = Array(numYears).fill(annualCashFlow);
   if (cashFlows.length > 0) {
     cashFlows[cashFlows.length - 1] += residualValue; // Add residual value to final year
   }
-  
+
   // Calculate NPV using configurable discount rate (based on down payment)
   const npv = calculateNPV(initialInvestment, cashFlows, safeDiscountRate);
-  
+
   // Calculate IRR (based on down payment)
   const irr = calculateIRR(-initialInvestment, cashFlows);
-  
+
   // Calculate payback period based on total asset cost and positive monthly cash flow
   const paybackPeriod = netMonthlyCashFlow > 0 
     ? totalAssetCost / netMonthlyCashFlow 
     : Infinity; // Negative cash flow means never recovers
-  
+
   // Calculate total return over loan term
   const totalNetIncome = netMonthlyCashFlow * safeTermMonths;
   const roi = initialInvestment > 0 ? (totalNetIncome / initialInvestment) * 100 : 
@@ -168,7 +168,7 @@ export function RenterSummaryTab({
 
       {/* Key Financial Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 [&>*]:transition-none [&>*]:transform-none">
-        
+
         {/* Initial Investment */}
         <Card>
           <CardHeader className="pb-3">
@@ -194,8 +194,6 @@ export function RenterSummaryTab({
             </div>
           </CardContent>
         </Card>
-
-        
 
         {/* Payback Period */}
         <Card>
