@@ -31,18 +31,13 @@ export function RenterCashFlowTab({
   
   // Calculate break-even point (minimum revenue to cover expenses)
   const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
-  
-  // Initialize monthlyRevenue with break-even only on first load or when it's below break-even
-  const [hasInitialized, setHasInitialized] = React.useState(false);
-  
+
+  // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
   React.useEffect(() => {
-    if (breakEvenRevenue > 0 && !hasInitialized) {
-      if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
-        setMonthlyRevenue(Math.max(breakEvenRevenue, 1000)); // Ensure minimum value
-      }
-      setHasInitialized(true);
+    if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
+      setMonthlyRevenue(breakEvenRevenue);
     }
-  }, [breakEvenRevenue, hasInitialized, setMonthlyRevenue]);
+  }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
   
   // Calculate monthly cash flow
   const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
@@ -109,10 +104,10 @@ export function RenterCashFlowTab({
                 </div>
                 <div className="relative">
                   <Slider
-                    value={[Math.max(safeMonthlyRevenue, breakEvenRevenue)]}
+                    value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
-                    min={Math.max(breakEvenRevenue, 1000)}
-                    max={Math.max(breakEvenRevenue * 3, 10000)}
+                    min={0}
+                    max={breakEvenRevenue * 3}
                     step={100}
                     className="w-full opacity-70"
                   />
@@ -120,7 +115,7 @@ export function RenterCashFlowTab({
                   <div 
                     className="absolute top-0 w-0.5 h-6 bg-orange-500 pointer-events-none"
                     style={{
-                      left: `${((breakEvenRevenue - Math.max(breakEvenRevenue, 1000)) / (Math.max(breakEvenRevenue * 3, 10000) - Math.max(breakEvenRevenue, 1000))) * 100}%`,
+                      left: `${(breakEvenRevenue / (breakEvenRevenue * 3)) * 100}%`,
                       transform: 'translateX(-50%)'
                     }}
                   >
@@ -130,8 +125,8 @@ export function RenterCashFlowTab({
                   </div>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>{formatCurrency(Math.max(breakEvenRevenue, 1000))}</span>
-                  <span>{formatCurrency(Math.max(breakEvenRevenue * 3, 10000))}</span>
+                  <span>$0</span>
+                  <span>{formatCurrency(breakEvenRevenue * 3)}</span>
                 </div>
               </div>
               <div className="text-center min-w-[120px]">
