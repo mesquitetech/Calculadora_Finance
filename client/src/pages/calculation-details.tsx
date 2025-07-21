@@ -67,7 +67,7 @@ export default function CalculationDetails() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'lender' | 'renter'>('lender');
   const [activeRenterSubTab, setActiveRenterSubTab] = useState<'summary' | 'cashflow' | 'income'>('summary');
-  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
+  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(0);
 
   const { data, isLoading, error } = useQuery<CalculationDetails>({
     queryKey: [`/api/calculations/${id}`],

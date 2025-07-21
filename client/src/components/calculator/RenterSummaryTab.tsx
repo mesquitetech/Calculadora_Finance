@@ -49,6 +49,13 @@ export function RenterSummaryTab({
   // Calculate break-even point (minimum revenue to cover expenses)
   const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
   
+  // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
+  React.useEffect(() => {
+    if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
+      setMonthlyRevenue(breakEvenRevenue);
+    }
+  }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
+  
   // Calculate net monthly cash flow
   const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
   
