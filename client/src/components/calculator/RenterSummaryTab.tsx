@@ -95,6 +95,32 @@ export function RenterSummaryTab({
   const roi = initialInvestment > 0 ? (totalNetIncome / initialInvestment) * 100 : 
     (totalNetIncome > 0 ? Infinity : 0); // Infinite ROI when no initial investment but positive returns
 
+  // Calculate TIR (IRR) - Internal Rate of Return
+  const calculateTIR = () => {
+    // Create cash flow array starting with negative down payment (initial investment)
+    const cashFlows = [-initialInvestment];
+    
+    // Add monthly net cash flows for each month of the loan term
+    for (let i = 0; i < safeTermMonths; i++) {
+      cashFlows.push(netMonthlyCashFlow);
+    }
+    
+    // Add residual value to the last cash flow
+    if (cashFlows.length > 1) {
+      cashFlows[cashFlows.length - 1] += residualValue;
+    }
+    
+    // Calculate monthly TIR using the IRR function
+    const monthlyTIR = calculateIRR(initialInvestment, cashFlows.slice(1));
+    
+    // Convert to annual rate: (1 + monthly_rate)^12 - 1
+    const annualTIR = isNaN(monthlyTIR) ? 0 : (Math.pow(1 + monthlyTIR, 12) - 1) * 100;
+    
+    return annualTIR;
+  };
+
+  const tirValue = calculateTIR();
+
   const handleRevenueChange = (value: number[]) => {
     const newValue = typeof value[0] === 'number' && !isNaN(value[0]) ? value[0] : 0;
     setMonthlyRevenue(newValue);
@@ -244,6 +270,19 @@ export function RenterSummaryTab({
                 Infinite ROI (no initial investment)
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* TIR (Internal Rate of Return) */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">TIR (Internal Rate of Return)</CardTitle>
+            <p className="text-sm text-muted-foreground">Annual return rate considering all cash flows</p>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${tirValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {tirValue.toFixed(2)}%
+            </div>
           </CardContent>
         </Card>
 

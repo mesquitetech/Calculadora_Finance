@@ -37,7 +37,7 @@ export function RenterConfigModal({ config, onConfigChange }: RenterConfigModalP
           variant="outline"
           size="sm"
           className="h-8 w-8 p-0"
-          title="Advanced Configuration"
+          title="Advanced Options"
         >
           <Settings className="h-4 w-4" />
         </Button>
