@@ -117,11 +117,18 @@ export function RenterIncomeStatementTab({
                       type="number"
                       value={safeMonthlyRevenue}
                       onChange={(e) => {
+                        // Allow free editing while typing
                         const newValue = Number(e.target.value);
                         setMonthlyRevenue(isNaN(newValue) ? 0 : newValue);
                       }}
+                      onBlur={(e) => {
+                        // Validate only when leaving the field
+                        const newValue = Number(e.target.value);
+                        if (isNaN(newValue) || newValue < breakEvenRevenue) {
+                          setMonthlyRevenue(breakEvenRevenue);
+                        }
+                      }}
                       className="w-24 px-2 py-1 text-sm border rounded text-right"
-                      min="0"
                       step="100"
                     />
                     <span className="text-sm text-muted-foreground">$</span>
