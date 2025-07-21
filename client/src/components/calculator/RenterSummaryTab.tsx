@@ -70,7 +70,7 @@ export function RenterSummaryTab({
   // Calculate total expenses over loan term
   const totalLoanPayments = safeMonthlyPayment * safeTermMonths;
   const totalOperatingExpenses = safeOtherExpenses * safeTermMonths;
-  const totalRevenue = (safeMonthlyRevenue * safeTermMonths) + residualValue;
+  const totalRevenue = safeMonthlyRevenue * safeTermMonths;
 
   // Generate cash flows for IRR calculation (including residual value in final year)
   const numYears = Math.ceil(safeTermMonths / 12);
@@ -243,14 +243,14 @@ export function RenterSummaryTab({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Total Revenue (Loan Term)</CardTitle>
-            <p className="text-sm text-muted-foreground">Gross income over {termMonths} months + residual value</p>
+            <p className="text-sm text-muted-foreground">Gross income over {termMonths} months</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {formatDollarAmount(totalRevenue)}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
-              Includes {formatCurrency(residualValue)} residual value
+              Monthly revenue over loan term
             </div>
           </CardContent>
         </Card>
@@ -333,6 +333,26 @@ export function RenterSummaryTab({
                 </div>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Residual Value Information */}
+      <Card className="border-dashed border-2 border-muted-foreground/30">
+        <CardHeader>
+          <CardTitle className="text-muted-foreground">Additional Asset Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>
+              <span className="font-medium">Residual Value at Loan End:</span> {formatCurrency(residualValue)}
+            </p>
+            <p className="text-xs">
+              * The residual value represents the estimated asset value at the end of the loan term 
+              ({(safeResidualValueRate * 100).toFixed(0)}% of original asset cost). This value is not 
+              included in the total revenue calculation above, as it represents potential asset value 
+              rather than operational income.
+            </p>
           </div>
         </CardContent>
       </Card>
