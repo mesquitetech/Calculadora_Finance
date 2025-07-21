@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { cn } from "@/lib/utils";
 
 export interface BusinessParameters {
   assetCost: number;
@@ -23,6 +24,8 @@ export function BusinessParametersCard({
   loanAmount
 }: BusinessParametersCardProps) {
   
+  const [assetCostError, setAssetCostError] = React.useState('');
+  
   // Sync loan amount to asset cost automatically only if asset cost is 0
   React.useEffect(() => {
     if (loanAmount && loanAmount > 0 && businessParams.assetCost === 0) {
@@ -32,6 +35,15 @@ export function BusinessParametersCard({
       }));
     }
   }, [loanAmount, setBusinessParams, businessParams.assetCost]);
+
+  // Validate asset cost
+  React.useEffect(() => {
+    if (loanAmount && businessParams.assetCost > 0 && businessParams.assetCost < loanAmount) {
+      setAssetCostError('Asset cost cannot be less than the loan amount');
+    } else {
+      setAssetCostError('');
+    }
+  }, [businessParams.assetCost, loanAmount]);
 
   const handleAssetCostChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, assetCost: value }));
@@ -60,7 +72,11 @@ export function BusinessParametersCard({
               min={0}
               max={100000000}
               disabled={isCalculating}
+              className={assetCostError ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
+            {assetCostError && (
+              <p className="text-xs text-red-500 mt-1">{assetCostError}</p>
+            )}
             <p className="text-xs text-muted-foreground mt-1">Initial cost of the asset or equipment</p>
           </div>
 

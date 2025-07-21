@@ -110,9 +110,9 @@ export default function Home() {
     if (savedBusinessParams) {
       try {
         const parsed = JSON.parse(savedBusinessParams);
-        // Ensure we have a default asset cost if none was saved
+        // Ensure we have a default asset cost if none was saved or if it's 0
         return {
-          assetCost: parsed.assetCost || 100000,
+          assetCost: (parsed.assetCost && parsed.assetCost > 0) ? parsed.assetCost : 100000,
           otherExpenses: parsed.otherExpenses || 0,
           monthlyExpenses: parsed.monthlyExpenses || 0,
         };
@@ -167,7 +167,15 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-  
+  // Sync asset cost with loan amount if asset cost is 0 or less than loan amount
+  useEffect(() => {
+    if (loanParams.totalAmount > 0 && (businessParams.assetCost === 0 || businessParams.assetCost < loanParams.totalAmount)) {
+      setBusinessParams(prev => ({ 
+        ...prev, 
+        assetCost: Math.max(prev.assetCost, loanParams.totalAmount)
+      }));
+    }
+  }, [loanParams.totalAmount, businessParams.assetCost]);
 
   // Save investors to localStorage whenever they change
   useEffect(() => {
