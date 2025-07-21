@@ -170,7 +170,7 @@ export default function Home() {
         setBusinessParams(prev => ({ ...prev, assetCost: parsed.assetCost }));
       }
     }
-  }, [activeTab]);
+  }, [activeMainTab]);
 
   // Save investors to localStorage whenever they change
   useEffect(() => {
