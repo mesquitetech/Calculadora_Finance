@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ export function RenterConfigModal({ config, onConfigChange }: RenterConfigModalP
           className="h-8 w-8 p-0"
           title="Advanced Options"
         >
-          <Settings className="h-4 w-4" />
+          Parameters
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

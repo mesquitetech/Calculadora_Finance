@@ -115,9 +115,9 @@ export default function Home() {
 
   // Load investors from server storage
   const [investors, setInvestors] = useState<Investor[]>([
-    { id: 1, name: "Investor 1", investmentAmount: 40000 },
-    { id: 2, name: "Investor 2", investmentAmount: 35000 },
-    { id: 3, name: "Investor 3", investmentAmount: 25000 }
+    { id: 1, name: "Investor 1", investmentAmount: 40000 }, // 40%
+    { id: 2, name: "Investor 2", investmentAmount: 35000 }, // 35%
+    { id: 3, name: "Investor 3", investmentAmount: 25000 }  // 25%
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({

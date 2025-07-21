@@ -114,7 +114,7 @@ export function RenterCashFlowTab({
                     value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
                     min={0}
-                    max={50000}
+                    max={breakEvenRevenue * 3}
                     step={100}
                     className="w-full opacity-70"
                   />
@@ -122,7 +122,7 @@ export function RenterCashFlowTab({
                   <div 
                     className="absolute top-0 w-0.5 h-6 bg-orange-500 pointer-events-none"
                     style={{
-                      left: `${(breakEvenRevenue / 50000) * 100}%`,
+                      left: `${(breakEvenRevenue / (breakEvenRevenue * 3)) * 100}%`,
                       transform: 'translateX(-50%)'
                     }}
                   >
@@ -133,7 +133,7 @@ export function RenterCashFlowTab({
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>$0</span>
-                  <span>$50,000</span>
+                  <span>${(breakEvenRevenue * 3).toLocaleString()}</span>
                 </div>
               </div>
               <div className="text-center min-w-[120px]">
