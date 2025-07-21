@@ -93,7 +93,17 @@ export function InvestorsCard({
   const handlePercentageInputBlur = (id: number) => {
     const value = percentageInputs[id];
     if (value !== undefined) {
-      const percentage = parseFloat(value) || 0;
+      let percentage = parseFloat(value) || 0;
+      
+      // Validate percentage is between 0 and 100
+      if (percentage < 0) {
+        percentage = 0;
+        setPercentageInputs(prev => ({ ...prev, [id]: '0' }));
+      } else if (percentage > 100) {
+        percentage = 100;
+        setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
+      }
+      
       const amount = (percentage / 100) * totalRequired;
       setInvestors(
         investors.map(investor => 
@@ -191,7 +201,13 @@ export function InvestorsCard({
                       <Input
                         type="number"
                         value={getPercentageDisplayValue(investor)}
-                        onChange={(e) => handlePercentageInputChange(investor.id, e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow empty string for better UX during typing
+                          if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                            handlePercentageInputChange(investor.id, value);
+                          }
+                        }}
                         onBlur={() => handlePercentageInputBlur(investor.id)}
                         onKeyDown={(e) => handlePercentageInputKeyDown(investor.id, e)}
                         min={0}
