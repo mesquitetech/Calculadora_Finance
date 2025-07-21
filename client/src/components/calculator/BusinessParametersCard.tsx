@@ -23,15 +23,15 @@ export function BusinessParametersCard({
   loanAmount
 }: BusinessParametersCardProps) {
   
-  // Sync loan amount to asset cost automatically
+  // Sync loan amount to asset cost automatically only if asset cost is 0
   React.useEffect(() => {
-    if (loanAmount && loanAmount > 0) {
+    if (loanAmount && loanAmount > 0 && businessParams.assetCost === 0) {
       setBusinessParams(prev => ({
         ...prev,
         assetCost: loanAmount
       }));
     }
-  }, [loanAmount, setBusinessParams]);
+  }, [loanAmount, setBusinessParams, businessParams.assetCost]);
 
   const handleAssetCostChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, assetCost: value }));

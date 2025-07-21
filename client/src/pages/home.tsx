@@ -109,13 +109,19 @@ export default function Home() {
     const savedBusinessParams = localStorage.getItem('businessParams');
     if (savedBusinessParams) {
       try {
-        return JSON.parse(savedBusinessParams);
+        const parsed = JSON.parse(savedBusinessParams);
+        // Ensure we have a default asset cost if none was saved
+        return {
+          assetCost: parsed.assetCost || 100000,
+          otherExpenses: parsed.otherExpenses || 0,
+          monthlyExpenses: parsed.monthlyExpenses || 0,
+        };
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
       }
     }
     return {
-      assetCost: 0,
+      assetCost: 100000,
       otherExpenses: 0,
       monthlyExpenses: 0,
     };
@@ -161,16 +167,7 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-  // Prevent asset cost from resetting when switching tabs
-  useEffect(() => {
-    const savedBusinessParams = localStorage.getItem('businessParams');
-    if (savedBusinessParams) {
-      const parsed = JSON.parse(savedBusinessParams);
-      if (parsed.assetCost !== businessParams.assetCost) {
-        setBusinessParams(prev => ({ ...prev, assetCost: parsed.assetCost }));
-      }
-    }
-  }, [activeMainTab]);
+  
 
   // Save investors to localStorage whenever they change
   useEffect(() => {
