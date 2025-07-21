@@ -12,7 +12,7 @@ export interface Investor {
   id: number;
   name: string;
   investmentAmount: number;
-  percentage?: number;
+  percentage: number; // Make percentage required
 }
 
 interface InvestorsCardProps {
@@ -32,6 +32,17 @@ export function InvestorsCard({
   const [error, setError] = useState<string | null>(null);
   const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('percentage');
   const [percentageInputs, setPercentageInputs] = useState<{[key: number]: string}>({});
+
+  // Recalculate amounts when totalRequired changes (loan amount changes)
+  useEffect(() => {
+    if (totalRequired > 0) {
+      const updatedInvestors = investors.map(investor => ({
+        ...investor,
+        investmentAmount: (investor.percentage / 100) * totalRequired
+      }));
+      setInvestors(updatedInvestors);
+    }
+  }, [totalRequired]);
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -61,7 +72,7 @@ export function InvestorsCard({
     setInvestors([
       ...investors,
       // Se asigna el nombre por defecto, por ejemplo "Investor 4"
-      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0 }
+      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0, percentage: 0 }
     ]);
   };
 
@@ -79,9 +90,17 @@ export function InvestorsCard({
   // Handle updating investor data
   const updateInvestor = (id: number, field: keyof Investor, value: string | number) => {
     setInvestors(
-      investors.map(investor => 
-        investor.id === id ? { ...investor, [field]: value } : investor
-      )
+      investors.map(investor => {
+        if (investor.id === id) {
+          const updated = { ...investor, [field]: value };
+          // If amount is updated, calculate new percentage
+          if (field === 'investmentAmount' && totalRequired > 0) {
+            updated.percentage = (Number(value) / totalRequired) * 100;
+          }
+          return updated;
+        }
+        return investor;
+      })
     );
   };
 
@@ -107,7 +126,7 @@ export function InvestorsCard({
       const amount = (percentage / 100) * totalRequired;
       setInvestors(
         investors.map(investor => 
-          investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
+          investor.id === id ? { ...investor, investmentAmount: amount, percentage: percentage } : investor
         )
       );
     }
@@ -124,7 +143,7 @@ export function InvestorsCard({
     if (percentageInputs[investor.id] !== undefined) {
       return percentageInputs[investor.id];
     }
-    return ((investor.investmentAmount / totalRequired) * 100).toFixed(2);
+    return investor.percentage.toFixed(2);
   };
 
   // Check if we have at least 1 investor
