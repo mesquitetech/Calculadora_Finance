@@ -29,18 +29,38 @@ export function RenterIncomeStatementTab({
   residualValueRate = 0.15
 }: RenterIncomeStatementTabProps) {
   
-  // Calculate break-even point and handler
-  const breakEvenRevenue = monthlyPayment + otherExpenses;
-  const netMonthlyCashFlow = monthlyRevenue - monthlyPayment - otherExpenses;
+  // Validate and sanitize all input values
+  const safeLoanAmount = typeof loanAmount === 'number' && !isNaN(loanAmount) ? loanAmount : 0;
+  const safeMonthlyPayment = typeof monthlyPayment === 'number' && !isNaN(monthlyPayment) ? monthlyPayment : 0;
+  const safeTermMonths = typeof termMonths === 'number' && !isNaN(termMonths) ? termMonths : 60;
+  const safeInterestRate = typeof interestRate === 'number' && !isNaN(interestRate) ? interestRate : 0;
+  const safeOtherExpenses = typeof otherExpenses === 'number' && !isNaN(otherExpenses) ? otherExpenses : 0;
+  const safeMonthlyRevenue = typeof monthlyRevenue === 'number' && !isNaN(monthlyRevenue) ? monthlyRevenue : 0;
+  const safeAssetCost = typeof assetCost === 'number' && !isNaN(assetCost) ? assetCost : 0;
+  const safeDiscountRate = typeof discountRate === 'number' && !isNaN(discountRate) ? discountRate : 0.04;
+  const safeResidualValueRate = typeof residualValueRate === 'number' && !isNaN(residualValueRate) ? residualValueRate : 0.15;
+  
+  // Calculate break-even point (minimum revenue to cover expenses)
+  const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
+  
+  // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
+  React.useEffect(() => {
+    if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
+      setMonthlyRevenue(breakEvenRevenue);
+    }
+  }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
+  
+  const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
 
   const handleRevenueChange = (value: number[]) => {
-    setMonthlyRevenue(value[0]);
+    const newValue = typeof value[0] === 'number' && !isNaN(value[0]) ? value[0] : 0;
+    setMonthlyRevenue(newValue);
   };
 
   // Calculate annual figures
-  const annualRevenue = monthlyRevenue * 12;
-  const annualOperatingExpenses = otherExpenses * 12;
-  const annualLoanPayments = monthlyPayment * 12;
+  const annualRevenue = safeMonthlyRevenue * 12;
+  const annualOperatingExpenses = safeOtherExpenses * 12;
+  const annualLoanPayments = safeMonthlyPayment * 12;
   
   // For simplification, assume interest portion is roughly 80% of payment in early years
   // In a real application, you'd calculate this more precisely using an amortization schedule
@@ -48,7 +68,7 @@ export function RenterIncomeStatementTab({
   const annualPrincipalPayment = annualLoanPayments * 0.2;
   
   // Calculate depreciation (assuming 27.5 year straight-line for rental property)
-  const annualDepreciation = assetCost / 27.5;
+  const annualDepreciation = safeAssetCost / 27.5;
   
   // Calculate profit/loss figures
   const grossProfit = annualRevenue;
@@ -95,8 +115,11 @@ export function RenterIncomeStatementTab({
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
-                      value={monthlyRevenue}
-                      onChange={(e) => setMonthlyRevenue(Number(e.target.value) || 0)}
+                      value={safeMonthlyRevenue}
+                      onChange={(e) => {
+                        const newValue = Number(e.target.value);
+                        setMonthlyRevenue(isNaN(newValue) ? 0 : newValue);
+                      }}
                       className="w-24 px-2 py-1 text-sm border rounded text-right"
                       min="0"
                       step="100"
@@ -106,7 +129,7 @@ export function RenterIncomeStatementTab({
                 </div>
                 <div className="relative">
                   <Slider
-                    value={[monthlyRevenue]}
+                    value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
                     min={0}
                     max={breakEvenRevenue * 3}

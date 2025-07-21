@@ -22,24 +22,39 @@ export function RenterCashFlowTab({
   setMonthlyRevenue
 }: RenterCashFlowTabProps) {
   
-  // Calculate monthly cash flow
-  const netMonthlyCashFlow = monthlyRevenue - monthlyPayment - otherExpenses;
+  // Validate and sanitize all input values
+  const safeLoanAmount = typeof loanAmount === 'number' && !isNaN(loanAmount) ? loanAmount : 0;
+  const safeMonthlyPayment = typeof monthlyPayment === 'number' && !isNaN(monthlyPayment) ? monthlyPayment : 0;
+  const safeTermMonths = typeof termMonths === 'number' && !isNaN(termMonths) ? termMonths : 60;
+  const safeOtherExpenses = typeof otherExpenses === 'number' && !isNaN(otherExpenses) ? otherExpenses : 0;
+  const safeMonthlyRevenue = typeof monthlyRevenue === 'number' && !isNaN(monthlyRevenue) ? monthlyRevenue : 0;
   
-  // Calculate break-even point
-  const breakEvenRevenue = monthlyPayment + otherExpenses;
+  // Calculate break-even point (minimum revenue to cover expenses)
+  const breakEvenRevenue = safeMonthlyPayment + safeOtherExpenses;
+  
+  // Initialize monthlyRevenue with break-even if it's currently 0 or below break-even
+  React.useEffect(() => {
+    if (safeMonthlyRevenue === 0 || safeMonthlyRevenue < breakEvenRevenue) {
+      setMonthlyRevenue(breakEvenRevenue);
+    }
+  }, [breakEvenRevenue, safeMonthlyRevenue, setMonthlyRevenue]);
+  
+  // Calculate monthly cash flow
+  const netMonthlyCashFlow = safeMonthlyRevenue - safeMonthlyPayment - safeOtherExpenses;
 
   const handleRevenueChange = (value: number[]) => {
-    setMonthlyRevenue(value[0]);
+    const newValue = typeof value[0] === 'number' && !isNaN(value[0]) ? value[0] : 0;
+    setMonthlyRevenue(newValue);
   };
   
   // Generate monthly cash flow data for the chart
-  const cashFlowData = Array.from({ length: termMonths }, (_, index) => {
+  const cashFlowData = Array.from({ length: safeTermMonths }, (_, index) => {
     const month = index + 1;
     return {
       month: month,
-      revenue: monthlyRevenue,
-      loanPayment: monthlyPayment,
-      expenses: otherExpenses,
+      revenue: safeMonthlyRevenue,
+      loanPayment: safeMonthlyPayment,
+      expenses: safeOtherExpenses,
       netCashFlow: netMonthlyCashFlow,
       cumulativeCashFlow: netMonthlyCashFlow * month
     };
@@ -47,13 +62,13 @@ export function RenterCashFlowTab({
 
   // Aggregate data by year for annual view
   const yearlyData = [];
-  for (let year = 1; year <= Math.ceil(termMonths / 12); year++) {
-    const monthsInYear = Math.min(12, termMonths - (year - 1) * 12);
+  for (let year = 1; year <= Math.ceil(safeTermMonths / 12); year++) {
+    const monthsInYear = Math.min(12, safeTermMonths - (year - 1) * 12);
     yearlyData.push({
       year: year,
-      revenue: monthlyRevenue * monthsInYear,
-      loanPayment: monthlyPayment * monthsInYear,
-      expenses: otherExpenses * monthsInYear,
+      revenue: safeMonthlyRevenue * monthsInYear,
+      loanPayment: safeMonthlyPayment * monthsInYear,
+      expenses: safeOtherExpenses * monthsInYear,
       netCashFlow: netMonthlyCashFlow * monthsInYear
     });
   }
@@ -75,8 +90,11 @@ export function RenterCashFlowTab({
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
-                      value={monthlyRevenue}
-                      onChange={(e) => setMonthlyRevenue(Number(e.target.value) || 0)}
+                      value={safeMonthlyRevenue}
+                      onChange={(e) => {
+                        const newValue = Number(e.target.value);
+                        setMonthlyRevenue(isNaN(newValue) ? 0 : newValue);
+                      }}
                       className="w-24 px-2 py-1 text-sm border rounded text-right"
                       min="0"
                       step="100"
@@ -86,7 +104,7 @@ export function RenterCashFlowTab({
                 </div>
                 <div className="relative">
                   <Slider
-                    value={[monthlyRevenue]}
+                    value={[safeMonthlyRevenue]}
                     onValueChange={handleRevenueChange}
                     min={0}
                     max={breakEvenRevenue * 3}
@@ -130,7 +148,7 @@ export function RenterCashFlowTab({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(monthlyRevenue)}
+              {formatCurrency(safeMonthlyRevenue)}
             </div>
           </CardContent>
         </Card>
@@ -141,7 +159,7 @@ export function RenterCashFlowTab({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(monthlyPayment)}
+              {formatCurrency(safeMonthlyPayment)}
             </div>
           </CardContent>
         </Card>
@@ -152,7 +170,7 @@ export function RenterCashFlowTab({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(otherExpenses)}
+              {formatCurrency(safeOtherExpenses)}
             </div>
           </CardContent>
         </Card>
@@ -256,21 +274,21 @@ export function RenterCashFlowTab({
               <tbody>
                 <tr className="border-b">
                   <td className="p-2 font-medium text-green-600">Revenue</td>
-                  <td className="p-2 text-right">{formatCurrency(monthlyRevenue)}</td>
-                  <td className="p-2 text-right">{formatCurrency(monthlyRevenue * 12)}</td>
-                  <td className="p-2 text-right">{formatCurrency(monthlyRevenue * termMonths)}</td>
+                  <td className="p-2 text-right">{formatCurrency(safeMonthlyRevenue)}</td>
+                  <td className="p-2 text-right">{formatCurrency(safeMonthlyRevenue * 12)}</td>
+                  <td className="p-2 text-right">{formatCurrency(safeMonthlyRevenue * safeTermMonths)}</td>
                 </tr>
                 <tr className="border-b">
                   <td className="p-2 font-medium text-red-600">Loan Payment</td>
-                  <td className="p-2 text-right">-{formatCurrency(monthlyPayment)}</td>
-                  <td className="p-2 text-right">-{formatCurrency(monthlyPayment * 12)}</td>
-                  <td className="p-2 text-right">-{formatCurrency(monthlyPayment * termMonths)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeMonthlyPayment)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeMonthlyPayment * 12)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeMonthlyPayment * safeTermMonths)}</td>
                 </tr>
                 <tr className="border-b">
                   <td className="p-2 font-medium text-orange-600">Operating Expenses</td>
-                  <td className="p-2 text-right">-{formatCurrency(otherExpenses)}</td>
-                  <td className="p-2 text-right">-{formatCurrency(otherExpenses * 12)}</td>
-                  <td className="p-2 text-right">-{formatCurrency(otherExpenses * termMonths)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeOtherExpenses)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeOtherExpenses * 12)}</td>
+                  <td className="p-2 text-right">-{formatCurrency(safeOtherExpenses * safeTermMonths)}</td>
                 </tr>
                 <tr className="border-b bg-muted/50">
                   <td className="p-2 font-bold">Net Cash Flow</td>
