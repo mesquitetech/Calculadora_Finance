@@ -79,6 +79,21 @@ export default function Home() {
       }
     };
 
+    // Load from localStorage first
+    const savedBusinessParams = localStorage.getItem('businessParams');
+    if (savedBusinessParams) {
+      try {
+        const parsed = JSON.parse(savedBusinessParams);
+        setBusinessParams({
+          assetCost: parsed.assetCost || 100000,
+          otherExpenses: parsed.otherExpenses || 0,
+          monthlyExpenses: parsed.monthlyExpenses || 0,
+        });
+      } catch (error) {
+        console.error('Error parsing saved business parameters:', error);
+      }
+    }
+
     loadSettings();
   }, [sessionId]);
 
@@ -105,25 +120,10 @@ export default function Home() {
     { id: 3, name: "Investor 3", investmentAmount: 25000 }
   ]);
 
-  const [businessParams, setBusinessParams] = useState<BusinessParameters>(() => {
-    const savedBusinessParams = localStorage.getItem('businessParams');
-    if (savedBusinessParams) {
-      try {
-        const parsed = JSON.parse(savedBusinessParams);
-        return {
-          assetCost: parsed.assetCost || 100000,
-          otherExpenses: parsed.otherExpenses || 0,
-          monthlyExpenses: parsed.monthlyExpenses || 0,
-        };
-      } catch (error) {
-        console.error('Error parsing saved business parameters:', error);
-      }
-    }
-    return {
-      assetCost: 100000,
-      otherExpenses: 0,
-      monthlyExpenses: 0,
-    };
+  const [businessParams, setBusinessParams] = useState<BusinessParameters>({
+    assetCost: 100000,
+    otherExpenses: 0,
+    monthlyExpenses: 0,
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -147,16 +147,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Check if asset cost is valid (not less than loan amount)
+    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
+    
     const isButtonEnabled =
       validations.isLoanNameValid &&
       validations.isTermValid &&
       loanParams.interestRate > 0 &&
       loanParams.termMonths > 0 &&
       investors.length >= 1 &&
-      investors.every(investor => investor.name.trim() !== "");
+      investors.every(investor => investor.name.trim() !== "") &&
+      assetCostValid;
 
     setInputsValid(isButtonEnabled);
-  }, [loanParams, investors, validations]);
+  }, [loanParams, investors, validations, businessParams.assetCost]);
 
   // Set break-even revenue when calculation results become available
   useEffect(() => {
@@ -166,16 +170,7 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-  // Initialize asset cost to match loan amount on first load
-  useEffect(() => {
-    const savedBusinessParams = localStorage.getItem('businessParams');
-    if (!savedBusinessParams && loanParams.totalAmount > 0) {
-      setBusinessParams(prev => ({ 
-        ...prev, 
-        assetCost: loanParams.totalAmount
-      }));
-    }
-  }, [loanParams.totalAmount]);
+  
 
   // Save investors to localStorage whenever they change
   useEffect(() => {
