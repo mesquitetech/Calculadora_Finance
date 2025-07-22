@@ -137,12 +137,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.body.businessParams) {
             const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
             console.log("Updating business parameters:", req.body.businessParams);
-            await storage.createBusinessParameters({
-                loanId: id,
-                assetCost: String(assetCost || 0),
-                otherExpenses: String(otherExpenses || 0),
-                monthlyExpenses: String(monthlyExpenses || 0)
-            });
+            
+            // Check if business parameters exist
+            const existingBusinessParams = await storage.getBusinessParametersByLoanId(id);
+            
+            if (existingBusinessParams) {
+                // Update existing parameters
+                await storage.updateBusinessParameters(id, {
+                    assetCost: String(assetCost || 0),
+                    otherExpenses: String(otherExpenses || 0),
+                    monthlyExpenses: String(monthlyExpenses || 0)
+                });
+            } else {
+                // Create new parameters
+                await storage.createBusinessParameters({
+                    loanId: id,
+                    assetCost: String(assetCost || 0),
+                    otherExpenses: String(otherExpenses || 0),
+                    monthlyExpenses: String(monthlyExpenses || 0)
+                });
+            }
         }
 
         res.status(200).json({ message: "Calculation updated successfully" });
@@ -303,7 +317,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           assetCost: Number(businessParams.assetCost),
           otherExpenses: Number(businessParams.otherExpenses),
           monthlyExpenses: Number(businessParams.monthlyExpenses)
-        } : null,
+        } : {
+          assetCost: 0,
+          otherExpenses: 0,
+          monthlyExpenses: 0
+        },
       });
     } catch (error) {
       console.error("Error fetching calculation details:", error);

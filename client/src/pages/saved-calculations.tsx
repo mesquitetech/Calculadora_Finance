@@ -137,9 +137,9 @@ export default function SavedCalculations() {
                 investmentAmount: inv.investmentAmount
             })),
             businessParams: {
-                assetCost: fullData.assetCost || 0,
-                otherExpenses: fullData.otherExpenses || 0,
-                monthlyExpenses: fullData.monthlyExpenses || 0,
+                assetCost: fullData.businessParams?.assetCost || 0,
+                otherExpenses: fullData.businessParams?.otherExpenses || 0,
+                monthlyExpenses: fullData.businessParams?.monthlyExpenses || 0,
             }
         };
         setSelectedCalc(editableData);
