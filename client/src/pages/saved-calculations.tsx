@@ -80,8 +80,13 @@ async function updateCalculation(data: EditableData): Promise<void> {
             amount: data.loanParams.amount,
         },
         investors: data.investors.map(({ id, ...rest}) => rest),
-        businessParams: data.businessParams,
+        businessParams: {
+            assetCost: data.businessParams.assetCost,
+            otherExpenses: data.businessParams.otherExpenses,
+            monthlyExpenses: data.businessParams.monthlyExpenses,
+        },
     };
+    console.log("Sending update payload:", payload);
     const response = await fetch(`/api/calculations/${data.loanParams.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

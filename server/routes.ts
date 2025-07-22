@@ -98,6 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (isNaN(id)) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
+        console.log("Update request body:", JSON.stringify(req.body, null, 2));
         const { loanParams, investors: updatedInvestors } = req.body;
         const validatedLoan = insertLoanSchema.parse({
             loanName: loanParams.loanName, amount: String(loanParams.amount),
@@ -135,6 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Save business parameters if provided
         if (req.body.businessParams) {
             const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
+            console.log("Updating business parameters:", req.body.businessParams);
             await storage.createBusinessParameters({
                 loanId: id,
                 assetCost: String(assetCost || 0),
