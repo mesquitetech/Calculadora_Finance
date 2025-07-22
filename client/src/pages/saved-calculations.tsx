@@ -189,11 +189,13 @@ export default function SavedCalculations() {
 
   const updateMutation = useMutation({
     mutationFn: updateCalculation,
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
         toast({ title: "Success", description: "Calculation updated." });
         // Invalidate both the list and individual calculation queries
         queryClient.invalidateQueries({ queryKey: ["/api/calculations"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/calculations/${variables.loanParams.id}`] });
         queryClient.removeQueries({ queryKey: ["/api/calculations"] }); // Force refetch
+        queryClient.removeQueries({ queryKey: [`/api/calculations/${variables.loanParams.id}`] }); // Force refetch specific calculation
         setIsEditModalOpen(false);
         setSelectedCalc(null);
     },
