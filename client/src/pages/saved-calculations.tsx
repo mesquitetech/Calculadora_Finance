@@ -191,7 +191,9 @@ export default function SavedCalculations() {
     mutationFn: updateCalculation,
     onSuccess: () => {
         toast({ title: "Success", description: "Calculation updated." });
+        // Invalidate both the list and individual calculation queries
         queryClient.invalidateQueries({ queryKey: ["/api/calculations"] });
+        queryClient.removeQueries({ queryKey: ["/api/calculations"] }); // Force refetch
         setIsEditModalOpen(false);
         setSelectedCalc(null);
     },

@@ -173,7 +173,7 @@ export class MemStorage implements IStorage {
   async createOrUpdateUserSettings(insertSettings: InsertUserSettings): Promise<UserSettings> {
     const existing = await this.getUserSettings(insertSettings.sessionId);
     const now = new Date();
-    
+
     if (existing) {
       const updated: UserSettings = {
         ...existing,
@@ -309,7 +309,7 @@ export class DatabaseStorage implements IStorage {
 
   async createOrUpdateUserSettings(insertSettings: InsertUserSettings): Promise<UserSettings> {
     const existing = await this.getUserSettings(insertSettings.sessionId);
-    
+
     if (existing) {
       const [updated] = await db.update(userSettings)
         .set({ ...insertSettings, updatedAt: new Date() })
