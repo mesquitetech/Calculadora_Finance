@@ -80,6 +80,7 @@ async function updateCalculation(data: EditableData): Promise<void> {
             amount: data.loanParams.amount,
         },
         investors: data.investors.map(({ id, ...rest}) => rest),
+        businessParams: data.businessParams,
     };
     const response = await fetch(`/api/calculations/${data.loanParams.id}`, {
         method: "PUT",
@@ -129,7 +130,12 @@ export default function SavedCalculations() {
                 id: inv.investorId,
                 name: inv.name,
                 investmentAmount: inv.investmentAmount
-            }))
+            })),
+            businessParams: {
+                assetCost: fullData.assetCost || 0,
+                otherExpenses: fullData.otherExpenses || 0,
+                monthlyExpenses: fullData.monthlyExpenses || 0,
+            }
         };
         setSelectedCalc(editableData);
         setIsEditModalOpen(true);

@@ -24,6 +24,7 @@ import { Trash, Plus, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatCurrency } from "@/lib/finance";
 import { cn } from "@/lib/utils";
+import { BusinessParameters } from "./BusinessParametersCard";
 
 // Definir y EXPORTAR las interfaces necesarias para que otros componentes puedan importarlas.
 interface LoanParams {
@@ -45,6 +46,7 @@ interface Investor {
 export interface EditableData {
     loanParams: LoanParams;
     investors: Investor[];
+    businessParams: BusinessParameters;
 }
 
 interface EditCalculationModalProps {
@@ -74,6 +76,9 @@ export function EditCalculationModal({
   const [interestRateError, setInterestRateError] = useState('');
   const [termError, setTermError] = useState('');
   const [investorError, setInvestorError] = useState<string | null>(null);
+  const [assetCostError, setAssetCostError] = useState('');
+  const [otherExpensesError, setOtherExpensesError] = useState('');
+  const [monthlyExpensesError, setMonthlyExpensesError] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
   // --- FIN DE LA CORRECCIÓN ---
 
@@ -151,8 +156,46 @@ export function EditCalculationModal({
         investorsAreValid = false;
     }
 
+    // Validación de parámetros de negocio
+    let assetCostIsValid = false;
+    let otherExpensesIsValid = false;
+    let monthlyExpensesIsValid = false;
+
+    // Asset Cost validation
+    const { businessParams } = editedData;
+    if (businessParams.assetCost >= 0 && businessParams.assetCost <= 100000000) {
+        if (businessParams.assetCost >= loanParams.amount || businessParams.assetCost === 0) {
+            setAssetCostError('');
+            assetCostIsValid = true;
+        } else {
+            setAssetCostError('Asset cost cannot be less than the loan amount.');
+            assetCostIsValid = false;
+        }
+    } else {
+        setAssetCostError('Asset cost must be between $0 and $100,000,000.');
+        assetCostIsValid = false;
+    }
+
+    // Other Expenses validation
+    if (businessParams.otherExpenses >= 0 && businessParams.otherExpenses <= 1000000) {
+        setOtherExpensesError('');
+        otherExpensesIsValid = true;
+    } else {
+        setOtherExpensesError('Other expenses must be between $0 and $1,000,000.');
+        otherExpensesIsValid = false;
+    }
+
+    // Monthly Expenses validation
+    if (businessParams.monthlyExpenses >= 0 && businessParams.monthlyExpenses <= 1000000) {
+        setMonthlyExpensesError('');
+        monthlyExpensesIsValid = true;
+    } else {
+        setMonthlyExpensesError('Monthly expenses must be between $0 and $1,000,000.');
+        monthlyExpensesIsValid = false;
+    }
+
     // El formulario es válido si TODAS las validaciones pasan.
-    setIsFormValid(nameIsValid && amountIsValid && interestRateIsValid && termIsValid && investorsAreValid);
+    setIsFormValid(nameIsValid && amountIsValid && interestRateIsValid && termIsValid && investorsAreValid && assetCostIsValid && otherExpensesIsValid && monthlyExpensesIsValid);
 
   }, [editedData]);
   // --- FIN DE LA CORRECCIÓN ---
@@ -201,6 +244,15 @@ export function EditCalculationModal({
         inv.id === id ? { ...inv, investmentAmount: amount } : inv
       );
       setEditedData({ ...editedData, investors: newInvestors });
+    }
+  };
+
+  const handleBusinessParamChange = (field: keyof BusinessParameters, value: number) => {
+    if (editedData) {
+      setEditedData({
+        ...editedData,
+        businessParams: { ...editedData.businessParams, [field]: value },
+      });
     }
   };
 
@@ -328,6 +380,47 @@ export function EditCalculationModal({
                     </div>
                 </div>
                 {investorError && <Alert variant="destructive" className="mt-3"><AlertCircle className="h-4 w-4" /><AlertDescription>{investorError}</AlertDescription></Alert>}
+            </fieldset>
+
+            <fieldset className="border p-4 rounded-md">
+                <legend className="text-lg font-semibold px-2">Business Parameters</legend>
+                <div className="grid grid-cols-1 gap-4 pt-2">
+                    <div className="form-group">
+                        <Label htmlFor="assetCost">Asset Cost</Label>
+                        <CurrencyInput
+                            id="assetCost"
+                            value={editedData.businessParams.assetCost}
+                            onChange={(value) => handleBusinessParamChange('assetCost', value)}
+                            className={cn(assetCostError && "border-red-500")}
+                        />
+                        {assetCostError && <p className="text-xs text-red-500 mt-1">{assetCostError}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">Initial cost of the asset or equipment</p>
+                    </div>
+
+                    <div className="form-group">
+                        <Label htmlFor="otherExpenses">Other Expenses</Label>
+                        <CurrencyInput
+                            id="otherExpenses"
+                            value={editedData.businessParams.otherExpenses}
+                            onChange={(value) => handleBusinessParamChange('otherExpenses', value)}
+                            className={cn(otherExpensesError && "border-red-500")}
+                        />
+                        {otherExpensesError && <p className="text-xs text-red-500 mt-1">{otherExpensesError}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">One-time additional expenses (fees, setup costs, etc.)</p>
+                    </div>
+
+                    <div className="form-group">
+                        <Label htmlFor="monthlyExpenses">Monthly Expenses</Label>
+                        <CurrencyInput
+                            id="monthlyExpenses"
+                            value={editedData.businessParams.monthlyExpenses}
+                            onChange={(value) => handleBusinessParamChange('monthlyExpenses', value)}
+                            className={cn(monthlyExpensesError && "border-red-500")}
+                        />
+                        {monthlyExpensesError && <p className="text-xs text-red-500 mt-1">{monthlyExpensesError}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">Recurring monthly operating expenses (maintenance, insurance, etc.)</p>
+                    </div>
+                </div>
             </fieldset>
         </div>
         <DialogFooter>
