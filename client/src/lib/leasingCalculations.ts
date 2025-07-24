@@ -1,69 +1,70 @@
+
 /**
- * Motor de Cálculo Central para Arrendamiento Puro
- * Implementa las fórmulas financieras especificadas en el documento de requerimientos
+ * Central Calculation Engine for Pure Leasing
+ * Implements the financial formulas specified in the requirements document
  */
 
-// ============= INTERFACES Y TIPOS =============
+// ============= INTERFACES AND TYPES =============
 
 export interface LeasingInputs {
-  // Variables básicas del activo
+  // Basic asset variables
   asset_cost_sans_iva: number;
   lease_term_months: number;
   
-  // Variables del operador (arrendador)
-  lessor_profit_margin_pct: number; // Ej. 20%
-  fixed_monthly_fee: number; // Cuota administrativa fija
+  // Operator (lessor) variables
+  lessor_profit_margin_pct: number; // e.g. 20%
+  fixed_monthly_fee: number; // Fixed administrative fee
   
-  // Variables del pago inicial
-  admin_commission_pct: number; // Ej. 1.0%
-  security_deposit_months: number; // Ej. 1 mes
-  delivery_costs: number; // Costos de trámites
+  // Initial payment variables
+  admin_commission_pct: number; // e.g. 1.0%
+  security_deposit_months: number; // e.g. 1 month
+  delivery_costs: number; // Processing costs
   
-  // Variables del préstamo a inversionistas
+  // Investor loan variables
   loan_amount: number;
   annual_interest_rate: number;
   
-  // Variables del flujo de caja
-  monthly_operational_expenses: number; // Seguros, mantenimiento, etc.
-  residual_value_rate: number; // % del valor inicial al final del contrato
-  discount_rate: number; // Tasa de descuento para NPV (ej. 4%)
+  // Cash flow variables
+  monthly_operational_expenses: number; // Insurance, maintenance, etc.
+  residual_value_rate: number; // % of initial value at contract end
+  discount_rate: number; // Discount rate for NPV (e.g. 4%)
 }
 
 export interface LeasingResults {
-  // Resultados para el Arrendatario (Cliente)
+  // Results for the Lessee (Client)
   lessor_monthly_profit: number;
   base_rent_amortization: number;
   base_rent_with_margin: number;
   total_monthly_rent_sans_iva: number;
   
-  // Resultados del Pago Inicial
+  // Initial Payment Results
   initial_admin_commission: number;
   initial_security_deposit: number;
   initial_payment_sans_iva: number;
   
-  // Resultados para el Operador
+  // Results for the Operator
   monthly_loan_payment: number;
   net_monthly_cash_flow: number;
   residual_value_amount: number;
   
-  // KPIs del Operador
+  // Operator KPIs
   net_present_value: number;
   internal_rate_of_return: number;
   payback_period_months: number;
   total_project_profit: number;
   
-  // Flujo de caja detallado
+  // Detailed cash flow
   cash_flow_schedule: CashFlowEntry[];
   
-  // Amortización del préstamo para inversionistas
+  // Loan amortization for investors
   loan_amortization_schedule: LoanPaymentEntry[];
 }
 
 export interface CashFlowEntry {
   month: number;
   date: Date;
-  cash_inflow: number; // Rentas + ingresos
-  cash_outflow: number; // Pagos de préstamo + gastos
+  cash_inflow: number; // Rents + income
+  cash_outflow: number; // Loan payments + expenses
   net_cash_flow: number;
   cumulative_cash_flow: number;
   present_value: number;
@@ -79,11 +80,11 @@ export interface LoanPaymentEntry {
   remaining_balance: number;
 }
 
-// ============= MÓDULO 1: CÁLCULOS DE RENTA MENSUAL =============
+// ============= MODULE 1: MONTHLY RENT CALCULATIONS =============
 
 /**
- * 1.1 Calcula la ganancia mensual del arrendador
- * Fórmula: (asset_cost_sans_iva * lessor_profit_margin_pct / 12) * (lease_term_months / 12) / lease_term_months
+ * 1.1 Calculates the lessor's monthly profit
+ * Formula: (asset_cost_sans_iva * lessor_profit_margin_pct / 12) * (lease_term_months / 12) / lease_term_months
  */
 export function calculateLessorMonthlyProfit(
   asset_cost_sans_iva: number,
@@ -94,8 +95,8 @@ export function calculateLessorMonthlyProfit(
 }
 
 /**
- * 1.2 Calcula la amortización del activo
- * Fórmula: asset_cost_sans_iva / lease_term_months
+ * 1.2 Calculates the asset amortization
+ * Formula: asset_cost_sans_iva / lease_term_months
  */
 export function calculateBaseRentAmortization(
   asset_cost_sans_iva: number,
@@ -105,8 +106,8 @@ export function calculateBaseRentAmortization(
 }
 
 /**
- * 1.3 Calcula la renta base con margen
- * Fórmula: base_rent_amortization + lessor_monthly_profit
+ * 1.3 Calculates the base rent with margin
+ * Formula: base_rent_amortization + lessor_monthly_profit
  */
 export function calculateBaseRentWithMargin(
   base_rent_amortization: number,
@@ -116,8 +117,8 @@ export function calculateBaseRentWithMargin(
 }
 
 /**
- * 1.4 Calcula la renta mensual total sin IVA
- * Fórmula: base_rent_with_margin + fixed_monthly_fee
+ * 1.4 Calculates the total monthly rent without VAT
+ * Formula: base_rent_with_margin + fixed_monthly_fee
  */
 export function calculateTotalMonthlyRentSansIva(
   base_rent_with_margin: number,
@@ -126,11 +127,11 @@ export function calculateTotalMonthlyRentSansIva(
   return base_rent_with_margin + fixed_monthly_fee;
 }
 
-// ============= MÓDULO 2: CÁLCULOS DE PAGO INICIAL =============
+// ============= MODULE 2: INITIAL PAYMENT CALCULATIONS =============
 
 /**
- * 2.1 Calcula la comisión por apertura
- * Fórmula: asset_cost_sans_iva * admin_commission_pct
+ * 2.1 Calculates the opening commission
+ * Formula: asset_cost_sans_iva * admin_commission_pct
  */
 export function calculateInitialAdminCommission(
   asset_cost_sans_iva: number,
@@ -140,8 +141,8 @@ export function calculateInitialAdminCommission(
 }
 
 /**
- * 2.2 Calcula el depósito en garantía
- * Fórmula: base_rent_with_margin * security_deposit_months
+ * 2.2 Calculates the security deposit
+ * Formula: base_rent_with_margin * security_deposit_months
  */
 export function calculateInitialSecurityDeposit(
   base_rent_with_margin: number,
@@ -151,8 +152,8 @@ export function calculateInitialSecurityDeposit(
 }
 
 /**
- * 2.3 Calcula el pago inicial total sin IVA
- * Fórmula: initial_admin_commission + initial_security_deposit + delivery_costs
+ * 2.3 Calculates the total initial payment without VAT
+ * Formula: initial_admin_commission + initial_security_deposit + delivery_costs
  */
 export function calculateInitialPaymentSansIva(
   initial_admin_commission: number,
@@ -162,11 +163,11 @@ export function calculateInitialPaymentSansIva(
   return initial_admin_commission + initial_security_deposit + delivery_costs;
 }
 
-// ============= MÓDULO 3: CÁLCULOS DEL PRÉSTAMO =============
+// ============= MODULE 3: LOAN CALCULATIONS =============
 
 /**
- * Calcula el pago mensual del préstamo usando la fórmula PMT
- * Fórmula: P × [r(1+r)^n] / [(1+r)^n - 1]
+ * Calculates the monthly loan payment using the PMT formula
+ * Formula: P × [r(1+r)^n] / [(1+r)^n - 1]
  */
 export function calculateLoanMonthlyPayment(
   loan_amount: number,
@@ -185,7 +186,7 @@ export function calculateLoanMonthlyPayment(
 }
 
 /**
- * Genera la tabla de amortización del préstamo
+ * Generates the loan amortization schedule
  */
 export function generateLoanAmortizationSchedule(
   loan_amount: number,
@@ -203,7 +204,7 @@ export function generateLoanAmortizationSchedule(
     const principal_payment = monthly_payment - interest_payment;
     remaining_balance -= principal_payment;
     
-    // Ajustar el último pago si hay pequeños residuos
+    // Adjust the last payment if there are small residuals
     if (month === term_months && remaining_balance > 0.01) {
       const adjusted_principal = principal_payment + remaining_balance;
       remaining_balance = 0;
@@ -225,10 +226,10 @@ export function generateLoanAmortizationSchedule(
   return schedule;
 }
 
-// ============= MÓDULO 4: FLUJO DE CAJA Y KPIs =============
+// ============= MODULE 4: CASH FLOW AND KPIs =============
 
 /**
- * Genera el flujo de caja completo del proyecto
+ * Generates the complete project cash flow
  */
 export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date): CashFlowEntry[] {
   const {
@@ -240,7 +241,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
     discount_rate
   } = inputs;
   
-  // Calcular componentes
+  // Calculate components
   const lessor_monthly_profit = calculateLessorMonthlyProfit(
     asset_cost_sans_iva, 
     inputs.lessor_profit_margin_pct, 
@@ -267,13 +268,13 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
   let cumulative_cash_flow = 0;
   let cumulative_npv = 0;
   
-  // Mes 0 - Inversión inicial
+  // Month 0 - Initial investment
   const initial_inflow = loan_amount + initial_admin_commission + inputs.delivery_costs;
-  const initial_outflow = asset_cost_sans_iva * 1.16; // Asumiendo 16% IVA
+  const initial_outflow = asset_cost_sans_iva * 1.16; // Assuming 16% VAT
   const initial_net_flow = initial_inflow - initial_outflow;
   
   cumulative_cash_flow += initial_net_flow;
-  cumulative_npv += initial_net_flow; // Mes 0 no se descuenta
+  cumulative_npv += initial_net_flow; // Month 0 is not discounted
   
   cash_flow.push({
     month: 0,
@@ -286,7 +287,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
     cumulative_npv
   });
   
-  // Meses 1 a lease_term_months
+  // Months 1 to lease_term_months
   for (let month = 1; month <= lease_term_months; month++) {
     const cash_inflow = total_monthly_rent;
     const cash_outflow = monthly_loan_payment + monthly_operational_expenses;
@@ -312,7 +313,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
     });
   }
   
-  // Mes final - Valor residual y devolución de depósito
+  // Final month - Residual value and deposit return
   const final_month = lease_term_months;
   const final_inflow = residual_value;
   const final_outflow = initial_security_deposit;
@@ -320,7 +321,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
   
   const final_present_value = final_net_flow / Math.pow(1 + monthly_discount_rate, final_month);
   
-  // Actualizar último mes con flujos finales
+  // Update last month with final flows
   if (cash_flow[final_month]) {
     cash_flow[final_month].cash_inflow += final_inflow;
     cash_flow[final_month].cash_outflow += final_outflow;
@@ -334,10 +335,10 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
 }
 
 /**
- * Calcula la TIR (IRR) usando el método de Newton-Raphson
+ * Calculates the IRR using the Newton-Raphson method
  */
 export function calculateIRR(cash_flows: number[]): number {
-  let rate = 0.1; // Estimación inicial del 10%
+  let rate = 0.1; // Initial estimate of 10%
   const precision = 0.000001;
   const max_iterations = 100;
   
@@ -351,7 +352,7 @@ export function calculateIRR(cash_flows: number[]): number {
     }
     
     if (Math.abs(npv) < precision) {
-      return rate * 100; // Convertir a porcentaje
+      return rate * 100; // Convert to percentage
     }
     
     const new_rate = rate - npv / npv_derivative;
@@ -363,11 +364,11 @@ export function calculateIRR(cash_flows: number[]): number {
     rate = new_rate;
   }
   
-  return rate * 100; // Si no converge, devolver la última estimación
+  return rate * 100; // If it doesn't converge, return the last estimate
 }
 
 /**
- * Calcula el período de recuperación en meses
+ * Calculates the payback period in months
  */
 export function calculatePaybackPeriod(cash_flows: CashFlowEntry[]): number {
   for (let i = 0; i < cash_flows.length; i++) {
@@ -375,16 +376,16 @@ export function calculatePaybackPeriod(cash_flows: CashFlowEntry[]): number {
       return i;
     }
   }
-  return cash_flows.length; // Si nunca se recupera
+  return cash_flows.length; // If it never recovers
 }
 
-// ============= FUNCIÓN PRINCIPAL =============
+// ============= MAIN FUNCTION =============
 
 /**
- * Función principal que ejecuta todos los cálculos
+ * Main function that executes all calculations
  */
 export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Date): LeasingResults {
-  // Módulo 1: Cálculos de renta
+  // Module 1: Rent calculations
   const lessor_monthly_profit = calculateLessorMonthlyProfit(
     inputs.asset_cost_sans_iva,
     inputs.lessor_profit_margin_pct,
@@ -406,7 +407,7 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
     inputs.fixed_monthly_fee
   );
   
-  // Módulo 2: Cálculos de pago inicial
+  // Module 2: Initial payment calculations
   const initial_admin_commission = calculateInitialAdminCommission(
     inputs.asset_cost_sans_iva,
     inputs.admin_commission_pct
@@ -423,7 +424,7 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
     inputs.delivery_costs
   );
   
-  // Módulo 3: Cálculos del préstamo
+  // Module 3: Loan calculations
   const monthly_loan_payment = calculateLoanMonthlyPayment(
     inputs.loan_amount,
     inputs.annual_interest_rate,
@@ -437,13 +438,13 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
     start_date
   );
   
-  // Módulo 4: Flujo de caja y KPIs
+  // Module 4: Cash flow and KPIs
   const cash_flow_schedule = generateProjectCashFlow(inputs, start_date);
   
   const net_monthly_cash_flow = total_monthly_rent_sans_iva - monthly_loan_payment - inputs.monthly_operational_expenses;
   const residual_value_amount = inputs.asset_cost_sans_iva * (inputs.residual_value_rate / 100);
   
-  // Extraer flujos de caja para cálculo de TIR
+  // Extract cash flows for IRR calculation
   const cash_flows_for_irr = cash_flow_schedule.map(entry => entry.net_cash_flow);
   const internal_rate_of_return = calculateIRR(cash_flows_for_irr);
   
@@ -453,43 +454,43 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
   const total_project_profit = cash_flow_schedule[cash_flow_schedule.length - 1].cumulative_cash_flow;
   
   return {
-    // Resultados para el Arrendatario
+    // Results for the Lessee
     lessor_monthly_profit,
     base_rent_amortization,
     base_rent_with_margin,
     total_monthly_rent_sans_iva,
     
-    // Resultados del Pago Inicial
+    // Initial Payment Results
     initial_admin_commission,
     initial_security_deposit,
     initial_payment_sans_iva,
     
-    // Resultados para el Operador
+    // Results for the Operator
     monthly_loan_payment,
     net_monthly_cash_flow,
     residual_value_amount,
     
-    // KPIs del Operador
+    // Operator KPIs
     net_present_value,
     internal_rate_of_return,
     payback_period_months,
     total_project_profit,
     
-    // Datos detallados
+    // Detailed data
     cash_flow_schedule,
     loan_amortization_schedule
   };
 }
 
-// ============= FUNCIONES DE UTILIDAD =============
+// ============= UTILITY FUNCTIONS =============
 
 export function formatCurrency(amount: number): string {
   if (typeof amount !== 'number' || isNaN(amount)) {
     return '$0.00';
   }
-  return new Intl.NumberFormat('es-MX', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
@@ -507,10 +508,10 @@ export function formatMonths(months: number): string {
   const remainingMonths = months % 12;
   
   if (years === 0) {
-    return `${months} meses`;
+    return `${months} months`;
   } else if (remainingMonths === 0) {
-    return `${years} ${years === 1 ? 'año' : 'años'}`;
+    return `${years} ${years === 1 ? 'year' : 'years'}`;
   } else {
-    return `${years} ${years === 1 ? 'año' : 'años'} y ${remainingMonths} meses`;
+    return `${years} ${years === 1 ? 'year' : 'years'} and ${remainingMonths} months`;
   }
 }

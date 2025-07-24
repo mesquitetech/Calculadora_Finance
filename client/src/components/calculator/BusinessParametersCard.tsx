@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -8,19 +9,19 @@ import { Badge } from "@/components/ui/badge";
 import { Settings, DollarSign, Percent, Calendar, Truck } from "lucide-react";
 
 export interface BusinessParameters {
-  // Variables básicas existentes
+  // Existing basic variables
   assetCost: number;
   otherExpenses: number;
   monthlyExpenses: number;
   
-  // Nuevas variables para arrendamiento puro
-  lessorProfitMarginPct: number; // Margen de ganancia del operador (%)
-  fixedMonthlyFee: number; // Cuota administrativa fija
-  adminCommissionPct: number; // Comisión por apertura (%)
-  securityDepositMonths: number; // Meses de depósito en garantía
-  deliveryCosts: number; // Costos de trámites y entrega
-  residualValueRate: number; // Valor residual (%)
-  discountRate: number; // Tasa de descuento para NPV (%)
+  // New variables for pure leasing
+  lessorProfitMarginPct: number; // Operator profit margin (%)
+  fixedMonthlyFee: number; // Fixed administrative fee
+  adminCommissionPct: number; // Opening commission (%)
+  securityDepositMonths: number; // Security deposit months
+  deliveryCosts: number; // Processing and delivery costs
+  residualValueRate: number; // Residual value (%)
+  discountRate: number; // Discount rate for NPV (%)
 }
 
 interface BusinessParametersCardProps {
@@ -90,20 +91,20 @@ export function BusinessParametersCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5" />
-          Parámetros de Arrendamiento
+          Leasing Parameters
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         
-        {/* Sección: Información del Activo */}
+        {/* Section: Asset Information */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-blue-600" />
-            <h3 className="font-semibold text-sm">Información del Activo</h3>
+            <h3 className="font-semibold text-sm">Asset Information</h3>
           </div>
           
           <div className="form-group">
-            <Label htmlFor="asset-cost">Costo del Activo (sin IVA)</Label>
+            <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
             <CurrencyInput
               id="asset-cost"
               name="asset-cost"
@@ -115,13 +116,13 @@ export function BusinessParametersCard({
               className={assetCostError ? "border-red-500 focus-visible:ring-red-500" : ""}
             />
             {assetCostError && (
-              <p className="text-xs text-red-500 mt-1">El costo del activo no puede ser menor al monto del préstamo</p>
+              <p className="text-xs text-red-500 mt-1">Asset cost cannot be less than loan amount</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="form-group">
-              <Label htmlFor="residual-value">Valor Residual (%)</Label>
+              <Label htmlFor="residual-value">Residual Value (%)</Label>
               <div className="relative">
                 <Input
                   id="residual-value"
@@ -139,7 +140,7 @@ export function BusinessParametersCard({
             </div>
             
             <div className="form-group">
-              <Label htmlFor="discount-rate">Tasa de Descuento (%)</Label>
+              <Label htmlFor="discount-rate">Discount Rate (%)</Label>
               <div className="relative">
                 <Input
                   id="discount-rate"
@@ -160,15 +161,15 @@ export function BusinessParametersCard({
 
         <Separator />
 
-        {/* Sección: Estructura de Rentabilidad */}
+        {/* Section: Profitability Structure */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Percent className="h-4 w-4 text-green-600" />
-            <h3 className="font-semibold text-sm">Estructura de Rentabilidad</h3>
+            <h3 className="font-semibold text-sm">Profitability Structure</h3>
           </div>
           
           <div className="form-group">
-            <Label htmlFor="lessor-margin">Margen de Ganancia (%)</Label>
+            <Label htmlFor="lessor-margin">Profit Margin (%)</Label>
             <div className="relative">
               <Input
                 id="lessor-margin"
@@ -186,7 +187,7 @@ export function BusinessParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="fixed-fee">Cuota Administrativa Mensual</Label>
+            <Label htmlFor="fixed-fee">Monthly Administrative Fee</Label>
             <CurrencyInput
               id="fixed-fee"
               name="fixed-fee"
@@ -201,16 +202,16 @@ export function BusinessParametersCard({
 
         <Separator />
 
-        {/* Sección: Pago Inicial */}
+        {/* Section: Initial Payment */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-purple-600" />
-            <h3 className="font-semibold text-sm">Configuración del Pago Inicial</h3>
+            <h3 className="font-semibold text-sm">Initial Payment Configuration</h3>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
             <div className="form-group">
-              <Label htmlFor="admin-commission">Comisión Apertura (%)</Label>
+              <Label htmlFor="admin-commission">Opening Commission (%)</Label>
               <div className="relative">
                 <Input
                   id="admin-commission"
@@ -228,7 +229,7 @@ export function BusinessParametersCard({
             </div>
             
             <div className="form-group">
-              <Label htmlFor="security-deposit">Depósito (meses)</Label>
+              <Label htmlFor="security-deposit">Deposit (months)</Label>
               <Input
                 id="security-deposit"
                 type="number"
@@ -243,7 +244,7 @@ export function BusinessParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="delivery-costs">Costos de Trámites y Entrega</Label>
+            <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
             <CurrencyInput
               id="delivery-costs"
               name="delivery-costs"
@@ -258,15 +259,15 @@ export function BusinessParametersCard({
 
         <Separator />
 
-        {/* Sección: Gastos Operativos */}
+        {/* Section: Operating Expenses */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Truck className="h-4 w-4 text-orange-600" />
-            <h3 className="font-semibold text-sm">Gastos Operativos</h3>
+            <h3 className="font-semibold text-sm">Operating Expenses</h3>
           </div>
           
           <div className="form-group">
-            <Label htmlFor="other-expenses">Otros Gastos Iniciales</Label>
+            <Label htmlFor="other-expenses">Other Initial Expenses</Label>
             <CurrencyInput
               id="other-expenses"
               name="other-expenses"
@@ -276,11 +277,11 @@ export function BusinessParametersCard({
               max={1000000}
               disabled={isCalculating}
             />
-            <p className="text-xs text-muted-foreground mt-1">Gastos únicos adicionales (configuración, etc.)</p>
+            <p className="text-xs text-muted-foreground mt-1">Additional one-time expenses (setup, etc.)</p>
           </div>
 
           <div className="form-group">
-            <Label htmlFor="monthly-expenses">Gastos Mensuales</Label>
+            <Label htmlFor="monthly-expenses">Monthly Expenses</Label>
             <CurrencyInput
               id="monthly-expenses"
               name="monthly-expenses"
@@ -290,14 +291,14 @@ export function BusinessParametersCard({
               max={1000000}
               disabled={isCalculating}
             />
-            <p className="text-xs text-muted-foreground mt-1">Seguros, mantenimiento, gastos operativos recurrentes</p>
+            <p className="text-xs text-muted-foreground mt-1">Insurance, maintenance, recurring operating expenses</p>
           </div>
         </div>
 
-        {/* Indicador de Configuración */}
+        {/* Configuration Indicator */}
         <div className="pt-2">
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-            Configuración de Arrendamiento Puro Completa
+            Pure Leasing Configuration Complete
           </Badge>
         </div>
       </CardContent>
