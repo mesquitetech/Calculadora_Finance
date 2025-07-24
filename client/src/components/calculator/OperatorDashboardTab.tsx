@@ -51,7 +51,7 @@ export function OperatorDashboardTab({
 }: OperatorDashboardTabProps) {
   const results = calculateLeasingFinancials(leasingInputs, startDate);
 
-  // Preparar datos para gráficos
+  // Prepare data for charts
   const cashFlowChartData = results.cash_flow_schedule.map(entry => ({
     month: entry.month,
     cashFlow: entry.net_cash_flow,
@@ -59,7 +59,7 @@ export function OperatorDashboardTab({
     npv: entry.cumulative_npv
   }));
 
-  // Datos anualizados para mejor visualización
+  // Annualized data for better visualization
   const annualizedData = [];
   for (let year = 1; year <= Math.ceil(leasingInputs.lease_term_months / 12); year++) {
     const startMonth = (year - 1) * 12;
@@ -70,14 +70,14 @@ export function OperatorDashboardTab({
     const avgMonthlyFlow = totalCashFlow / (endMonth - startMonth);
 
     annualizedData.push({
-      year: `Año ${year}`,
+      year: `Year ${year}`,
       monthlyAverage: avgMonthlyFlow,
       totalFlow: totalCashFlow,
       cumulativeNPV: yearData[yearData.length - 1]?.cumulative_npv || 0
     });
   }
 
-  // Evaluación de la viabilidad del proyecto
+  // Project viability assessment
   const isProjectViable = results.net_present_value > 0 && results.internal_rate_of_return > leasingInputs.discount_rate;
   const profitabilityScore = Math.min(100, Math.max(0, 
     (results.net_present_value / leasingInputs.asset_cost_sans_iva) * 100 + 50
@@ -97,7 +97,7 @@ export function OperatorDashboardTab({
         </div>
         <Button onClick={onExportReport} className="flex items-center gap-2">
           <Download className="h-4 w-4" />
-          Exportar Análisis
+          Export Analysis
         </Button>
       </div>
 
@@ -139,7 +139,7 @@ export function OperatorDashboardTab({
             </div>
             <div className="mt-2">
               <p className="text-xs text-muted-foreground">
-                Meta: {formatPercentage(leasingInputs.discount_rate)}
+                Target: {formatPercentage(leasingInputs.discount_rate)}
               </p>
             </div>
           </CardContent>
@@ -169,7 +169,7 @@ export function OperatorDashboardTab({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Ganancia Total</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Profit</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {formatCurrency(results.total_project_profit)}
                 </p>
@@ -178,7 +178,7 @@ export function OperatorDashboardTab({
             </div>
             <div className="mt-2">
               <p className="text-xs text-muted-foreground">
-                Margen: {formatPercentage((results.total_project_profit / leasingInputs.asset_cost_sans_iva) * 100)}
+                Margin: {formatPercentage((results.total_project_profit / leasingInputs.asset_cost_sans_iva) * 100)}
               </p>
             </div>
           </CardContent>
@@ -190,7 +190,7 @@ export function OperatorDashboardTab({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Evaluación de Viabilidad del Proyecto
+            Project Viability Assessment
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -203,18 +203,18 @@ export function OperatorDashboardTab({
               )}
               <div>
                 <h3 className={`text-lg font-semibold ${isProjectViable ? 'text-green-700' : 'text-red-700'}`}>
-                  {isProjectViable ? 'Proyecto Viable' : 'Proyecto de Alto Riesgo'}
+                  {isProjectViable ? 'Viable Project' : 'High Risk Project'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {isProjectViable 
-                    ? 'El proyecto cumple con los criterios de rentabilidad establecidos'
-                    : 'El proyecto no cumple con los criterios mínimos de rentabilidad'
+                    ? 'The project meets the established profitability criteria'
+                    : 'The project does not meet minimum profitability criteria'
                   }
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Puntuación de Rentabilidad</p>
+              <p className="text-sm text-muted-foreground">Profitability Score</p>
               <p className="text-2xl font-bold">{profitabilityScore.toFixed(0)}/100</p>
               <Progress value={profitabilityScore} className="w-24 h-2 mt-1" />
             </div>
@@ -225,19 +225,19 @@ export function OperatorDashboardTab({
               <div className="text-lg font-semibold text-blue-600">
                 {formatCurrency(results.net_monthly_cash_flow)}
               </div>
-              <div className="text-sm text-muted-foreground">Flujo de Caja Mensual Neto</div>
+              <div className="text-sm text-muted-foreground">Net Monthly Cash Flow</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-green-600">
                 {formatCurrency(results.residual_value_amount)}
               </div>
-              <div className="text-sm text-muted-foreground">Valor Residual Esperado</div>
+              <div className="text-sm text-muted-foreground">Expected Residual Value</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-purple-600">
                 {formatCurrency(results.monthly_loan_payment)}
               </div>
-              <div className="text-sm text-muted-foreground">Pago Mensual a Inversionistas</div>
+              <div className="text-sm text-muted-foreground">Monthly Payment to Investors</div>
             </div>
           </div>
         </CardContent>
@@ -247,7 +247,7 @@ export function OperatorDashboardTab({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Flujo de Caja Acumulado</CardTitle>
+            <CardTitle>Cumulative Cash Flow</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -257,7 +257,7 @@ export function OperatorDashboardTab({
                 <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(month) => `Mes ${month}`}
+                  labelFormatter={(month) => `Month ${month}`}
                 />
                 <Area 
                   type="monotone" 
@@ -265,7 +265,7 @@ export function OperatorDashboardTab({
                   stroke="#2563eb" 
                   fill="#dbeafe" 
                   fillOpacity={0.3}
-                  name="Flujo Acumulado"
+                  name="Cumulative Flow"
                 />
                 <Line 
                   type="monotone" 
@@ -273,7 +273,7 @@ export function OperatorDashboardTab({
                   stroke="#059669" 
                   strokeWidth={2}
                   dot={false}
-                  name="Flujo Mensual"
+                  name="Monthly Flow"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -282,7 +282,7 @@ export function OperatorDashboardTab({
 
         <Card>
           <CardHeader>
-            <CardTitle>Valor Presente Neto Acumulado</CardTitle>
+            <CardTitle>Cumulative Net Present Value</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -292,7 +292,7 @@ export function OperatorDashboardTab({
                 <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(month) => `Mes ${month}`}
+                  labelFormatter={(month) => `Month ${month}`}
                 />
                 <Line 
                   type="monotone" 
@@ -300,7 +300,7 @@ export function OperatorDashboardTab({
                   stroke="#dc2626" 
                   strokeWidth={3}
                   dot={false}
-                  name="NPV Acumulado"
+                  name="Cumulative NPV"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -311,7 +311,7 @@ export function OperatorDashboardTab({
       {/* Análisis por Año */}
       <Card>
         <CardHeader>
-          <CardTitle>Proyección Anual del Flujo de Caja</CardTitle>
+          <CardTitle>Annual Cash Flow Projection</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -326,13 +326,13 @@ export function OperatorDashboardTab({
               <Bar 
                 dataKey="totalFlow" 
                 fill="#3b82f6" 
-                name="Flujo Anual Total"
+                name="Total Annual Flow"
                 radius={[4, 4, 0, 0]}
               />
               <Bar 
                 dataKey="monthlyAverage" 
                 fill="#10b981" 
-                name="Promedio Mensual"
+                name="Monthly Average"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -343,41 +343,41 @@ export function OperatorDashboardTab({
       {/* Resumen Financiero Detallado */}
       <Card>
         <CardHeader>
-          <CardTitle>Desglose Financiero del Proyecto</CardTitle>
+          <CardTitle>Project Financial Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="font-semibold text-sm flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-green-600" />
-                Ingresos del Proyecto
+                Project Income
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Renta Mensual (sin IVA):</span>
+                  <span>Monthly Rent (without VAT):</span>
                   <span className="font-medium">{formatCurrency(results.total_monthly_rent_sans_iva)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Ingresos Totales por Rentas:</span>
+                  <span>Total Rental Income:</span>
                   <span className="font-medium">
                     {formatCurrency(results.total_monthly_rent_sans_iva * leasingInputs.lease_term_months)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Comisión de Apertura:</span>
+                  <span>Opening Commission:</span>
                   <span className="font-medium">{formatCurrency(results.initial_admin_commission)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Costos de Entrega:</span>
+                  <span>Delivery Costs:</span>
                   <span className="font-medium">{formatCurrency(leasingInputs.delivery_costs)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Valor Residual:</span>
+                  <span>Residual Value:</span>
                   <span className="font-medium">{formatCurrency(results.residual_value_amount)}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold">
-                    <span>Total Ingresos:</span>
+                    <span>Total Income:</span>
                     <span className="text-green-600">
                       {formatCurrency(
                         results.total_monthly_rent_sans_iva * leasingInputs.lease_term_months +
@@ -394,34 +394,34 @@ export function OperatorDashboardTab({
             <div className="space-y-4">
               <h4 className="font-semibold text-sm flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-red-600" />
-                Costos del Proyecto
+                Project Costs
               </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Costo del Activo (con IVA):</span>
+                  <span>Asset Cost (with VAT):</span>
                   <span className="font-medium">
                     {formatCurrency(leasingInputs.asset_cost_sans_iva * 1.16)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Pagos Totales del Préstamo:</span>
+                  <span>Total Loan Payments:</span>
                   <span className="font-medium">
                     {formatCurrency(results.monthly_loan_payment * leasingInputs.lease_term_months)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Gastos Operativos Totales:</span>
+                  <span>Total Operating Expenses:</span>
                   <span className="font-medium">
                     {formatCurrency(leasingInputs.monthly_operational_expenses * leasingInputs.lease_term_months)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Devolución de Depósito:</span>
+                  <span>Deposit Return:</span>
                   <span className="font-medium">{formatCurrency(results.initial_security_deposit)}</span>
                 </div>
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold">
-                    <span>Total Costos:</span>
+                    <span>Total Costs:</span>
                     <span className="text-red-600">
                       {formatCurrency(
                         leasingInputs.asset_cost_sans_iva * 1.16 +

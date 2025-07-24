@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { CalculatorIcon, Wand2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalculatorIcon, Wand2, Calculator, Users, TrendingUp } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
@@ -358,86 +359,128 @@ export default function Home() {
         return (
           <div className="px-4 sm:px-6">
             <div className="max-w-7xl mx-auto">
-              {/* Desktop Layout: 3 columns with improved spacing */}
-              <div className="hidden xl:grid xl:grid-cols-3 gap-6 lg:gap-8">
-                <div className="space-y-1">
-                  <LoanParametersCard
-                    loanParams={loanParams}
-                    setLoanParams={setLoanParams}
-                    isCalculating={calculateMutation.isPending}
-                    onValidationChange={handleValidationChange}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <InvestorsCard
-                    investors={investors}
-                    setInvestors={setInvestors}
-                    totalRequired={loanParams.totalAmount}
-                    isCalculating={calculateMutation.isPending}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <BusinessParametersCard
-                    businessParams={businessParams}
-                    setBusinessParams={setBusinessParams}
-                    isCalculating={calculateMutation.isPending}
-                    loanAmount={loanParams.totalAmount}
-                  />
-                </div>
+              {/* Desktop Layout: 3 columns with proper spacing and card elevation */}
+              <div className="hidden xl:grid xl:grid-cols-3 gap-8">
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
+                  <CardContent className="p-6">
+                    <LoanParametersCard
+                      loanParams={loanParams}
+                      setLoanParams={setLoanParams}
+                      isCalculating={calculateMutation.isPending}
+                      onValidationChange={handleValidationChange}
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
+                  <CardContent className="p-6">
+                    <InvestorsCard
+                      investors={investors}
+                      setInvestors={setInvestors}
+                      totalRequired={loanParams.totalAmount}
+                      isCalculating={calculateMutation.isPending}
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50/30">
+                  <CardContent className="p-6">
+                    <BusinessParametersCard
+                      businessParams={businessParams}
+                      setBusinessParams={setBusinessParams}
+                      isCalculating={calculateMutation.isPending}
+                      loanAmount={loanParams.totalAmount}
+                    />
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Tablet Layout: 2 columns with better balance */}
-              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-6 lg:gap-8">
-                <div className="space-y-6">
-                  <LoanParametersCard
-                    loanParams={loanParams}
-                    setLoanParams={setLoanParams}
-                    isCalculating={calculateMutation.isPending}
-                    onValidationChange={handleValidationChange}
-                  />
-                  <BusinessParametersCard
-                    businessParams={businessParams}
-                    setBusinessParams={setBusinessParams}
-                    isCalculating={calculateMutation.isPending}
-                    loanAmount={loanParams.totalAmount}
-                  />
+              {/* Tablet Layout: 2 columns with enhanced cards */}
+              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-8">
+                <div className="space-y-8">
+                  <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
+                    <CardContent className="p-6">
+                      <LoanParametersCard
+                        loanParams={loanParams}
+                        setLoanParams={setLoanParams}
+                        isCalculating={calculateMutation.isPending}
+                        onValidationChange={handleValidationChange}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50/30">
+                    <CardContent className="p-6">
+                      <BusinessParametersCard
+                        businessParams={businessParams}
+                        setBusinessParams={setBusinessParams}
+                        isCalculating={calculateMutation.isPending}
+                        loanAmount={loanParams.totalAmount}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className="space-y-1">
-                  <InvestorsCard
-                    investors={investors}
-                    setInvestors={setInvestors}
-                    totalRequired={loanParams.totalAmount}
-                    isCalculating={calculateMutation.isPending}
-                  />
-                </div>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
+                  <CardContent className="p-6">
+                    <InvestorsCard
+                      investors={investors}
+                      setInvestors={setInvestors}
+                      totalRequired={loanParams.totalAmount}
+                      isCalculating={calculateMutation.isPending}
+                    />
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Mobile Layout: 1 column with consistent spacing */}
-              <div className="lg:hidden space-y-6">
-                <div className="bg-white rounded-lg shadow-sm p-1">
-                  <LoanParametersCard
-                    loanParams={loanParams}
-                    setLoanParams={setLoanParams}
-                    isCalculating={calculateMutation.isPending}
-                    onValidationChange={handleValidationChange}
-                  />
-                </div>
-                <div className="bg-white rounded-lg shadow-sm p-1">
-                  <InvestorsCard
-                    investors={investors}
-                    setInvestors={setInvestors}
-                    totalRequired={loanParams.totalAmount}
-                    isCalculating={calculateMutation.isPending}
-                  />
-                </div>
-                <div className="bg-white rounded-lg shadow-sm p-1">
-                  <BusinessParametersCard
-                    businessParams={businessParams}
-                    setBusinessParams={setBusinessParams}
-                    isCalculating={calculateMutation.isPending}
-                    loanAmount={loanParams.totalAmount}
-                  />
-                </div>
+              {/* Mobile Layout: 1 column with enhanced visual design */}
+              <div className="lg:hidden space-y-8">
+                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5" />
+                      Loan Parameters
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <LoanParametersCard
+                      loanParams={loanParams}
+                      setLoanParams={setLoanParams}
+                      isCalculating={calculateMutation.isPending}
+                      onValidationChange={handleValidationChange}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-blue-50/30 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Investors
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <InvestorsCard
+                      investors={investors}
+                      setInvestors={setInvestors}
+                      totalRequired={loanParams.totalAmount}
+                      isCalculating={calculateMutation.isPending}
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-purple-50/30 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Business Parameters
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <BusinessParametersCard
+                      businessParams={businessParams}
+                      setBusinessParams={setBusinessParams}
+                      isCalculating={calculateMutation.isPending}
+                      loanAmount={loanParams.totalAmount}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>

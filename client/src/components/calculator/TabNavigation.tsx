@@ -159,7 +159,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Resumen
+              Summary
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('cash-flow')}
@@ -169,7 +169,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Flujo de Caja
+              Cash Flow
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('income-statement')}
@@ -179,7 +179,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Estado de Resultados
+              Income Statement
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('metrics-explained')}
@@ -189,7 +189,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Métricas Explicadas
+              Metrics Explained
             </button>
           </div>
         </div>
