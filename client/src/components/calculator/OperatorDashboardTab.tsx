@@ -50,7 +50,7 @@ export function OperatorDashboardTab({
   onExportReport
 }: OperatorDashboardTabProps) {
   const results = calculateLeasingFinancials(leasingInputs, startDate);
-  
+
   // Preparar datos para gráficos
   const cashFlowChartData = results.cash_flow_schedule.map(entry => ({
     month: entry.month,
@@ -64,11 +64,11 @@ export function OperatorDashboardTab({
   for (let year = 1; year <= Math.ceil(leasingInputs.lease_term_months / 12); year++) {
     const startMonth = (year - 1) * 12;
     const endMonth = Math.min(year * 12, leasingInputs.lease_term_months);
-    
+
     const yearData = results.cash_flow_schedule.slice(startMonth, endMonth + 1);
     const totalCashFlow = yearData.reduce((sum, entry) => sum + entry.net_cash_flow, 0);
     const avgMonthlyFlow = totalCashFlow / (endMonth - startMonth);
-    
+
     annualizedData.push({
       year: `Año ${year}`,
       monthlyAverage: avgMonthlyFlow,
@@ -88,11 +88,11 @@ export function OperatorDashboardTab({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold flex items-center gap-2">
-            <Building className="h-8 w-8 text-blue-600" />
-            Panel de Control del Operador
+            <BarChart3 className="h-8 w-8 text-blue-600" />
+            Operator Control Panel
           </h2>
           <p className="text-muted-foreground mt-1">
-            Análisis de rentabilidad y viabilidad del proyecto de arrendamiento
+            Leasing project profitability and viability analysis
           </p>
         </div>
         <Button onClick={onExportReport} className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export function OperatorDashboardTab({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Valor Presente Neto</p>
+                <p className="text-sm font-medium text-muted-foreground">Net Present Value</p>
                 <p className={`text-2xl font-bold ${results.net_present_value > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(results.net_present_value)}
                 </p>
@@ -120,7 +120,7 @@ export function OperatorDashboardTab({
             </div>
             <div className="mt-2">
               <Badge variant={results.net_present_value > 0 ? "default" : "destructive"} className="text-xs">
-                {results.net_present_value > 0 ? "RENTABLE" : "NO RENTABLE"}
+                {results.net_present_value > 0 ? "PROFITABLE" : "NOT PROFITABLE"}
               </Badge>
             </div>
           </CardContent>
@@ -130,7 +130,7 @@ export function OperatorDashboardTab({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Tasa Interna de Retorno</p>
+                <p className="text-sm font-medium text-muted-foreground">Internal Rate of Return</p>
                 <p className={`text-2xl font-bold ${results.internal_rate_of_return > leasingInputs.discount_rate ? 'text-green-600' : 'text-orange-600'}`}>
                   {formatPercentage(results.internal_rate_of_return)}
                 </p>
@@ -149,7 +149,7 @@ export function OperatorDashboardTab({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Período de Recuperación</p>
+                <p className="text-sm font-medium text-muted-foreground">Payback Period</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {formatMonths(results.payback_period_months)}
                 </p>

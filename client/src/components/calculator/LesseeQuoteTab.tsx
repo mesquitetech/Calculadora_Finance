@@ -31,21 +31,20 @@ export function LesseeQuoteTab({
   startDate,
   onExportQuote
 }: LesseeQuoteTabProps) {
-  // Validate inputs before calculation
+  // Validate inputs before calculation - ensure we have meaningful defaults
   const validatedInputs = {
-    ...leasingInputs,
-    asset_cost_sans_iva: leasingInputs.asset_cost_sans_iva || 0,
-    lease_term_months: leasingInputs.lease_term_months || 0,
-    lessor_profit_margin_pct: leasingInputs.lessor_profit_margin_pct || 0,
-    fixed_monthly_fee: leasingInputs.fixed_monthly_fee || 0,
-    admin_commission_pct: leasingInputs.admin_commission_pct || 0,
-    security_deposit_months: leasingInputs.security_deposit_months || 0,
-    delivery_costs: leasingInputs.delivery_costs || 0,
-    loan_amount: leasingInputs.loan_amount || 0,
-    annual_interest_rate: leasingInputs.annual_interest_rate || 0,
-    monthly_operational_expenses: leasingInputs.monthly_operational_expenses || 0,
-    residual_value_rate: leasingInputs.residual_value_rate || 0,
-    discount_rate: leasingInputs.discount_rate || 0,
+    asset_cost_sans_iva: Number(leasingInputs.asset_cost_sans_iva) || 100000,
+    lease_term_months: Number(leasingInputs.lease_term_months) || 36,
+    lessor_profit_margin_pct: Number(leasingInputs.lessor_profit_margin_pct) || 20,
+    fixed_monthly_fee: Number(leasingInputs.fixed_monthly_fee) || 194,
+    admin_commission_pct: Number(leasingInputs.admin_commission_pct) || 1,
+    security_deposit_months: Number(leasingInputs.security_deposit_months) || 1,
+    delivery_costs: Number(leasingInputs.delivery_costs) || 6320,
+    loan_amount: Number(leasingInputs.loan_amount) || 100000,
+    annual_interest_rate: Number(leasingInputs.annual_interest_rate) || 10,
+    monthly_operational_expenses: Number(leasingInputs.monthly_operational_expenses) || 0,
+    residual_value_rate: Number(leasingInputs.residual_value_rate) || 15,
+    discount_rate: Number(leasingInputs.discount_rate) || 4,
   };
 
   const results = calculateLeasingFinancials(validatedInputs, startDate);

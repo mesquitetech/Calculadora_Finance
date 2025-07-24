@@ -358,9 +358,9 @@ export default function Home() {
         return (
           <div className="px-4 sm:px-6">
             <div className="max-w-7xl mx-auto">
-              {/* Desktop Layout: 3 columns */}
-              <div className="hidden xl:grid xl:grid-cols-3 gap-8">
-                <div>
+              {/* Desktop Layout: 3 columns with improved spacing */}
+              <div className="hidden xl:grid xl:grid-cols-3 gap-6 lg:gap-8">
+                <div className="space-y-1">
                   <LoanParametersCard
                     loanParams={loanParams}
                     setLoanParams={setLoanParams}
@@ -368,7 +368,7 @@ export default function Home() {
                     onValidationChange={handleValidationChange}
                   />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <InvestorsCard
                     investors={investors}
                     setInvestors={setInvestors}
@@ -376,7 +376,7 @@ export default function Home() {
                     isCalculating={calculateMutation.isPending}
                   />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <BusinessParametersCard
                     businessParams={businessParams}
                     setBusinessParams={setBusinessParams}
@@ -386,9 +386,9 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Tablet Layout: 2 columns */}
-              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-8">
-                <div className="space-y-8">
+              {/* Tablet Layout: 2 columns with better balance */}
+              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-6 lg:gap-8">
+                <div className="space-y-6">
                   <LoanParametersCard
                     loanParams={loanParams}
                     setLoanParams={setLoanParams}
@@ -402,7 +402,7 @@ export default function Home() {
                     loanAmount={loanParams.totalAmount}
                   />
                 </div>
-                <div>
+                <div className="space-y-1">
                   <InvestorsCard
                     investors={investors}
                     setInvestors={setInvestors}
@@ -412,26 +412,32 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Mobile Layout: 1 column */}
-              <div className="lg:hidden space-y-8">
-                <LoanParametersCard
-                  loanParams={loanParams}
-                  setLoanParams={setLoanParams}
-                  isCalculating={calculateMutation.isPending}
-                  onValidationChange={handleValidationChange}
-                />
-                <InvestorsCard
-                  investors={investors}
-                  setInvestors={setInvestors}
-                  totalRequired={loanParams.totalAmount}
-                  isCalculating={calculateMutation.isPending}
-                />
-                <BusinessParametersCard
-                  businessParams={businessParams}
-                  setBusinessParams={setBusinessParams}
-                  isCalculating={calculateMutation.isPending}
-                  loanAmount={loanParams.totalAmount}
-                />
+              {/* Mobile Layout: 1 column with consistent spacing */}
+              <div className="lg:hidden space-y-6">
+                <div className="bg-white rounded-lg shadow-sm p-1">
+                  <LoanParametersCard
+                    loanParams={loanParams}
+                    setLoanParams={setLoanParams}
+                    isCalculating={calculateMutation.isPending}
+                    onValidationChange={handleValidationChange}
+                  />
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-1">
+                  <InvestorsCard
+                    investors={investors}
+                    setInvestors={setInvestors}
+                    totalRequired={loanParams.totalAmount}
+                    isCalculating={calculateMutation.isPending}
+                  />
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-1">
+                  <BusinessParametersCard
+                    businessParams={businessParams}
+                    setBusinessParams={setBusinessParams}
+                    isCalculating={calculateMutation.isPending}
+                    loanAmount={loanParams.totalAmount}
+                  />
+                </div>
               </div>
             </div>
           </div>
