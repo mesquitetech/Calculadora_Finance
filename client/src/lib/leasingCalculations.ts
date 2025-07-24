@@ -484,6 +484,9 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
 // ============= FUNCIONES DE UTILIDAD =============
 
 export function formatCurrency(amount: number): string {
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return '$0.00';
+  }
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
@@ -493,6 +496,9 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatPercentage(rate: number): string {
+  if (typeof rate !== 'number' || isNaN(rate)) {
+    return '0.00%';
+  }
   return `${rate.toFixed(2)}%`;
 }
 
