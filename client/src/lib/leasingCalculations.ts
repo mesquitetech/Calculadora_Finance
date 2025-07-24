@@ -485,7 +485,7 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
 // ============= UTILITY FUNCTIONS =============
 
 export function formatCurrency(amount: number): string {
-  if (typeof amount !== 'number' || isNaN(amount)) {
+  if (typeof amount !== 'number' || isNaN(amount) || amount === null || amount === undefined) {
     return '$0.00';
   }
   return new Intl.NumberFormat('en-US', {

@@ -356,25 +356,76 @@ export default function Home() {
     switch (activeMainTab) {
       case 'input':
         return (
-          <div className="px-6">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              <div>
+          <div className="px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Desktop Layout: 3 columns */}
+              <div className="hidden xl:grid xl:grid-cols-3 gap-8">
+                <div>
+                  <LoanParametersCard
+                    loanParams={loanParams}
+                    setLoanParams={setLoanParams}
+                    isCalculating={calculateMutation.isPending}
+                    onValidationChange={handleValidationChange}
+                  />
+                </div>
+                <div>
+                  <InvestorsCard
+                    investors={investors}
+                    setInvestors={setInvestors}
+                    totalRequired={loanParams.totalAmount}
+                    isCalculating={calculateMutation.isPending}
+                  />
+                </div>
+                <div>
+                  <BusinessParametersCard
+                    businessParams={businessParams}
+                    setBusinessParams={setBusinessParams}
+                    isCalculating={calculateMutation.isPending}
+                    loanAmount={loanParams.totalAmount}
+                  />
+                </div>
+              </div>
+
+              {/* Tablet Layout: 2 columns */}
+              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-8">
+                <div className="space-y-8">
+                  <LoanParametersCard
+                    loanParams={loanParams}
+                    setLoanParams={setLoanParams}
+                    isCalculating={calculateMutation.isPending}
+                    onValidationChange={handleValidationChange}
+                  />
+                  <BusinessParametersCard
+                    businessParams={businessParams}
+                    setBusinessParams={setBusinessParams}
+                    isCalculating={calculateMutation.isPending}
+                    loanAmount={loanParams.totalAmount}
+                  />
+                </div>
+                <div>
+                  <InvestorsCard
+                    investors={investors}
+                    setInvestors={setInvestors}
+                    totalRequired={loanParams.totalAmount}
+                    isCalculating={calculateMutation.isPending}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Layout: 1 column */}
+              <div className="lg:hidden space-y-8">
                 <LoanParametersCard
                   loanParams={loanParams}
                   setLoanParams={setLoanParams}
                   isCalculating={calculateMutation.isPending}
                   onValidationChange={handleValidationChange}
                 />
-              </div>
-              <div>
                 <InvestorsCard
                   investors={investors}
                   setInvestors={setInvestors}
                   totalRequired={loanParams.totalAmount}
                   isCalculating={calculateMutation.isPending}
                 />
-              </div>
-              <div>
                 <BusinessParametersCard
                   businessParams={businessParams}
                   setBusinessParams={setBusinessParams}
@@ -582,41 +633,43 @@ export default function Home() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
-            {activeMainTab === 'renter-operator' && (
-              <RenterConfigModal
-                config={renterConfig}
-                onConfigChange={setRenterConfig}
-              />
-            )}
-          </div>
-          <div className="flex gap-3">
-            {activeMainTab === 'input' && (
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex items-center space-x-4">
+              {activeMainTab === 'renter-operator' && (
+                <RenterConfigModal
+                  config={renterConfig}
+                  onConfigChange={setRenterConfig}
+                />
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {activeMainTab === 'input' && (
+                <Button
+                  onClick={handleCalculate}
+                  disabled={!inputsValid || calculateMutation.isPending}
+                  className="px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  <CalculatorIcon className="h-5 w-5 mr-2" />
+                  {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
+                </Button>
+              )}
               <Button
-                onClick={handleCalculate}
-                disabled={!inputsValid || calculateMutation.isPending}
-                className="px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                variant="outline"
+                onClick={openWizard}
+                className="px-6 border-2 hover:bg-blue-50"
               >
-                <CalculatorIcon className="h-5 w-5 mr-2" />
-                {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
+                <Wand2 className="h-5 w-5 mr-2" />
+                Setup Wizard
               </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={openWizard}
-              className="px-6 border-2 hover:bg-blue-50"
-            >
-              <Wand2 className="h-5 w-5 mr-2" />
-              Setup Wizard
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => window.location.href = "/saved-calculations"}
-              className="border-2 hover:bg-purple-50"
-            >
-              View Saved Calculations
-            </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = "/saved-calculations"}
+                className="border-2 hover:bg-purple-50"
+              >
+                View Saved Calculations
+              </Button>
+            </div>
           </div>
         </div>
 

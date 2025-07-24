@@ -31,14 +31,31 @@ export function LesseeQuoteTab({
   startDate,
   onExportQuote
 }: LesseeQuoteTabProps) {
-  const results = calculateLeasingFinancials(leasingInputs, startDate);
+  // Validate inputs before calculation
+  const validatedInputs = {
+    ...leasingInputs,
+    asset_cost_sans_iva: leasingInputs.asset_cost_sans_iva || 0,
+    lease_term_months: leasingInputs.lease_term_months || 0,
+    lessor_profit_margin_pct: leasingInputs.lessor_profit_margin_pct || 0,
+    fixed_monthly_fee: leasingInputs.fixed_monthly_fee || 0,
+    admin_commission_pct: leasingInputs.admin_commission_pct || 0,
+    security_deposit_months: leasingInputs.security_deposit_months || 0,
+    delivery_costs: leasingInputs.delivery_costs || 0,
+    loan_amount: leasingInputs.loan_amount || 0,
+    annual_interest_rate: leasingInputs.annual_interest_rate || 0,
+    monthly_operational_expenses: leasingInputs.monthly_operational_expenses || 0,
+    residual_value_rate: leasingInputs.residual_value_rate || 0,
+    discount_rate: leasingInputs.discount_rate || 0,
+  };
+
+  const results = calculateLeasingFinancials(validatedInputs, startDate);
   
   // Calculate VAT (16%)
   const vat_rate = 0.16;
-  const monthly_rent_with_vat = results.total_monthly_rent_sans_iva * (1 + vat_rate);
-  const initial_payment_with_vat = (results.initial_admin_commission + leasingInputs.delivery_costs) * (1 + vat_rate) + results.initial_security_deposit;
+  const monthly_rent_with_vat = (results.total_monthly_rent_sans_iva || 0) * (1 + vat_rate);
+  const initial_payment_with_vat = ((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0)) * (1 + vat_rate) + (results.initial_security_deposit || 0);
   
-  const total_contract_value = (monthly_rent_with_vat * leasingInputs.lease_term_months) + initial_payment_with_vat;
+  const total_contract_value = (monthly_rent_with_vat * (validatedInputs.lease_term_months || 0)) + initial_payment_with_vat;
 
   return (
     <div className="space-y-6">
@@ -82,7 +99,7 @@ export function LesseeQuoteTab({
             </div>
             <div className="text-center space-y-2">
               <div className="text-3xl font-bold text-purple-600">
-                {leasingInputs.lease_term_months} months
+                {validatedInputs.lease_term_months} months
               </div>
               <div className="text-sm text-muted-foreground">Contract Term</div>
             </div>
@@ -109,19 +126,19 @@ export function LesseeQuoteTab({
             <div className="flex justify-between items-center">
               <span className="text-sm">Processing Costs:</span>
               <span className="font-medium">
-                {formatCurrency(leasingInputs.delivery_costs)} + VAT
+                {formatCurrency(validatedInputs.delivery_costs)} + VAT
               </span>
             </div>
             <div className="flex justify-between items-center border-t pt-2">
               <span className="text-sm">Subtotal (taxable):</span>
               <span className="font-medium">
-                {formatCurrency(results.initial_admin_commission + leasingInputs.delivery_costs)}
+                {formatCurrency((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0))}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">VAT (16%):</span>
               <span className="font-medium">
-                {formatCurrency((results.initial_admin_commission + leasingInputs.delivery_costs) * vat_rate)}
+                {formatCurrency(((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0)) * vat_rate)}
               </span>
             </div>
             <div className="border-t pt-2 space-y-2">
@@ -172,7 +189,7 @@ export function LesseeQuoteTab({
             <div className="flex justify-between items-center">
               <span className="text-sm">Administrative Fee:</span>
               <span className="font-medium">
-                {formatCurrency(leasingInputs.fixed_monthly_fee)}
+                {formatCurrency(validatedInputs.fixed_monthly_fee)}
               </span>
             </div>
             <div className="border-t pt-2">
@@ -213,7 +230,7 @@ export function LesseeQuoteTab({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
-                {formatCurrency(leasingInputs.asset_cost_sans_iva)}
+                {formatCurrency(validatedInputs.asset_cost_sans_iva)}
               </div>
               <div className="text-sm text-muted-foreground">Asset Value</div>
             </div>
@@ -231,7 +248,7 @@ export function LesseeQuoteTab({
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
-                {formatPercentage(leasingInputs.lessor_profit_margin_pct)}
+                {formatPercentage(validatedInputs.lessor_profit_margin_pct)}
               </div>
               <div className="text-sm text-muted-foreground">Applied Margin</div>
             </div>
