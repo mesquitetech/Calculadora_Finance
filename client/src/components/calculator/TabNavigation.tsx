@@ -10,7 +10,7 @@ import {
 // Export the Tab type to be reused in other components
 export type MainTab = 'input' | 'lender-investor' | 'renter-operator';
 export type LenderSubTab = 'schedule' | 'investors' | 'summary' | 'projections' | 'reports';
-export type RenterSubTab = 'summary' | 'cash-flow' | 'income-statement' | 'metrics-explained';
+export type RenterSubTab = 'dashboard' | 'lessee-quote' | 'summary' | 'cash-flow' | 'income-statement' | 'metrics-explained';
 
 interface TabNavigationProps {
   activeMainTab: MainTab;
@@ -74,7 +74,7 @@ export function TabNavigation({
         <div className="max-w-4xl mx-auto">
           <div className="flex w-full bg-muted/50 rounded-lg p-1">
             <button
-              onClick={() => setActiveLenderSubTab('schedule')}
+              onClick={() => setActiveLenderSubTab?.('schedule')}
               className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
                 activeLenderSubTab === 'schedule' 
                   ? 'bg-background text-foreground shadow-sm' 
@@ -84,7 +84,7 @@ export function TabNavigation({
               Schedule
             </button>
             <button
-              onClick={() => setActiveLenderSubTab('investors')}
+              onClick={() => setActiveLenderSubTab?.('investors')}
               className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
                 activeLenderSubTab === 'investors' 
                   ? 'bg-background text-foreground shadow-sm' 
@@ -94,7 +94,7 @@ export function TabNavigation({
               Investors
             </button>
             <button
-              onClick={() => setActiveLenderSubTab('summary')}
+              onClick={() => setActiveLenderSubTab?.('summary')}
               className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
                 activeLenderSubTab === 'summary' 
                   ? 'bg-background text-foreground shadow-sm' 
@@ -104,7 +104,7 @@ export function TabNavigation({
               Summary
             </button>
             <button
-              onClick={() => setActiveLenderSubTab('projections')}
+              onClick={() => setActiveLenderSubTab?.('projections')}
               className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
                 activeLenderSubTab === 'projections' 
                   ? 'bg-background text-foreground shadow-sm' 
@@ -114,7 +114,7 @@ export function TabNavigation({
               Projections
             </button>
             <button
-              onClick={() => setActiveLenderSubTab('reports')}
+              onClick={() => setActiveLenderSubTab?.('reports')}
               className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
                 activeLenderSubTab === 'reports' 
                   ? 'bg-background text-foreground shadow-sm' 
@@ -129,47 +129,67 @@ export function TabNavigation({
 
       {/* Renter/Operator Sub-tabs */}
       {activeMainTab === 'renter-operator' && showSubTabs && (
-        <div className="max-w-4xl mx-auto">
-          <div className="flex w-full bg-muted/50 rounded-lg p-1">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex w-full bg-muted/50 rounded-lg p-1 overflow-x-auto">
+            <button
+              onClick={() => setActiveRenterSubTab?.('dashboard')}
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                activeRenterSubTab === 'dashboard' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              Panel del Operador
+            </button>
+            <button
+              onClick={() => setActiveRenterSubTab?.('lessee-quote')}
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                activeRenterSubTab === 'lessee-quote' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              Cotización Cliente
+            </button>
             <button
               onClick={() => setActiveRenterSubTab?.('summary')}
-              className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeRenterSubTab === 'summary' 
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Summary
+              Resumen
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('cash-flow')}
-              className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeRenterSubTab === 'cash-flow' 
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Cash Flow
+              Flujo de Caja
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('income-statement')}
-              className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeRenterSubTab === 'income-statement' 
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Income Statement (P&L)
+              Estado de Resultados
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('metrics-explained')}
-              className={`flex-1 px-3 py-3 text-base font-medium rounded-md transition-colors ${
+              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                 activeRenterSubTab === 'metrics-explained' 
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Financial Metrics Explained
+              Métricas Explicadas
             </button>
           </div>
         </div>

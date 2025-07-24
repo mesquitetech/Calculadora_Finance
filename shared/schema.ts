@@ -94,13 +94,25 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
   renterConfig: true,
 });
 
-// Define business parameters table
+// Define business parameters table with leasing-specific variables
 export const businessParameters = pgTable("business_parameters", {
   id: serial("id").primaryKey(),
   loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: 'cascade' }),
+  
+  // Variables básicas existentes
   assetCost: numeric("asset_cost", { precision: 12, scale: 2 }).notNull(),
   otherExpenses: numeric("other_expenses", { precision: 12, scale: 2 }).notNull(),
   monthlyExpenses: numeric("monthly_expenses", { precision: 12, scale: 2 }).notNull(),
+  
+  // Nuevas variables para arrendamiento puro
+  lessorProfitMarginPct: numeric("lessor_profit_margin_pct", { precision: 5, scale: 2 }).notNull().default("20.00"), // 20%
+  fixedMonthlyFee: numeric("fixed_monthly_fee", { precision: 10, scale: 2 }).notNull().default("194.00"),
+  adminCommissionPct: numeric("admin_commission_pct", { precision: 5, scale: 2 }).notNull().default("1.00"), // 1%
+  securityDepositMonths: integer("security_deposit_months").notNull().default(1),
+  deliveryCosts: numeric("delivery_costs", { precision: 10, scale: 2 }).notNull().default("6320.00"),
+  residualValueRate: numeric("residual_value_rate", { precision: 5, scale: 2 }).notNull().default("15.00"), // 15%
+  discountRate: numeric("discount_rate", { precision: 5, scale: 2 }).notNull().default("4.00"), // 4%
+  
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -109,6 +121,13 @@ export const insertBusinessParametersSchema = createInsertSchema(businessParamet
   assetCost: true,
   otherExpenses: true,
   monthlyExpenses: true,
+  lessorProfitMarginPct: true,
+  fixedMonthlyFee: true,
+  adminCommissionPct: true,
+  securityDepositMonths: true,
+  deliveryCosts: true,
+  residualValueRate: true,
+  discountRate: true,
 });
 
 // Define Relations

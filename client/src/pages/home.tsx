@@ -21,6 +21,8 @@ import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
 import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
 import { RenterMetricsExplainedTab } from "@/components/calculator/RenterMetricsExplainedTab";
 import { RenterConfigModal, RenterConfig } from "@/components/calculator/RenterConfigModal";
+import { OperatorDashboardTab } from "@/components/calculator/OperatorDashboardTab";
+import { LesseeQuoteTab } from "@/components/calculator/LesseeQuoteTab";
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -35,7 +37,7 @@ import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 export default function Home() {
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('input');
   const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
-  const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('summary');
+  const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('dashboard');
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // Interactive revenue state for renter/operator analysis
@@ -88,6 +90,13 @@ export default function Home() {
           assetCost: parsed.assetCost || 100000,
           otherExpenses: parsed.otherExpenses || 0,
           monthlyExpenses: parsed.monthlyExpenses || 0,
+          lessorProfitMarginPct: parsed.lessorProfitMarginPct || 20.0,
+          fixedMonthlyFee: parsed.fixedMonthlyFee || 194.0,
+          adminCommissionPct: parsed.adminCommissionPct || 1.0,
+          securityDepositMonths: parsed.securityDepositMonths || 1,
+          deliveryCosts: parsed.deliveryCosts || 6320.0,
+          residualValueRate: parsed.residualValueRate || 15.0,
+          discountRate: parsed.discountRate || 4.0,
         });
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
@@ -124,6 +133,13 @@ export default function Home() {
     assetCost: 100000,
     otherExpenses: 0,
     monthlyExpenses: 0,
+    lessorProfitMarginPct: 20.0, // 20% margen de ganancia
+    fixedMonthlyFee: 194.0, // Cuota administrativa fija
+    adminCommissionPct: 1.0, // 1% comisión por apertura
+    securityDepositMonths: 1, // 1 mes de depósito
+    deliveryCosts: 6320.0, // Costos de trámites
+    residualValueRate: 15.0, // 15% valor residual
+    discountRate: 4.0, // 4% tasa de descuento
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -410,6 +426,8 @@ export default function Home() {
                 investors={calculationResults.investorReturns}
                 paymentSchedule={calculationResults.paymentSchedule}
                 onExport={handleExportSummary}
+                paymentFrequency={loanParams.paymentFrequency}
+                periodicPayment={calculationResults.monthlyPayment}
               />
             );
           case 'projections':
@@ -451,6 +469,58 @@ export default function Home() {
         }
 
         switch (activeRenterSubTab) {
+          case 'dashboard':
+            return (
+              <OperatorDashboardTab
+                leasingInputs={{
+                  asset_cost_sans_iva: businessParams.assetCost,
+                  lease_term_months: loanParams.termMonths,
+                  lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
+                  fixed_monthly_fee: businessParams.fixedMonthlyFee,
+                  admin_commission_pct: businessParams.adminCommissionPct,
+                  security_deposit_months: businessParams.securityDepositMonths,
+                  delivery_costs: businessParams.deliveryCosts,
+                  loan_amount: loanParams.totalAmount,
+                  annual_interest_rate: loanParams.interestRate,
+                  monthly_operational_expenses: businessParams.monthlyExpenses,
+                  residual_value_rate: businessParams.residualValueRate,
+                  discount_rate: businessParams.discountRate,
+                }}
+                startDate={loanParams.startDate}
+                onExportReport={() => {
+                  toast({
+                    title: "Reporte generado",
+                    description: "El análisis del operador ha sido exportado exitosamente",
+                  });
+                }}
+              />
+            );
+          case 'lessee-quote':
+            return (
+              <LesseeQuoteTab
+                leasingInputs={{
+                  asset_cost_sans_iva: businessParams.assetCost,
+                  lease_term_months: loanParams.termMonths,
+                  lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
+                  fixed_monthly_fee: businessParams.fixedMonthlyFee,
+                  admin_commission_pct: businessParams.adminCommissionPct,
+                  security_deposit_months: businessParams.securityDepositMonths,
+                  delivery_costs: businessParams.deliveryCosts,
+                  loan_amount: loanParams.totalAmount,
+                  annual_interest_rate: loanParams.interestRate,
+                  monthly_operational_expenses: businessParams.monthlyExpenses,
+                  residual_value_rate: businessParams.residualValueRate,
+                  discount_rate: businessParams.discountRate,
+                }}
+                startDate={loanParams.startDate}
+                onExportQuote={() => {
+                  toast({
+                    title: "Cotización generada",
+                    description: "La cotización para el cliente ha sido exportada exitosamente",
+                  });
+                }}
+              />
+            );
           case 'summary':
             return (
               <RenterSummaryTab
