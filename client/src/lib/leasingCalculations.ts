@@ -84,14 +84,16 @@ export interface LoanPaymentEntry {
 
 /**
  * 1.1 Calculates the lessor's monthly profit
- * Formula: (asset_cost_sans_iva * lessor_profit_margin_pct / 12) * (lease_term_months / 12) / lease_term_months
+ * Formula: (asset_cost_sans_iva * lessor_profit_margin_pct / 100) / 12
+ * This gives us the monthly profit needed to achieve the desired annual margin
  */
 export function calculateLessorMonthlyProfit(
   asset_cost_sans_iva: number,
   lessor_profit_margin_pct: number,
   lease_term_months: number
 ): number {
-  return (asset_cost_sans_iva * (lessor_profit_margin_pct / 100) / 12) * (lease_term_months / 12) / lease_term_months;
+  // Simple monthly profit calculation: annual profit / 12 months
+  return (asset_cost_sans_iva * (lessor_profit_margin_pct / 100)) / 12;
 }
 
 /**
@@ -269,7 +271,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
   let cumulative_npv = 0;
   
   // Month 0 - Initial investment
-  const initial_inflow = loan_amount + initial_admin_commission + inputs.delivery_costs;
+  const initial_inflow = loan_amount + initial_admin_commission + inputs.delivery_costs + initial_security_deposit;
   const initial_outflow = asset_cost_sans_iva * 1.16; // Assuming 16% VAT
   const initial_net_flow = initial_inflow - initial_outflow;
   
