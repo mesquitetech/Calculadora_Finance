@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalculatorIcon, Wand2, Calculator, Users, TrendingUp, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
+import { CalculatorIcon, Wand2, Calculator, Users, TrendingUp, ArrowLeft, ArrowRight, CheckCircle, Car } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
