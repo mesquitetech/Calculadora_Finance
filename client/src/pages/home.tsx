@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalculatorIcon, Wand2, Calculator, Users, TrendingUp } from "lucide-react";
+import { CalculatorIcon, Wand2, Calculator, Users, TrendingUp, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { Header } from "@/components/calculator/Header";
 import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
 import { Link, useLocation } from "wouter";
 import { TabNavigation, MainTab, LenderSubTab, RenterSubTab } from "@/components/calculator/TabNavigation";
-import { LoanParametersCard, LoanParameters } from "@/components/calculator/LoanParametersCard";
-import { InvestorsCard, Investor } from "@/components/calculator/InvestorsCard";
-import { BusinessParametersCard, BusinessParameters } from "@/components/calculator/BusinessParametersCard";
+import { LoanParameters } from "@/components/calculator/LoanParametersCard";
+import { Investor } from "@/components/calculator/InvestorsCard";
+import { BusinessParameters } from "@/components/calculator/BusinessParametersCard";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
@@ -31,15 +32,28 @@ import {
   calculateMonthlyPayment,
   generatePaymentSchedule,
   calculateInvestorReturns,
-  PaymentScheduleEntry
+  PaymentScheduleEntry,
+  formatCurrency
 } from "@/lib/finance";
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Settings, DollarSign, Percent, Calendar, Truck, Trash, Plus, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
+
+type WizardStep = 'asset-leasing' | 'financing-investors' | 'review-calculate';
 
 export default function Home() {
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('input');
   const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
   const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('dashboard');
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [currentWizardStep, setCurrentWizardStep] = useState<WizardStep>('asset-leasing');
 
   // Interactive revenue state for renter/operator analysis
   const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
@@ -159,6 +173,14 @@ export default function Home() {
     isTermValid: true,
   });
 
+  // Validation states for wizard steps
+  const [loanNameError, setLoanNameError] = useState('');
+  const [termError, setTermError] = useState('');
+  const [totalInvestment, setTotalInvestment] = useState(0);
+  const [investorError, setInvestorError] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('percentage');
+  const [percentageInputs, setPercentageInputs] = useState<{[key: number]: string}>({});
+
   const handleValidationChange = useCallback((newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
     setValidations(newValidations);
   }, []);
@@ -187,8 +209,6 @@ export default function Home() {
     }
   }, [calculationResults, businessParams.monthlyExpenses]);
 
-
-
   // Save investors to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('investors', JSON.stringify(investors));
@@ -198,6 +218,65 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('businessParams', JSON.stringify(businessParams));
   }, [businessParams]);
+
+  // Validation effects for wizard
+  useEffect(() => {
+    // Validación del nombre del préstamo
+    const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+    if (loanParams.loanName.length > 0 && !isLoanNameValid) {
+      setLoanNameError(loanParams.loanName.length < 3 ? 'Loan name must be at least 3 characters long.' : 'Loan name must be shorter than 60 characters.');
+    } else {
+      setLoanNameError('');
+    }
+
+    // Validación del plazo del préstamo
+    const { termMonths, paymentFrequency } = loanParams;
+    let isTermValid = true;
+    let termErrorMessage = '';
+    const monthsPerPeriod = {
+      'monthly': 1,
+      'quarterly': 3,
+      'semi-annual': 6,
+      'annual': 12
+    }[paymentFrequency];
+
+    if (termMonths > 0 && termMonths % monthsPerPeriod !== 0) {
+      isTermValid = false;
+      termErrorMessage = `For ${paymentFrequency} payments, term must be a multiple of ${monthsPerPeriod}.`;
+    }
+    setTermError(termErrorMessage);
+
+    // Notificar al componente padre del estado de ambas validaciones
+    handleValidationChange({ isLoanNameValid, isTermValid });
+
+  }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, handleValidationChange]);
+
+  // Recalculate amounts when totalRequired changes (loan amount changes)
+  useEffect(() => {
+    if (loanParams.totalAmount > 0) {
+      const updatedInvestors = investors.map(investor => ({
+        ...investor,
+        investmentAmount: (investor.percentage / 100) * loanParams.totalAmount
+      }));
+      setInvestors(updatedInvestors);
+    }
+  }, [loanParams.totalAmount]);
+
+  // Calculate total investment whenever investors change
+  useEffect(() => {
+    const total = investors.reduce(
+      (sum, investor) => sum + investor.investmentAmount,
+      0
+    );
+    setTotalInvestment(total);
+
+    // Clear error if investments match required amount
+    if (Math.abs(total - loanParams.totalAmount) < 0.01) {
+      setInvestorError(null);
+    } else if (investors.length > 0) {
+      setInvestorError("Total investment amount must match the required loan amount.");
+    }
+  }, [investors, loanParams.totalAmount]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
@@ -353,135 +432,768 @@ export default function Home() {
     setWizardOpen(false);
   };
 
+  // Wizard navigation functions
+  const goToNextStep = () => {
+    if (currentWizardStep === 'asset-leasing') {
+      setCurrentWizardStep('financing-investors');
+    } else if (currentWizardStep === 'financing-investors') {
+      setCurrentWizardStep('review-calculate');
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (currentWizardStep === 'financing-investors') {
+      setCurrentWizardStep('asset-leasing');
+    } else if (currentWizardStep === 'review-calculate') {
+      setCurrentWizardStep('financing-investors');
+    }
+  };
+
+  // Validation for each step
+  const isStep1Valid = () => {
+    const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
+    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
+    return isLoanNameValid && loanParams.totalAmount >= 1000 && assetCostValid;
+  };
+
+  const isStep2Valid = () => {
+    const isLoanDetailsValid = loanParams.interestRate > 0 && loanParams.termMonths > 0 && !termError;
+    const investmentDifference = Math.abs(totalInvestment - loanParams.totalAmount);
+    const isInvestorsValid = investors.length >= 1 && 
+                            investors.every(investor => investor.name.trim() !== "") &&
+                            investmentDifference < 0.01;
+    return isLoanDetailsValid && isInvestorsValid;
+  };
+
+  // Investor management functions
+  const addInvestor = () => {
+    const newId = investors.length > 0
+      ? Math.max(...investors.map(i => i.id)) + 1
+      : 1;
+
+    const newInvestorNumber = investors.length + 1;
+
+    setInvestors([
+      ...investors,
+      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0, percentage: 0 }
+    ]);
+  };
+
+  const removeInvestor = (id: number) => {
+    setInvestors(investors.filter(investor => investor.id !== id));
+    setPercentageInputs(prev => {
+      const newInputs = { ...prev };
+      delete newInputs[id];
+      return newInputs;
+    });
+  };
+
+  const updateInvestor = (id: number, field: keyof Investor, value: string | number) => {
+    setInvestors(
+      investors.map(investor => {
+        if (investor.id === id) {
+          const updated = { ...investor, [field]: value };
+          if (field === 'investmentAmount' && loanParams.totalAmount > 0) {
+            updated.percentage = (Number(value) / loanParams.totalAmount) * 100;
+          }
+          return updated;
+        }
+        return investor;
+      })
+    );
+  };
+
+  const handlePercentageInputChange = (id: number, value: string) => {
+    setPercentageInputs(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handlePercentageInputBlur = (id: number) => {
+    const value = percentageInputs[id];
+    if (value !== undefined) {
+      let percentage = parseFloat(value) || 0;
+      
+      if (percentage < 0) {
+        percentage = 0;
+        setPercentageInputs(prev => ({ ...prev, [id]: '0' }));
+      } else if (percentage > 100) {
+        percentage = 100;
+        setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
+      }
+      
+      const amount = (percentage / 100) * loanParams.totalAmount;
+      setInvestors(
+        investors.map(investor => 
+          investor.id === id ? { ...investor, investmentAmount: amount, percentage: percentage } : investor
+        )
+      );
+    }
+  };
+
+  const getPercentageDisplayValue = (investor: Investor) => {
+    if (percentageInputs[investor.id] !== undefined) {
+      return percentageInputs[investor.id];
+    }
+    return investor.percentage.toFixed(2);
+  };
+
+  // Render wizard step content
+  const renderWizardStep = () => {
+    switch (currentWizardStep) {
+      case 'asset-leasing':
+        return (
+          <div className="space-y-8">
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label htmlFor="loan-name">Loan Name <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="loan-name"
+                    type="text"
+                    value={loanParams.loanName}
+                    onChange={(e) => setLoanParams(prev => ({ ...prev, loanName: e.target.value }))}
+                    disabled={isCalculating}
+                    required
+                    className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
+                  />
+                  {loanNameError && <p className="text-xs text-red-500 mt-1">{loanNameError}</p>}
+                </div>
+
+                <div className="form-group">
+                  <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
+                  <CurrencyInput
+                    id="total-amount"
+                    value={loanParams.totalAmount}
+                    onChange={(value) => setLoanParams(prev => ({ ...prev, totalAmount: value }))}
+                    min={1000}
+                    max={100000000}
+                    disabled={isCalculating}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Minimum: $1,000 Maximum: $100,000,000</p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <Label>Start Date <span className="text-destructive">*</span></Label>
+                <DatePicker
+                  date={loanParams.startDate}
+                  setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
+                  disabled={isCalculating}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Asset Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-blue-600" />
+                <h3 className="font-semibold text-sm">Asset Information</h3>
+              </div>
+              
+              <div className="form-group">
+                <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
+                <CurrencyInput
+                  id="asset-cost"
+                  value={businessParams.assetCost}
+                  onChange={(value) => setBusinessParams(prev => ({ ...prev, assetCost: value }))}
+                  min={0}
+                  max={100000000}
+                  disabled={isCalculating}
+                  className={businessParams.assetCost < loanParams.totalAmount ? "border-red-500 focus-visible:ring-red-500" : ""}
+                />
+                {businessParams.assetCost < loanParams.totalAmount && (
+                  <p className="text-xs text-red-500 mt-1">Asset cost cannot be less than loan amount</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-group">
+                  <Label htmlFor="residual-value">Residual Value (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="residual-value"
+                      type="number"
+                      value={businessParams.residualValueRate}
+                      onChange={(e) => setBusinessParams(prev => ({ ...prev, residualValueRate: parseFloat(e.target.value) || 0 }))}
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      disabled={isCalculating}
+                      className="pr-8"
+                    />
+                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <Label htmlFor="discount-rate">Discount Rate (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="discount-rate"
+                      type="number"
+                      value={businessParams.discountRate}
+                      onChange={(e) => setBusinessParams(prev => ({ ...prev, discountRate: parseFloat(e.target.value) || 0 }))}
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      disabled={isCalculating}
+                      className="pr-8"
+                    />
+                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Leasing Parameters */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-green-600" />
+                <h3 className="font-semibold text-sm">Leasing Parameters</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label htmlFor="lessor-margin">Profit Margin (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="lessor-margin"
+                      type="number"
+                      value={businessParams.lessorProfitMarginPct}
+                      onChange={(e) => setBusinessParams(prev => ({ ...prev, lessorProfitMarginPct: parseFloat(e.target.value) || 0 }))}
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      disabled={isCalculating}
+                      className="pr-8"
+                    />
+                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <Label htmlFor="fixed-fee">Monthly Administrative Fee</Label>
+                  <CurrencyInput
+                    id="fixed-fee"
+                    value={businessParams.fixedMonthlyFee}
+                    onChange={(value) => setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }))}
+                    min={0}
+                    max={10000}
+                    disabled={isCalculating}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-group">
+                  <Label htmlFor="admin-commission">Opening Commission (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="admin-commission"
+                      type="number"
+                      value={businessParams.adminCommissionPct}
+                      onChange={(e) => setBusinessParams(prev => ({ ...prev, adminCommissionPct: parseFloat(e.target.value) || 0 }))}
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      disabled={isCalculating}
+                      className="pr-8"
+                    />
+                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <Label htmlFor="security-deposit">Deposit (months)</Label>
+                  <Input
+                    id="security-deposit"
+                    type="number"
+                    value={businessParams.securityDepositMonths}
+                    onChange={(e) => setBusinessParams(prev => ({ ...prev, securityDepositMonths: parseInt(e.target.value) || 0 }))}
+                    min={0}
+                    max={12}
+                    step={1}
+                    disabled={isCalculating}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
+                <CurrencyInput
+                  id="delivery-costs"
+                  value={businessParams.deliveryCosts}
+                  onChange={(value) => setBusinessParams(prev => ({ ...prev, deliveryCosts: value }))}
+                  min={0}
+                  max={50000}
+                  disabled={isCalculating}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label htmlFor="other-expenses">Other Initial Expenses</Label>
+                  <CurrencyInput
+                    id="other-expenses"
+                    value={businessParams.otherExpenses}
+                    onChange={(value) => setBusinessParams(prev => ({ ...prev, otherExpenses: value }))}
+                    min={0}
+                    max={1000000}
+                    disabled={isCalculating}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Additional one-time expenses (setup, etc.)</p>
+                </div>
+
+                <div className="form-group">
+                  <Label htmlFor="monthly-expenses">Monthly Expenses</Label>
+                  <CurrencyInput
+                    id="monthly-expenses"
+                    value={businessParams.monthlyExpenses}
+                    onChange={(value) => setBusinessParams(prev => ({ ...prev, monthlyExpenses: value }))}
+                    min={0}
+                    max={1000000}
+                    disabled={isCalculating}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Insurance, maintenance, recurring operating expenses</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'financing-investors':
+        return (
+          <div className="space-y-8">
+            {/* Loan Details Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-purple-600" />
+                <h3 className="text-lg font-semibold">Financing Details</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label htmlFor="interest-rate">Annual Interest Rate (%) <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      id="interest-rate"
+                      type="number"
+                      value={loanParams.interestRate.toString()}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        if (!isNaN(value) && value >= 0 && value <= 999) {
+                          setLoanParams(prev => ({ ...prev, interestRate: value }));
+                        } else if (e.target.value === '') {
+                          setLoanParams(prev => ({ ...prev, interestRate: 0 }));
+                        }
+                      }}
+                      min={0}
+                      max={999}
+                      step={0.01}
+                      className="pr-12"
+                      placeholder="0.00"
+                      disabled={isCalculating}
+                      required
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Maximum interest rate: 999%</p>
+                </div>
+
+                <div className="form-group">
+                  <Label htmlFor="loan-term">Loan Term (Months) <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="loan-term"
+                    type="number"
+                    value={loanParams.termMonths.toString()}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10);
+                      if (!isNaN(value) && value >= 1 && value <= 1200) {
+                        setLoanParams(prev => ({ ...prev, termMonths: value }));
+                      } else if (e.target.value === '') {
+                        setLoanParams(prev => ({ ...prev, termMonths: 0 }));
+                      }
+                    }}
+                    min={1}
+                    max={1200}
+                    placeholder="Enter loan term in months"
+                    disabled={isCalculating}
+                    required
+                    className={cn(termError && "border-red-500")}
+                  />
+                  {termError && <p className="text-xs text-red-500 mt-1">{termError}</p>}
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Investors Section */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-600" />
+                  <h3 className="text-lg font-semibold">Investors</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-muted-foreground">1-20 allowed</div>
+                  <div className="flex border rounded-md p-1">
+                    <button
+                      onClick={() => setInputMode('amount')}
+                      className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                    >
+                      Amount
+                    </button>
+                    <button
+                      onClick={() => setInputMode('percentage')}
+                      className={`px-2 py-1 text-xs rounded-sm ${inputMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {investors.map((investor, index) => (
+                  <div 
+                    key={investor.id} 
+                    className="investor-entry rounded-lg p-3 border"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Investor {index + 1}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeInvestor(investor.id)}
+                        disabled={investors.length <= 1 || isCalculating}
+                        className="text-muted-foreground hover:text-red-500 h-6 w-6 p-0"
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Input
+                          value={investor.name}
+                          onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
+                          placeholder={`Investor ${index + 1}`}
+                          disabled={isCalculating}
+                          className="text-sm h-9"
+                        />
+                      </div>
+                      <div>
+                        {inputMode === 'amount' ? (
+                          <CurrencyInput
+                            value={investor.investmentAmount}
+                            onChange={(value) => updateInvestor(investor.id, 'investmentAmount', value)}
+                            min={0}
+                            disabled={isCalculating}
+                            className="text-sm h-9"
+                          />
+                        ) : (
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              value={getPercentageDisplayValue(investor)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                  handlePercentageInputChange(investor.id, value);
+                                }
+                              }}
+                              onBlur={() => handlePercentageInputBlur(investor.id)}
+                              min={0}
+                              max={100}
+                              step={0.01}
+                              disabled={isCalculating}
+                              className="text-sm h-9 pr-8"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={addInvestor}
+                variant="secondary"
+                size="sm"
+                disabled={isCalculating}
+                className="w-full h-10"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Investor
+              </Button>
+
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <div className="text-sm space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Total Investment:</span>
+                    <span className={`font-bold ${
+                      Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
+                    }`}>
+                      {formatCurrency(totalInvestment)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Required:</span>
+                    <span className="font-bold text-gray-900">
+                      {formatCurrency(loanParams.totalAmount)}
+                    </span>
+                  </div>
+                  {Math.abs(loanParams.totalAmount - totalInvestment) >= 0.01 && (
+                    <div className="flex justify-between items-center pt-1 border-t">
+                      <span className="font-medium text-orange-600">Difference:</span>
+                      <span className="font-bold text-orange-600">
+                        {(loanParams.totalAmount - totalInvestment) > 0 ? "+" : ""}{formatCurrency(loanParams.totalAmount - totalInvestment)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {investorError && (
+                <Alert variant="destructive" className="mt-2 py-2">
+                  <AlertCircle className="h-3 w-3" />
+                  <AlertDescription className="text-xs">{investorError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'review-calculate':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h3 className="text-lg font-semibold">Review and Calculate</h3>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Basic Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Loan Name:</span>
+                    <span className="text-sm font-medium">{loanParams.loanName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Amount:</span>
+                    <span className="text-sm font-medium">{formatCurrency(loanParams.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Start Date:</span>
+                    <span className="text-sm font-medium">{loanParams.startDate.toLocaleDateString()}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Asset Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Asset Cost:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Residual Value:</span>
+                    <span className="text-sm font-medium">{businessParams.residualValueRate}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Profit Margin:</span>
+                    <span className="text-sm font-medium">{businessParams.lessorProfitMarginPct}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Financing Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Interest Rate:</span>
+                    <span className="text-sm font-medium">{loanParams.interestRate}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Term:</span>
+                    <span className="text-sm font-medium">{loanParams.termMonths} months</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Monthly Fee:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.fixedMonthlyFee)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Investors Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Investors:</span>
+                    <span className="text-sm font-medium">{investors.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Investment:</span>
+                    <span className="text-sm font-medium">{formatCurrency(totalInvestment)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Match Status:</span>
+                    <Badge variant={Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "default" : "destructive"}>
+                      {Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Investors List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Investor Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {investors.map((investor, index) => (
+                    <div key={investor.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                      <span className="text-sm font-medium">{investor.name}</span>
+                      <div className="text-right">
+                        <div className="text-sm font-medium">{formatCurrency(investor.investmentAmount)}</div>
+                        <div className="text-xs text-muted-foreground">{investor.percentage.toFixed(2)}%</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Calculate Button */}
+            <div className="pt-4">
+              <Button
+                onClick={handleCalculate}
+                disabled={!inputsValid || calculateMutation.isPending}
+                className="w-full h-12 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <CalculatorIcon className="h-5 w-5 mr-2" />
+                {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
+              </Button>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const renderMainTabContent = () => {
     switch (activeMainTab) {
       case 'input':
         return (
           <div className="px-4 sm:px-6">
-            <div className="max-w-7xl mx-auto">
-              {/* Desktop Layout: 3 columns with proper spacing and card elevation */}
-              <div className="hidden xl:grid xl:grid-cols-3 gap-8">
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
-                  <CardContent className="p-6">
-                    <LoanParametersCard
-                      loanParams={loanParams}
-                      setLoanParams={setLoanParams}
-                      isCalculating={calculateMutation.isPending}
-                      onValidationChange={handleValidationChange}
-                    />
-                  </CardContent>
-                </Card>
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
-                  <CardContent className="p-6">
-                    <InvestorsCard
-                      investors={investors}
-                      setInvestors={setInvestors}
-                      totalRequired={loanParams.totalAmount}
-                      isCalculating={calculateMutation.isPending}
-                    />
-                  </CardContent>
-                </Card>
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50/30">
-                  <CardContent className="p-6">
-                    <BusinessParametersCard
-                      businessParams={businessParams}
-                      setBusinessParams={setBusinessParams}
-                      isCalculating={calculateMutation.isPending}
-                      loanAmount={loanParams.totalAmount}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Tablet Layout: 2 columns with enhanced cards */}
-              <div className="hidden lg:grid lg:grid-cols-2 xl:hidden gap-8">
-                <div className="space-y-8">
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
-                    <CardContent className="p-6">
-                      <LoanParametersCard
-                        loanParams={loanParams}
-                        setLoanParams={setLoanParams}
-                        isCalculating={calculateMutation.isPending}
-                        onValidationChange={handleValidationChange}
-                      />
-                    </CardContent>
-                  </Card>
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50/30">
-                    <CardContent className="p-6">
-                      <BusinessParametersCard
-                        businessParams={businessParams}
-                        setBusinessParams={setBusinessParams}
-                        isCalculating={calculateMutation.isPending}
-                        loanAmount={loanParams.totalAmount}
-                      />
-                    </CardContent>
-                  </Card>
+            <div className="max-w-4xl mx-auto">
+              {/* Step Indicators */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="flex items-center space-x-4">
+                  {[
+                    { id: 'asset-leasing', label: 'Asset & Leasing', icon: Car },
+                    { id: 'financing-investors', label: 'Financing & Investors', icon: Users },
+                    { id: 'review-calculate', label: 'Review & Calculate', icon: Calculator }
+                  ].map((step, index) => {
+                    const isActive = currentWizardStep === step.id;
+                    const isCompleted = index < ['asset-leasing', 'financing-investors', 'review-calculate'].indexOf(currentWizardStep);
+                    const StepIcon = step.icon;
+                    
+                    return (
+                      <React.Fragment key={step.id}>
+                        {index > 0 && (
+                          <div className={`w-12 h-0.5 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />
+                        )}
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
+                              isActive ? "bg-blue-600 text-white" :
+                              isCompleted ? "bg-green-600 text-white" : "bg-gray-200 text-gray-600"
+                            )}
+                          >
+                            <StepIcon className="h-5 w-5" />
+                          </div>
+                          <span className="text-xs mt-2 text-center max-w-[80px]">{step.label}</span>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
-                <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30">
-                  <CardContent className="p-6">
-                    <InvestorsCard
-                      investors={investors}
-                      setInvestors={setInvestors}
-                      totalRequired={loanParams.totalAmount}
-                      isCalculating={calculateMutation.isPending}
-                    />
-                  </CardContent>
-                </Card>
               </div>
 
-              {/* Mobile Layout: 1 column with enhanced visual design */}
-              <div className="lg:hidden space-y-8">
-                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="h-5 w-5" />
-                      Loan Parameters
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <LoanParametersCard
-                      loanParams={loanParams}
-                      setLoanParams={setLoanParams}
-                      isCalculating={calculateMutation.isPending}
-                      onValidationChange={handleValidationChange}
-                    />
-                  </CardContent>
-                </Card>
+              {/* Main Wizard Card */}
+              <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-center">
+                    {currentWizardStep === 'asset-leasing' && 'Asset & Leasing Configuration'}
+                    {currentWizardStep === 'financing-investors' && 'Financing & Investors Setup'}
+                    {currentWizardStep === 'review-calculate' && 'Review & Calculate'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8">
+                  {renderWizardStep()}
+                </CardContent>
                 
-                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-blue-50/30 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Investors
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <InvestorsCard
-                      investors={investors}
-                      setInvestors={setInvestors}
-                      totalRequired={loanParams.totalAmount}
-                      isCalculating={calculateMutation.isPending}
-                    />
-                  </CardContent>
-                </Card>
-                
-                <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-purple-50/30 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Business Parameters
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <BusinessParametersCard
-                      businessParams={businessParams}
-                      setBusinessParams={setBusinessParams}
-                      isCalculating={calculateMutation.isPending}
-                      loanAmount={loanParams.totalAmount}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+                {/* Navigation Footer */}
+                <div className="border-t p-6 flex justify-between items-center">
+                  <Button
+                    variant="outline"
+                    onClick={goToPreviousStep}
+                    disabled={currentWizardStep === 'asset-leasing'}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <div className="text-sm text-muted-foreground">
+                    Step {['asset-leasing', 'financing-investors', 'review-calculate'].indexOf(currentWizardStep) + 1} of 3
+                  </div>
+
+                  <Button
+                    onClick={goToNextStep}
+                    disabled={
+                      (currentWizardStep === 'asset-leasing' && !isStep1Valid()) ||
+                      (currentWizardStep === 'financing-investors' && !isStep2Valid()) ||
+                      currentWizardStep === 'review-calculate'
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
             </div>
           </div>
         );
@@ -693,16 +1405,6 @@ export default function Home() {
               )}
             </div>
             <div className="flex flex-wrap gap-3">
-              {activeMainTab === 'input' && (
-                <Button
-                  onClick={handleCalculate}
-                  disabled={!inputsValid || calculateMutation.isPending}
-                  className="px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  <CalculatorIcon className="h-5 w-5 mr-2" />
-                  {calculateMutation.isPending ? "Calculating..." : "Calculate Investment Returns"}
-                </Button>
-              )}
               <Button
                 variant="outline"
                 onClick={openWizard}
