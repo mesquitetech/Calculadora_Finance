@@ -149,7 +149,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Cotización Cliente
+              Customer Quote
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('summary')}
