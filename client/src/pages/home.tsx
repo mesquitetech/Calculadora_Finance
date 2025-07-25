@@ -70,6 +70,10 @@ export default function Home() {
     if (!id) {
       id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('sessionId', id);
+      
+      // Clean up any corrupted localStorage data
+      localStorage.removeItem('businessParams');
+      localStorage.removeItem('investors');
     }
     return id;
   });
@@ -85,7 +89,19 @@ export default function Home() {
             setInvestors(data.investors);
           }
           if (data.businessParams) {
-            setBusinessParams(data.businessParams);
+            // Only update if the saved values are meaningful (not 0 or undefined)
+            setBusinessParams(prev => ({
+              assetCost: data.businessParams.assetCost > 0 ? data.businessParams.assetCost : prev.assetCost,
+              otherExpenses: data.businessParams.otherExpenses !== undefined ? data.businessParams.otherExpenses : prev.otherExpenses,
+              monthlyExpenses: data.businessParams.monthlyExpenses !== undefined ? data.businessParams.monthlyExpenses : prev.monthlyExpenses,
+              lessorProfitMarginPct: data.businessParams.lessorProfitMarginPct > 0 ? data.businessParams.lessorProfitMarginPct : prev.lessorProfitMarginPct,
+              fixedMonthlyFee: data.businessParams.fixedMonthlyFee > 0 ? data.businessParams.fixedMonthlyFee : prev.fixedMonthlyFee,
+              adminCommissionPct: data.businessParams.adminCommissionPct > 0 ? data.businessParams.adminCommissionPct : prev.adminCommissionPct,
+              securityDepositMonths: data.businessParams.securityDepositMonths > 0 ? data.businessParams.securityDepositMonths : prev.securityDepositMonths,
+              deliveryCosts: data.businessParams.deliveryCosts > 0 ? data.businessParams.deliveryCosts : prev.deliveryCosts,
+              residualValueRate: data.businessParams.residualValueRate > 0 ? data.businessParams.residualValueRate : prev.residualValueRate,
+              discountRate: data.businessParams.discountRate > 0 ? data.businessParams.discountRate : prev.discountRate,
+            }));
           }
           if (data.renterConfig) {
             setRenterConfig(data.renterConfig);
@@ -96,23 +112,24 @@ export default function Home() {
       }
     };
 
-    // Load from localStorage first
+    // Load from localStorage - only if values are meaningful
     const savedBusinessParams = localStorage.getItem('businessParams');
     if (savedBusinessParams) {
       try {
         const parsed = JSON.parse(savedBusinessParams);
-        setBusinessParams({
-          assetCost: parsed.assetCost || 100000,
-          otherExpenses: parsed.otherExpenses || 0,
-          monthlyExpenses: parsed.monthlyExpenses || 0,
-          lessorProfitMarginPct: parsed.lessorProfitMarginPct || 20.0,
-          fixedMonthlyFee: parsed.fixedMonthlyFee || 194.0,
-          adminCommissionPct: parsed.adminCommissionPct || 1.0,
-          securityDepositMonths: parsed.securityDepositMonths || 1,
-          deliveryCosts: parsed.deliveryCosts || 6320.0,
-          residualValueRate: parsed.residualValueRate || 15.0,
-          discountRate: parsed.discountRate || 4.0,
-        });
+        // Only apply saved values if they are meaningful (not 0 or empty)
+        setBusinessParams(prev => ({
+          assetCost: parsed.assetCost > 0 ? parsed.assetCost : prev.assetCost,
+          otherExpenses: parsed.otherExpenses !== undefined ? parsed.otherExpenses : prev.otherExpenses,
+          monthlyExpenses: parsed.monthlyExpenses !== undefined ? parsed.monthlyExpenses : prev.monthlyExpenses,
+          lessorProfitMarginPct: parsed.lessorProfitMarginPct > 0 ? parsed.lessorProfitMarginPct : prev.lessorProfitMarginPct,
+          fixedMonthlyFee: parsed.fixedMonthlyFee > 0 ? parsed.fixedMonthlyFee : prev.fixedMonthlyFee,
+          adminCommissionPct: parsed.adminCommissionPct > 0 ? parsed.adminCommissionPct : prev.adminCommissionPct,
+          securityDepositMonths: parsed.securityDepositMonths > 0 ? parsed.securityDepositMonths : prev.securityDepositMonths,
+          deliveryCosts: parsed.deliveryCosts > 0 ? parsed.deliveryCosts : prev.deliveryCosts,
+          residualValueRate: parsed.residualValueRate > 0 ? parsed.residualValueRate : prev.residualValueRate,
+          discountRate: parsed.discountRate > 0 ? parsed.discountRate : prev.discountRate,
+        }));
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
       }
