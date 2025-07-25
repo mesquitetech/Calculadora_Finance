@@ -37,18 +37,62 @@ import {
   formatPercentage,
   formatMonths 
 } from "@/lib/leasingCalculations";
+import { PaymentScheduleEntry } from "@/lib/finance";
+
+interface BusinessParameters {
+  assetCost: number;
+  otherExpenses: number;
+  monthlyExpenses: number;
+  lessorProfitMarginPct: number;
+  fixedMonthlyFee: number;
+  adminCommissionPct: number;
+  securityDepositMonths: number;
+  deliveryCosts: number;
+  residualValueRate: number;
+  discountRate: number;
+}
+
+interface LoanParameters {
+  loanName: string;
+  totalAmount: number;
+  interestRate: number;
+  termMonths: number;
+  startDate: string;
+  paymentFrequency: string;
+}
 
 interface OperatorDashboardTabProps {
-  leasingInputs: LeasingInputs;
-  startDate: Date;
+  businessParams: BusinessParameters;
+  loanParams: LoanParameters;
+  monthlyPayment: number;
+  paymentSchedule: PaymentScheduleEntry[];
   onExportReport: () => void;
 }
 
 export function OperatorDashboardTab({
-  leasingInputs,
-  startDate,
+  businessParams,
+  loanParams,
+  monthlyPayment,
+  paymentSchedule,
   onExportReport
 }: OperatorDashboardTabProps) {
+  // Convert to LeasingInputs format for calculations
+  const leasingInputs: LeasingInputs = {
+    asset_cost_sans_iva: businessParams.assetCost,
+    lease_term_months: loanParams.termMonths,
+    lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
+    fixed_monthly_fee: businessParams.fixedMonthlyFee,
+    admin_commission_pct: businessParams.adminCommissionPct,
+    security_deposit_months: businessParams.securityDepositMonths,
+    delivery_costs: businessParams.deliveryCosts,
+    loan_amount: loanParams.totalAmount,
+    annual_interest_rate: loanParams.interestRate,
+    monthly_operational_expenses: businessParams.monthlyExpenses,
+    residual_value_rate: businessParams.residualValueRate,
+    discount_rate: businessParams.discountRate
+  };
+
+  const startDate = new Date(loanParams.startDate);
   const results = calculateLeasingFinancials(leasingInputs, startDate);
 
   // Prepare data for charts

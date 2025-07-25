@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +69,7 @@ export default function Home() {
     if (!id) {
       id = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('sessionId', id);
-      
+
       // Clean up any corrupted localStorage data
       localStorage.removeItem('businessParams');
       localStorage.removeItem('investors');
@@ -276,7 +275,7 @@ export default function Home() {
         investmentAmount: (investor.percentage / 100) * loanParams.totalAmount
       }));
       setInvestors(updatedInvestors);
-      
+
       // Sync asset cost with loan amount
       setBusinessParams(prev => ({
         ...prev,
@@ -534,7 +533,7 @@ export default function Home() {
     const value = percentageInputs[id];
     if (value !== undefined) {
       let percentage = parseFloat(value) || 0;
-      
+
       if (percentage < 0) {
         percentage = 0;
         setPercentageInputs(prev => ({ ...prev, [id]: '0' }));
@@ -542,7 +541,7 @@ export default function Home() {
         percentage = 100;
         setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
       }
-      
+
       const amount = (percentage / 100) * loanParams.totalAmount;
       setInvestors(
         investors.map(investor => 
@@ -559,6 +558,13 @@ export default function Home() {
     return investor.percentage.toFixed(2);
   };
 
+    const handleExportReport = () => {
+        toast({
+            title: "Reporte generado",
+            description: "El análisis del operador ha sido exportado exitosamente",
+        });
+    };
+
   // Render wizard step content
   const renderWizardStep = () => {
     switch (currentWizardStep) {
@@ -571,7 +577,7 @@ export default function Home() {
                 <Calculator className="h-5 w-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">Basic Information</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <Label htmlFor="loan-name">Loan Name <span className="text-destructive">*</span></Label>
@@ -620,7 +626,7 @@ export default function Home() {
                 <DollarSign className="h-4 w-4 text-blue-600" />
                 <h3 className="font-semibold text-sm">Asset Information</h3>
               </div>
-              
+
               <div className="form-group">
                 <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
                 <CurrencyInput
@@ -655,7 +661,7 @@ export default function Home() {
                     <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
-                
+
                 <div className="form-group">
                   <Label htmlFor="discount-rate">Discount Rate (%)</Label>
                   <div className="relative">
@@ -735,7 +741,7 @@ export default function Home() {
                     <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
-                
+
                 <div className="form-group">
                   <Label htmlFor="security-deposit">Deposit (months)</Label>
                   <Input
@@ -799,8 +805,7 @@ export default function Home() {
           <div className="space-y-8">
             {/* Loan Details Section */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Calculator className="h-5 w-5 text-purple-600" />
+              <div className="flex items-center gap-2 mb-4"><Calculator className="h-5 w-5 text-purple-600" />
                 <h3 className="text-lg font-semibold">Financing Details</h3>
               </div>
 
@@ -1150,7 +1155,7 @@ export default function Home() {
                     const isActive = currentWizardStep === step.id;
                     const isCompleted = index < ['asset-leasing', 'financing-investors', 'review-calculate'].indexOf(currentWizardStep);
                     const StepIcon = step.icon;
-                    
+
                     return (
                       <React.Fragment key={step.id}>
                         {index > 0 && (
@@ -1186,7 +1191,7 @@ export default function Home() {
                 <CardContent className="p-8">
                   {renderWizardStep()}
                 </CardContent>
-                
+
                 {/* Navigation Footer */}
                 <div className="border-t p-6 flex justify-between items-center">
                   <Button
@@ -1307,27 +1312,11 @@ export default function Home() {
           case 'dashboard':
             return (
               <OperatorDashboardTab
-                leasingInputs={{
-                  asset_cost_sans_iva: businessParams.assetCost,
-                  lease_term_months: loanParams.termMonths,
-                  lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
-                  fixed_monthly_fee: businessParams.fixedMonthlyFee,
-                  admin_commission_pct: businessParams.adminCommissionPct,
-                  security_deposit_months: businessParams.securityDepositMonths,
-                  delivery_costs: businessParams.deliveryCosts,
-                  loan_amount: loanParams.totalAmount,
-                  annual_interest_rate: loanParams.interestRate,
-                  monthly_operational_expenses: businessParams.monthlyExpenses,
-                  residual_value_rate: businessParams.residualValueRate,
-                  discount_rate: businessParams.discountRate,
-                }}
-                startDate={loanParams.startDate}
-                onExportReport={() => {
-                  toast({
-                    title: "Reporte generado",
-                    description: "El análisis del operador ha sido exportado exitosamente",
-                  });
-                }}
+                businessParams={businessParams}
+                loanParams={loanParams}
+                monthlyPayment={calculationResults?.monthlyPayment || 0}
+                paymentSchedule={calculationResults?.paymentSchedule || []}
+                onExportReport={handleExportReport}
               />
             );
           case 'lessee-quote':
