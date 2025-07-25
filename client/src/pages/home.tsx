@@ -164,11 +164,11 @@ export default function Home() {
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
     assetCost: 150000, // Igual al loan amount
     otherExpenses: 5000, // Gastos iniciales adicionales
-    monthlyExpenses: 1200, // Gastos operativos mensuales
+    monthlyExpenses: 0, // Gastos operativos mensuales
     lessorProfitMarginPct: 18.0, // 18% margen de ganancia
     fixedMonthlyFee: 250.0, // Cuota administrativa fija
-    adminCommissionPct: 1.5, // 1.5% comisión por apertura
-    securityDepositMonths: 2, // 2 meses de depósito
+    adminCommissionPct: 1.0, // 1% comisión por apertura
+    securityDepositMonths: 1, // 1 mes de depósito
     deliveryCosts: 7500.0, // Costos de trámites y entrega
     residualValueRate: 20.0, // 20% valor residual
     discountRate: 6.0, // 6% tasa de descuento
