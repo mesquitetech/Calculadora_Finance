@@ -56,12 +56,12 @@ export default function Home() {
   const [currentWizardStep, setCurrentWizardStep] = useState<WizardStep>('asset-leasing');
 
   // Interactive revenue state for renter/operator analysis
-  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(15000);
+  const [interactiveRevenue, setInteractiveRevenue] = useState<number>(18000);
 
   // Renter configuration state
   const [renterConfig, setRenterConfig] = useState<RenterConfig>({
-    discountRate: 4.0,
-    residualValueRate: 15
+    discountRate: 6.0,
+    residualValueRate: 20
   });
 
   // Generate or get session ID
@@ -129,32 +129,32 @@ export default function Home() {
   );
 
   const [loanParams, setLoanParams] = useState<LoanParameters>({
-    loanName: "New Loan",
-    totalAmount: 100000,
-    interestRate: 10,
-    termMonths: 36,
+    loanName: "Equipment Leasing Project",
+    totalAmount: 150000,
+    interestRate: 8.5,
+    termMonths: 48,
     startDate: todayDate,
     paymentFrequency: 'monthly'
   });
 
   // Load investors from server storage
   const [investors, setInvestors] = useState<Investor[]>([
-    { id: 1, name: "Investor 1", investmentAmount: 40000, percentage: 40 }, // 40%
-    { id: 2, name: "Investor 2", investmentAmount: 35000, percentage: 35 }, // 35%
-    { id: 3, name: "Investor 3", investmentAmount: 25000, percentage: 25 }  // 25%
+    { id: 1, name: "Primary Bank", investmentAmount: 75000, percentage: 50 }, // 50%
+    { id: 2, name: "Investment Fund A", investmentAmount: 45000, percentage: 30 }, // 30%
+    { id: 3, name: "Private Investor", investmentAmount: 30000, percentage: 20 }  // 20%
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    assetCost: 100000,
-    otherExpenses: 0,
-    monthlyExpenses: 0,
-    lessorProfitMarginPct: 20.0, // 20% margen de ganancia
-    fixedMonthlyFee: 194.0, // Cuota administrativa fija
-    adminCommissionPct: 1.0, // 1% comisión por apertura
-    securityDepositMonths: 1, // 1 mes de depósito
-    deliveryCosts: 6320.0, // Costos de trámites
-    residualValueRate: 15.0, // 15% valor residual
-    discountRate: 4.0, // 4% tasa de descuento
+    assetCost: 150000, // Igual al loan amount
+    otherExpenses: 5000, // Gastos iniciales adicionales
+    monthlyExpenses: 1200, // Gastos operativos mensuales
+    lessorProfitMarginPct: 18.0, // 18% margen de ganancia
+    fixedMonthlyFee: 250.0, // Cuota administrativa fija
+    adminCommissionPct: 1.5, // 1.5% comisión por apertura
+    securityDepositMonths: 2, // 2 meses de depósito
+    deliveryCosts: 7500.0, // Costos de trámites y entrega
+    residualValueRate: 20.0, // 20% valor residual
+    discountRate: 6.0, // 6% tasa de descuento
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -259,6 +259,12 @@ export default function Home() {
         investmentAmount: (investor.percentage / 100) * loanParams.totalAmount
       }));
       setInvestors(updatedInvestors);
+      
+      // Sync asset cost with loan amount
+      setBusinessParams(prev => ({
+        ...prev,
+        assetCost: loanParams.totalAmount
+      }));
     }
   }, [loanParams.totalAmount]);
 
