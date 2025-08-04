@@ -807,4 +807,4 @@ export default function Home() {
 
                 <div className="form-group">
                   <Label htmlFor="monthly-expenses">Monthly Expenses</Label>
-                  <Currency
+                  <CurrencyInput
