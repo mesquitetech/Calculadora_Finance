@@ -14,7 +14,7 @@ import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
-import { SetupWizard } from "@/components/calculator/SetupWizard";
+//import { SetupWizard } from "@/components/calculator/SetupWizard";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
 import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
@@ -1417,6 +1417,7 @@ export default function Home() {
               )}
             </div>
             <div className="flex flex-wrap gap-3">
+              {/*
               <Button
                 variant="outline"
                 onClick={openWizard}
@@ -1425,6 +1426,7 @@ export default function Home() {
                 <Wand2 className="h-5 w-5 mr-2" />
                 Setup Wizard
               </Button>
+              */}
               <Button
                 variant="outline"
                 onClick={() => window.location.href = "/saved-calculations"}
@@ -1454,7 +1456,7 @@ export default function Home() {
       <Footer />
 
       <AboutFooter />
-
+      {/* Setup Wizard
       <SetupWizard
         isOpen={wizardOpen}
         onClose={closeWizard}
@@ -1463,6 +1465,8 @@ export default function Home() {
         initialInvestors={investors}
         initialBusinessParams={businessParams}
       />
+        */
+      }
     </div>
   );
 }
