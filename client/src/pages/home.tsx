@@ -17,9 +17,7 @@ import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { SetupWizard } from "@/components/calculator/SetupWizard";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
-import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
-import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
-import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
+import { RenterAnalysisTab } from "@/components/calculator/RenterAnalysisTab";
 import { RenterMetricsExplainedTab } from "@/components/calculator/RenterMetricsExplainedTab";
 import { RenterConfigModal, RenterConfig } from "@/components/calculator/RenterConfigModal";
 import { OperatorDashboardTab } from "@/components/calculator/OperatorDashboardTab";
@@ -1346,48 +1344,16 @@ export default function Home() {
               />
             );
           case 'summary':
-            return (
-              <RenterSummaryTab
-                loanAmount={typeof loanParams.totalAmount === 'number' && !isNaN(loanParams.totalAmount) ? loanParams.totalAmount : 0}
-                monthlyPayment={typeof calculationResults.monthlyPayment === 'number' && !isNaN(calculationResults.monthlyPayment) ? calculationResults.monthlyPayment : 0}
-                termMonths={typeof loanParams.termMonths === 'number' && !isNaN(loanParams.termMonths) ? loanParams.termMonths : 60}
-                interestRate={typeof loanParams.interestRate === 'number' && !isNaN(loanParams.interestRate) ? loanParams.interestRate : 0}
-                otherExpenses={typeof businessParams.monthlyExpenses === 'number' && !isNaN(businessParams.monthlyExpenses) ? businessParams.monthlyExpenses : 0}
-                monthlyRevenue={typeof interactiveRevenue === 'number' && !isNaN(interactiveRevenue) ? interactiveRevenue : 0}
-                setMonthlyRevenue={setInteractiveRevenue}
-                assetCost={(() => {
-                  const cost = (typeof businessParams.assetCost === 'number' && !isNaN(businessParams.assetCost) ? businessParams.assetCost : 0) + 
-                               (typeof businessParams.otherExpenses === 'number' && !isNaN(businessParams.otherExpenses) ? businessParams.otherExpenses : 0);
-                  return cost;
-                })()}
-                discountRate={typeof renterConfig.discountRate === 'number' && !isNaN(renterConfig.discountRate) ? renterConfig.discountRate / 100 : 0.04}
-                residualValueRate={typeof renterConfig.residualValueRate === 'number' && !isNaN(renterConfig.residualValueRate) ? renterConfig.residualValueRate / 100 : 0.15}
-              />
-            );
           case 'cash-flow':
-            return (
-              <RenterCashFlowTab
-                loanAmount={loanParams.totalAmount}
-                monthlyPayment={calculationResults.monthlyPayment}
-                termMonths={loanParams.termMonths}
-                otherExpenses={businessParams.monthlyExpenses}
-                monthlyRevenue={interactiveRevenue}
-                setMonthlyRevenue={setInteractiveRevenue}
-              />
-            );
           case 'income-statement':
             return (
-              <RenterIncomeStatementTab
-                loanAmount={loanParams.totalAmount}
-                monthlyPayment={calculationResults.monthlyPayment}
-                termMonths={loanParams.termMonths}
-                interestRate={loanParams.interestRate}
-                otherExpenses={businessParams.monthlyExpenses}
-                monthlyRevenue={interactiveRevenue}
-                setMonthlyRevenue={setInteractiveRevenue}
-                assetCost={businessParams.assetCost + businessParams.otherExpenses}
-                discountRate={renterConfig.discountRate / 100}
-                residualValueRate={renterConfig.residualValueRate / 100}
+              <RenterAnalysisTab
+                businessParams={businessParams}
+                loanParams={loanParams}
+                monthlyPayment={calculationResults?.monthlyPayment || 0}
+                paymentSchedule={calculationResults?.paymentSchedule || []}
+                renterConfig={renterConfig}
+                onExportReport={handleExportReport}
               />
             );
           case 'metrics-explained':

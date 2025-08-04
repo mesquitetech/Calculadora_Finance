@@ -154,32 +154,12 @@ export function TabNavigation({
             <button
               onClick={() => setActiveRenterSubTab?.('summary')}
               className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                activeRenterSubTab === 'summary' 
+                ['summary', 'cash-flow', 'income-statement'].includes(activeRenterSubTab || '') 
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Summary
-            </button>
-            <button
-              onClick={() => setActiveRenterSubTab?.('cash-flow')}
-              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                activeRenterSubTab === 'cash-flow' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-              }`}
-            >
-              Cash Flow
-            </button>
-            <button
-              onClick={() => setActiveRenterSubTab?.('income-statement')}
-              className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                activeRenterSubTab === 'income-statement' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-              }`}
-            >
-              Income Statement
+              Financial Analysis
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('metrics-explained')}

@@ -10,9 +10,7 @@ import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
-import { RenterSummaryTab } from "@/components/calculator/RenterSummaryTab";
-import { RenterCashFlowTab } from "@/components/calculator/RenterCashFlowTab";
-import { RenterIncomeStatementTab } from "@/components/calculator/RenterIncomeStatementTab";
+import { RenterAnalysisTab } from "@/components/calculator/RenterAnalysisTab";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
@@ -360,50 +358,29 @@ export default function CalculationDetails() {
 
         <TabsContent value="renter">
           {data && data.businessParams ? (
-            <Tabs value={activeRenterSubTab} onValueChange={(value) => setActiveRenterSubTab(value as 'summary' | 'cashflow' | 'income')} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="summary">Summary</TabsTrigger>
-                <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
-                <TabsTrigger value="income">Income Statement</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="summary">
-                <RenterSummaryTab
-                  loanAmount={data.amount}
-                  monthlyPayment={data.monthlyPayment}
-                  termMonths={data.termMonths}
-                  interestRate={data.interestRate}
-                  otherExpenses={data.businessParams.monthlyExpenses}
-                  monthlyRevenue={interactiveRevenue}
-                  setMonthlyRevenue={setInteractiveRevenue}
-                  assetCost={data.businessParams.assetCost + data.businessParams.otherExpenses}
-                />
-              </TabsContent>
-
-              <TabsContent value="cashflow">
-                <RenterCashFlowTab
-                  loanAmount={data.amount}
-                  monthlyPayment={data.monthlyPayment}
-                  termMonths={data.termMonths}
-                  otherExpenses={data.businessParams.monthlyExpenses}
-                  monthlyRevenue={interactiveRevenue}
-                  setMonthlyRevenue={setInteractiveRevenue}
-                />
-              </TabsContent>
-
-              <TabsContent value="income">
-                <RenterIncomeStatementTab
-                  loanAmount={data.amount}
-                  monthlyPayment={data.monthlyPayment}
-                  termMonths={data.termMonths}
-                  interestRate={data.interestRate}
-                  otherExpenses={data.businessParams.monthlyExpenses}
-                  monthlyRevenue={interactiveRevenue}
-                  setMonthlyRevenue={setInteractiveRevenue}
-                  assetCost={data.businessParams.assetCost + data.businessParams.otherExpenses}
-                />
-              </TabsContent>
-            </Tabs>
+            <RenterAnalysisTab
+              businessParams={data.businessParams}
+              loanParams={{
+                loanName: data.name,
+                totalAmount: data.amount,
+                interestRate: data.interestRate,
+                termMonths: data.termMonths,
+                startDate: new Date(data.startDate),
+                paymentFrequency: 'monthly'
+              }}
+              monthlyPayment={data.monthlyPayment}
+              paymentSchedule={formattedPaymentSchedule}
+              renterConfig={{
+                discountRate: data.businessParams.discountRate || 6.0,
+                residualValueRate: data.businessParams.residualValueRate || 20
+              }}
+              onExportReport={() => {
+                toast({
+                  title: "Reporte generado",
+                  description: "El análisis del operador ha sido exportado exitosamente",
+                });
+              }}
+            />
           ) : (
             <div className="text-center py-20">
               <p className="text-muted-foreground mb-4">Business parameters not available for this calculation.</p>
