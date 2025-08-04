@@ -1,7 +1,7 @@
-
 /**
  * Central Calculation Engine for Pure Leasing
- * Implements the financial formulas specified in the requirements document
+ * Implements the specified financial formulas and corrects the cash flow logic.
+ * @version 2.1 (Translated)
  */
 
 // ============= INTERFACES AND TYPES =============
@@ -10,24 +10,25 @@ export interface LeasingInputs {
   // Basic asset variables
   asset_cost_sans_iva: number;
   lease_term_months: number;
-  
+
   // Operator (lessor) variables
-  lessor_profit_margin_pct: number; // e.g. 20%
-  fixed_monthly_fee: number; // Fixed administrative fee
-  
+  lessor_profit_margin_pct: number; // Desired ANNUAL profit rate on the asset cost
+  fixed_monthly_fee: number; // Fixed monthly administrative fee
+
   // Initial payment variables
-  admin_commission_pct: number; // e.g. 1.0%
-  security_deposit_months: number; // e.g. 1 month
-  delivery_costs: number; // Processing costs
-  
+  admin_commission_pct: number; // Opening commission on the asset cost
+  security_deposit_months: number; // Months of base rent as a security deposit
+  delivery_costs: number; // Delivery costs
+  other_initial_expenses: number; // NEW: For management, plates, paperwork, etc.
+
   // Investor loan variables
   loan_amount: number;
   annual_interest_rate: number;
-  
+
   // Cash flow variables
   monthly_operational_expenses: number; // Insurance, maintenance, etc.
   residual_value_rate: number; // % of initial value at contract end
-  discount_rate: number; // Discount rate for NPV (e.g. 4%)
+  discount_rate: number; // Discount rate for NPV (e.g., 4%)
 }
 
 export interface LeasingResults {
@@ -36,26 +37,26 @@ export interface LeasingResults {
   base_rent_amortization: number;
   base_rent_with_margin: number;
   total_monthly_rent_sans_iva: number;
-  
+
   // Initial Payment Results
   initial_admin_commission: number;
   initial_security_deposit: number;
   initial_payment_sans_iva: number;
-  
+
   // Results for the Operator
   monthly_loan_payment: number;
   net_monthly_cash_flow: number;
   residual_value_amount: number;
-  
+
   // Operator KPIs
   net_present_value: number;
   internal_rate_of_return: number;
   payback_period_months: number;
   total_project_profit: number;
-  
+
   // Detailed cash flow
   cash_flow_schedule: CashFlowEntry[];
-  
+
   // Loan amortization for investors
   loan_amortization_schedule: LoanPaymentEntry[];
 }
@@ -63,8 +64,8 @@ export interface LeasingResults {
 export interface CashFlowEntry {
   month: number;
   date: Date;
-  cash_inflow: number; // Rents + income
-  cash_outflow: number; // Loan payments + expenses
+  cash_inflow: number;
+  cash_outflow: number;
   net_cash_flow: number;
   cumulative_cash_flow: number;
   present_value: number;
@@ -83,21 +84,18 @@ export interface LoanPaymentEntry {
 // ============= MODULE 1: MONTHLY RENT CALCULATIONS =============
 
 /**
- * 1.1 Calculates the lessor's monthly profit
+ * 1.1 Calculates the lessor's monthly profit from an ANNUAL rate.
  * Formula: (asset_cost_sans_iva * lessor_profit_margin_pct / 100) / 12
- * This gives us the monthly profit needed to achieve the desired annual margin
  */
 export function calculateLessorMonthlyProfit(
   asset_cost_sans_iva: number,
-  lessor_profit_margin_pct: number,
-  lease_term_months: number
+  lessor_profit_margin_pct: number // ANNUAL rate
 ): number {
-  // Simple monthly profit calculation: annual profit / 12 months
   return (asset_cost_sans_iva * (lessor_profit_margin_pct / 100)) / 12;
 }
 
 /**
- * 1.2 Calculates the asset amortization
+ * 1.2 Calculates the asset amortization.
  * Formula: asset_cost_sans_iva / lease_term_months
  */
 export function calculateBaseRentAmortization(
@@ -108,7 +106,7 @@ export function calculateBaseRentAmortization(
 }
 
 /**
- * 1.3 Calculates the base rent with margin
+ * 1.3 Calculates the base rent with margin.
  * Formula: base_rent_amortization + lessor_monthly_profit
  */
 export function calculateBaseRentWithMargin(
@@ -119,7 +117,7 @@ export function calculateBaseRentWithMargin(
 }
 
 /**
- * 1.4 Calculates the total monthly rent without VAT
+ * 1.4 Calculates the total monthly rent without VAT.
  * Formula: base_rent_with_margin + fixed_monthly_fee
  */
 export function calculateTotalMonthlyRentSansIva(
@@ -132,7 +130,7 @@ export function calculateTotalMonthlyRentSansIva(
 // ============= MODULE 2: INITIAL PAYMENT CALCULATIONS =============
 
 /**
- * 2.1 Calculates the opening commission
+ * 2.1 Calculates the opening commission.
  * Formula: asset_cost_sans_iva * admin_commission_pct
  */
 export function calculateInitialAdminCommission(
@@ -143,7 +141,7 @@ export function calculateInitialAdminCommission(
 }
 
 /**
- * 2.2 Calculates the security deposit
+ * 2.2 Calculates the security deposit.
  * Formula: base_rent_with_margin * security_deposit_months
  */
 export function calculateInitialSecurityDeposit(
@@ -154,7 +152,7 @@ export function calculateInitialSecurityDeposit(
 }
 
 /**
- * 2.3 Calculates the total initial payment without VAT
+ * 2.3 Calculates the total initial payment without VAT.
  * Formula: initial_admin_commission + initial_security_deposit + delivery_costs
  */
 export function calculateInitialPaymentSansIva(
@@ -168,7 +166,7 @@ export function calculateInitialPaymentSansIva(
 // ============= MODULE 3: LOAN CALCULATIONS =============
 
 /**
- * Calculates the monthly loan payment using the PMT formula
+ * Calculates the monthly loan payment using the PMT formula.
  * Formula: P × [r(1+r)^n] / [(1+r)^n - 1]
  */
 export function calculateLoanMonthlyPayment(
@@ -177,18 +175,21 @@ export function calculateLoanMonthlyPayment(
   term_months: number
 ): number {
   if (annual_interest_rate === 0) {
-    return loan_amount / term_months;
+    return term_months > 0 ? loan_amount / term_months : 0;
   }
-  
+  if (term_months === 0) return 0;
+
   const monthly_rate = annual_interest_rate / 100 / 12;
   const numerator = monthly_rate * Math.pow(1 + monthly_rate, term_months);
   const denominator = Math.pow(1 + monthly_rate, term_months) - 1;
-  
+
+  if (denominator === 0) return 0;
+
   return loan_amount * (numerator / denominator);
 }
 
 /**
- * Generates the loan amortization schedule
+ * Generates the loan amortization schedule.
  */
 export function generateLoanAmortizationSchedule(
   loan_amount: number,
@@ -200,38 +201,37 @@ export function generateLoanAmortizationSchedule(
   const monthly_rate = annual_interest_rate / 100 / 12;
   let remaining_balance = loan_amount;
   const schedule: LoanPaymentEntry[] = [];
-  
+
   for (let month = 1; month <= term_months; month++) {
     const interest_payment = remaining_balance * monthly_rate;
-    const principal_payment = monthly_payment - interest_payment;
-    remaining_balance -= principal_payment;
-    
-    // Adjust the last payment if there are small residuals
-    if (month === term_months && remaining_balance > 0.01) {
-      const adjusted_principal = principal_payment + remaining_balance;
-      remaining_balance = 0;
+    let principal_payment = monthly_payment - interest_payment;
+
+    if (month === term_months) {
+        principal_payment = remaining_balance;
+        remaining_balance = 0;
+    } else {
+        remaining_balance -= principal_payment;
     }
-    
+
     const payment_date = new Date(start_date);
-    payment_date.setMonth(payment_date.getMonth() + month - 1);
-    
+    payment_date.setMonth(payment_date.getMonth() + month);
+
     schedule.push({
       payment_number: month,
       date: payment_date,
-      payment_amount: monthly_payment,
+      payment_amount: month === term_months ? interest_payment + principal_payment : monthly_payment,
       interest_payment,
-      principal_payment: month === term_months ? principal_payment + remaining_balance : principal_payment,
+      principal_payment,
       remaining_balance: Math.max(0, remaining_balance)
     });
   }
-  
   return schedule;
 }
 
-// ============= MODULE 4: CASH FLOW AND KPIs =============
+// ============= MODULE 4: CASH FLOW AND KPIs (CORRECTED LOGIC) =============
 
 /**
- * Generates the complete project cash flow
+ * Generates the complete project cash flow with corrected logic.
  */
 export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date): CashFlowEntry[] {
   const {
@@ -240,44 +240,36 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
     loan_amount,
     monthly_operational_expenses,
     residual_value_rate,
-    discount_rate
+    discount_rate,
+    other_initial_expenses,
+    delivery_costs
   } = inputs;
-  
-  // Calculate components
-  const lessor_monthly_profit = calculateLessorMonthlyProfit(
-    asset_cost_sans_iva, 
-    inputs.lessor_profit_margin_pct, 
-    lease_term_months
-  );
-  
+
+  // --- Component Calculations ---
+  const lessor_monthly_profit = calculateLessorMonthlyProfit(asset_cost_sans_iva, inputs.lessor_profit_margin_pct);
   const base_rent_amortization = calculateBaseRentAmortization(asset_cost_sans_iva, lease_term_months);
   const base_rent_with_margin = calculateBaseRentWithMargin(base_rent_amortization, lessor_monthly_profit);
   const total_monthly_rent = calculateTotalMonthlyRentSansIva(base_rent_with_margin, inputs.fixed_monthly_fee);
-  
   const initial_admin_commission = calculateInitialAdminCommission(asset_cost_sans_iva, inputs.admin_commission_pct);
   const initial_security_deposit = calculateInitialSecurityDeposit(base_rent_with_margin, inputs.security_deposit_months);
-  
-  const monthly_loan_payment = calculateLoanMonthlyPayment(
-    loan_amount, 
-    inputs.annual_interest_rate, 
-    lease_term_months
-  );
-  
+  const monthly_loan_payment = calculateLoanMonthlyPayment(loan_amount, inputs.annual_interest_rate, lease_term_months);
   const residual_value = asset_cost_sans_iva * (residual_value_rate / 100);
-  const monthly_discount_rate = discount_rate / 100 / 12;
-  
+  const monthly_discount_rate = discount_rate > 0 ? discount_rate / 100 / 12 : 0;
+
   const cash_flow: CashFlowEntry[] = [];
   let cumulative_cash_flow = 0;
   let cumulative_npv = 0;
-  
-  // Month 0 - Initial investment
-  const initial_inflow = loan_amount + initial_admin_commission + inputs.delivery_costs + initial_security_deposit;
-  const initial_outflow = asset_cost_sans_iva * 1.16; // Assuming 16% VAT
+
+  // ===== MONTH 0: Initial Investment (CORRECTED) =====
+  // INFLOW: Money the operator receives to start (loan + initial customer payments).
+  const initial_inflow = loan_amount + initial_admin_commission + initial_security_deposit;
+  // OUTFLOW: Money the operator spends (asset purchase WITHOUT VAT + initial expenses).
+  const initial_outflow = asset_cost_sans_iva + delivery_costs + other_initial_expenses;
   const initial_net_flow = initial_inflow - initial_outflow;
-  
-  cumulative_cash_flow += initial_net_flow;
-  cumulative_npv += initial_net_flow; // Month 0 is not discounted
-  
+
+  cumulative_cash_flow = initial_net_flow;
+  cumulative_npv = initial_net_flow; // Present value in month 0 is the flow itself.
+
   cash_flow.push({
     month: 0,
     date: start_date,
@@ -288,21 +280,20 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
     present_value: initial_net_flow,
     cumulative_npv
   });
-  
-  // Months 1 to lease_term_months
+
+  // ===== MONTHS 1 to N (Operating Flows) =====
   for (let month = 1; month <= lease_term_months; month++) {
     const cash_inflow = total_monthly_rent;
     const cash_outflow = monthly_loan_payment + monthly_operational_expenses;
     const net_cash_flow = cash_inflow - cash_outflow;
-    
     cumulative_cash_flow += net_cash_flow;
-    
+
     const present_value = net_cash_flow / Math.pow(1 + monthly_discount_rate, month);
     cumulative_npv += present_value;
-    
+
     const month_date = new Date(start_date);
     month_date.setMonth(month_date.getMonth() + month);
-    
+
     cash_flow.push({
       month,
       date: month_date,
@@ -314,171 +305,122 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
       cumulative_npv
     });
   }
-  
-  // Final month - Residual value and deposit return
-  const final_month = lease_term_months;
-  const final_inflow = residual_value;
-  const final_outflow = initial_security_deposit;
-  const final_net_flow = final_inflow - final_outflow;
-  
-  const final_present_value = final_net_flow / Math.pow(1 + monthly_discount_rate, final_month);
-  
-  // Update last month with final flows
-  if (cash_flow[final_month]) {
-    cash_flow[final_month].cash_inflow += final_inflow;
-    cash_flow[final_month].cash_outflow += final_outflow;
-    cash_flow[final_month].net_cash_flow += final_net_flow;
-    cash_flow[final_month].cumulative_cash_flow += final_net_flow;
-    cash_flow[final_month].present_value += final_present_value;
-    cash_flow[final_month].cumulative_npv += final_present_value;
+
+  // ===== FINAL MONTH: Final Flows (CORRECTED) =====
+  // Add residual value (inflow) and return security deposit (outflow).
+  const final_month_entry = cash_flow[lease_term_months];
+  if (final_month_entry) {
+    const final_inflow_adjustment = residual_value;
+    const final_outflow_adjustment = initial_security_deposit;
+    const final_net_adjustment = final_inflow_adjustment - final_outflow_adjustment;
+
+    final_month_entry.cash_inflow += final_inflow_adjustment;
+    final_month_entry.cash_outflow += final_outflow_adjustment;
+    final_month_entry.net_cash_flow += final_net_adjustment;
+    final_month_entry.cumulative_cash_flow += final_net_adjustment;
+
+    const final_pv_adjustment = final_net_adjustment / Math.pow(1 + monthly_discount_rate, lease_term_months);
+    final_month_entry.present_value += final_pv_adjustment;
+    final_month_entry.cumulative_npv += final_pv_adjustment;
   }
-  
+
   return cash_flow;
 }
 
 /**
- * Calculates the IRR using the Newton-Raphson method
+ * Calculates the IRR (Internal Rate of Return) using the Newton-Raphson method.
  */
 export function calculateIRR(cash_flows: number[]): number {
-  let rate = 0.1; // Initial estimate of 10%
-  const precision = 0.000001;
   const max_iterations = 100;
-  
+  const precision = 1e-7;
+  let rate = 0.1; // Initial guess
+
   for (let i = 0; i < max_iterations; i++) {
     let npv = 0;
     let npv_derivative = 0;
-    
     for (let t = 0; t < cash_flows.length; t++) {
       npv += cash_flows[t] / Math.pow(1 + rate, t);
       npv_derivative -= (t * cash_flows[t]) / Math.pow(1 + rate, t + 1);
     }
-    
     if (Math.abs(npv) < precision) {
       return rate * 100; // Convert to percentage
     }
-    
-    const new_rate = rate - npv / npv_derivative;
-    
-    if (Math.abs(new_rate - rate) < precision) {
-      return new_rate * 100;
+    if (npv_derivative === 0) {
+        break; // Avoid division by zero
     }
-    
-    rate = new_rate;
+    rate -= npv / npv_derivative;
   }
-  
-  return rate * 100; // If it doesn't converge, return the last estimate
+  return rate * 100; // Return last guess if it doesn't converge
 }
 
 /**
- * Calculates the payback period in months
+ * Calculates the Payback Period in months.
  */
 export function calculatePaybackPeriod(cash_flows: CashFlowEntry[]): number {
-  for (let i = 0; i < cash_flows.length; i++) {
+  // Find the first month where cumulative cash flow is positive
+  const initialInvestment = -cash_flows[0].net_cash_flow;
+  if (initialInvestment <= 0) return 0;
+
+  for (let i = 1; i < cash_flows.length; i++) {
     if (cash_flows[i].cumulative_cash_flow >= 0) {
-      return i;
+      // Optional: fractional calculation for more precision
+      const last_negative_flow = cash_flows[i - 1].cumulative_cash_flow;
+      const current_month_flow = cash_flows[i].net_cash_flow;
+      return (i - 1) + (-last_negative_flow / current_month_flow);
     }
   }
-  return cash_flows.length; // If it never recovers
+  return Infinity; // If the investment is never recovered
 }
 
 // ============= MAIN FUNCTION =============
 
 /**
- * Main function that executes all calculations
+ * Main function that executes all calculations and returns the results object.
  */
 export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Date): LeasingResults {
-  // Module 1: Rent calculations
-  const lessor_monthly_profit = calculateLessorMonthlyProfit(
-    inputs.asset_cost_sans_iva,
-    inputs.lessor_profit_margin_pct,
-    inputs.lease_term_months
-  );
-  
-  const base_rent_amortization = calculateBaseRentAmortization(
-    inputs.asset_cost_sans_iva,
-    inputs.lease_term_months
-  );
-  
-  const base_rent_with_margin = calculateBaseRentWithMargin(
-    base_rent_amortization,
-    lessor_monthly_profit
-  );
-  
-  const total_monthly_rent_sans_iva = calculateTotalMonthlyRentSansIva(
-    base_rent_with_margin,
-    inputs.fixed_monthly_fee
-  );
-  
-  // Module 2: Initial payment calculations
-  const initial_admin_commission = calculateInitialAdminCommission(
-    inputs.asset_cost_sans_iva,
-    inputs.admin_commission_pct
-  );
-  
-  const initial_security_deposit = calculateInitialSecurityDeposit(
-    base_rent_with_margin,
-    inputs.security_deposit_months
-  );
-  
-  const initial_payment_sans_iva = calculateInitialPaymentSansIva(
-    initial_admin_commission,
-    initial_security_deposit,
-    inputs.delivery_costs
-  );
-  
-  // Module 3: Loan calculations
-  const monthly_loan_payment = calculateLoanMonthlyPayment(
-    inputs.loan_amount,
-    inputs.annual_interest_rate,
-    inputs.lease_term_months
-  );
-  
-  const loan_amortization_schedule = generateLoanAmortizationSchedule(
-    inputs.loan_amount,
-    inputs.annual_interest_rate,
-    inputs.lease_term_months,
-    start_date
-  );
-  
-  // Module 4: Cash flow and KPIs
+  // Module 1: Rent Calculations
+  const lessor_monthly_profit = calculateLessorMonthlyProfit(inputs.asset_cost_sans_iva, inputs.lessor_profit_margin_pct);
+  const base_rent_amortization = calculateBaseRentAmortization(inputs.asset_cost_sans_iva, inputs.lease_term_months);
+  const base_rent_with_margin = calculateBaseRentWithMargin(base_rent_amortization, lessor_monthly_profit);
+  const total_monthly_rent_sans_iva = calculateTotalMonthlyRentSansIva(base_rent_with_margin, inputs.fixed_monthly_fee);
+
+  // Module 2: Initial Payment Calculations
+  const initial_admin_commission = calculateInitialAdminCommission(inputs.asset_cost_sans_iva, inputs.admin_commission_pct);
+  const initial_security_deposit = calculateInitialSecurityDeposit(base_rent_with_margin, inputs.security_deposit_months);
+  const initial_payment_sans_iva = calculateInitialPaymentSansIva(initial_admin_commission, initial_security_deposit, inputs.delivery_costs);
+
+  // Module 3: Loan Calculations
+  const monthly_loan_payment = calculateLoanMonthlyPayment(inputs.loan_amount, inputs.annual_interest_rate, inputs.lease_term_months);
+  const loan_amortization_schedule = generateLoanAmortizationSchedule(inputs.loan_amount, inputs.annual_interest_rate, inputs.lease_term_months, start_date);
+
+  // Module 4: Cash Flow and KPIs
   const cash_flow_schedule = generateProjectCashFlow(inputs, start_date);
-  
   const net_monthly_cash_flow = total_monthly_rent_sans_iva - monthly_loan_payment - inputs.monthly_operational_expenses;
   const residual_value_amount = inputs.asset_cost_sans_iva * (inputs.residual_value_rate / 100);
-  
-  // Extract cash flows for IRR calculation
+
+  // Extract net flows for IRR calculation
   const cash_flows_for_irr = cash_flow_schedule.map(entry => entry.net_cash_flow);
   const internal_rate_of_return = calculateIRR(cash_flows_for_irr);
-  
+
   const net_present_value = cash_flow_schedule[cash_flow_schedule.length - 1].cumulative_npv;
   const payback_period_months = calculatePaybackPeriod(cash_flow_schedule);
-  
   const total_project_profit = cash_flow_schedule[cash_flow_schedule.length - 1].cumulative_cash_flow;
-  
+
   return {
-    // Results for the Lessee
     lessor_monthly_profit,
     base_rent_amortization,
     base_rent_with_margin,
     total_monthly_rent_sans_iva,
-    
-    // Initial Payment Results
     initial_admin_commission,
     initial_security_deposit,
     initial_payment_sans_iva,
-    
-    // Results for the Operator
     monthly_loan_payment,
     net_monthly_cash_flow,
     residual_value_amount,
-    
-    // Operator KPIs
     net_present_value,
     internal_rate_of_return,
     payback_period_months,
     total_project_profit,
-    
-    // Detailed data
     cash_flow_schedule,
     loan_amortization_schedule
   };
@@ -487,7 +429,7 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
 // ============= UTILITY FUNCTIONS =============
 
 export function formatCurrency(amount: number): string {
-  if (typeof amount !== 'number' || isNaN(amount) || amount === null || amount === undefined) {
+  if (typeof amount !== 'number' || isNaN(amount)) {
     return '$0.00';
   }
   return new Intl.NumberFormat('en-US', {
@@ -506,11 +448,14 @@ export function formatPercentage(rate: number): string {
 }
 
 export function formatMonths(months: number): string {
+  if (typeof months !== 'number' || isNaN(months) || !isFinite(months)) {
+    return 'N/A';
+  }
   const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  
+  const remainingMonths = Math.round(months % 12);
+
   if (years === 0) {
-    return `${months} months`;
+    return `${remainingMonths} months`;
   } else if (remainingMonths === 0) {
     return `${years} ${years === 1 ? 'year' : 'years'}`;
   } else {
