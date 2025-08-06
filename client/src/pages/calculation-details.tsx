@@ -318,6 +318,7 @@ export default function CalculationDetails() {
                 loanParams={loanParams}
                 monthlyPayment={data.monthlyPayment}
                 paymentSchedule={formattedPaymentSchedule}
+                investors={data.investorReturns}
                 onExportReport={handleExportReport}
               />
             );
