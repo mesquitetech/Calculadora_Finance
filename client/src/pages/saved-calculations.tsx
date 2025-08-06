@@ -53,6 +53,13 @@ interface Calculation {
     assetCost: number;
     otherExpenses: number;
     monthlyExpenses: number;
+    lessorProfitMarginPct?: number;
+    fixedMonthlyFee?: number;
+    adminCommissionPct?: number;
+    securityDepositMonths?: number;
+    deliveryCosts?: number;
+    residualValueRate?: number;
+    discountRate?: number;
   };
 }
 

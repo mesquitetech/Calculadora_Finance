@@ -29,7 +29,7 @@ export function TabNavigation({
   setActiveLenderSubTab,
   activeRenterSubTab,
   setActiveRenterSubTab,
-  showSubTabs 
+  showSubTabs = false 
 }: TabNavigationProps) {
   return (
     <div className="w-full mb-8">

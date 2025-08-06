@@ -431,7 +431,157 @@ export function EditCalculationModal({
                         {monthlyExpensesError && <p className="text-xs text-red-500 mt-1">{monthlyExpensesError}</p>}
                         <p className="text-xs text-muted-foreground mt-1">Recurring monthly operating expenses (maintenance, insurance, etc.)</p>
                     </div>
-                    {/* New fields would be added here, with their respective Labels, Inputs/CurrencyInputs, and error states */}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="lessor-profit-margin">Lessor Profit Margin (%)</Label>
+                        <div className="relative">
+                            <Input
+                                id="lessor-profit-margin"
+                                type="number"
+                                value={editableData.businessParams.lessorProfitMarginPct || 15}
+                                onChange={(e) => setEditableData(prev => ({
+                                    ...prev,
+                                    businessParams: {
+                                        ...prev.businessParams,
+                                        lessorProfitMarginPct: parseFloat(e.target.value) || 15
+                                    }
+                                }))}
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                className="pr-8"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <Label htmlFor="fixed-monthly-fee">Fixed Monthly Fee</Label>
+                        <CurrencyInput
+                            id="fixed-monthly-fee"
+                            value={editableData.businessParams.fixedMonthlyFee || 0}
+                            onChange={(value) => setEditableData(prev => ({
+                                ...prev,
+                                businessParams: {
+                                    ...prev.businessParams,
+                                    fixedMonthlyFee: value
+                                }
+                            }))}
+                            min={0}
+                            max={10000}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="admin-commission">Admin Commission (%)</Label>
+                        <div className="relative">
+                            <Input
+                                id="admin-commission"
+                                type="number"
+                                value={editableData.businessParams.adminCommissionPct || 2}
+                                onChange={(e) => setEditableData(prev => ({
+                                    ...prev,
+                                    businessParams: {
+                                        ...prev.businessParams,
+                                        adminCommissionPct: parseFloat(e.target.value) || 2
+                                    }
+                                }))}
+                                min={0}
+                                max={10}
+                                step={0.1}
+                                className="pr-8"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <Label htmlFor="security-deposit">Security Deposit (months)</Label>
+                        <Input
+                            id="security-deposit"
+                            type="number"
+                            value={editableData.businessParams.securityDepositMonths || 1}
+                            onChange={(e) => setEditableData(prev => ({
+                                ...prev,
+                                businessParams: {
+                                    ...prev.businessParams,
+                                    securityDepositMonths: parseInt(e.target.value) || 1
+                                }
+                            }))}
+                            min={0}
+                            max={12}
+                            step={1}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="delivery-costs">Delivery Costs</Label>
+                        <CurrencyInput
+                            id="delivery-costs"
+                            value={editableData.businessParams.deliveryCosts || 0}
+                            onChange={(value) => setEditableData(prev => ({
+                                ...prev,
+                                businessParams: {
+                                    ...prev.businessParams,
+                                    deliveryCosts: value
+                                }
+                            }))}
+                            min={0}
+                            max={50000}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <Label htmlFor="residual-value-rate">Residual Value Rate (%)</Label>
+                        <div className="relative">
+                            <Input
+                                id="residual-value-rate"
+                                type="number"
+                                value={editableData.businessParams.residualValueRate || 20}
+                                onChange={(e) => setEditableData(prev => ({
+                                    ...prev,
+                                    businessParams: {
+                                        ...prev.businessParams,
+                                        residualValueRate: parseFloat(e.target.value) || 20
+                                    }
+                                }))}
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                className="pr-8"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <Label htmlFor="discount-rate">Discount Rate (%)</Label>
+                    <div className="relative">
+                        <Input
+                            id="discount-rate"
+                            type="number"
+                            value={editableData.businessParams.discountRate || 6}
+                            onChange={(e) => setEditableData(prev => ({
+                                ...prev,
+                                businessParams: {
+                                    ...prev.businessParams,
+                                    discountRate: parseFloat(e.target.value) || 6
+                                }
+                            }))}
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            className="pr-8"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
                 </div>
             </fieldset>
         </div>
