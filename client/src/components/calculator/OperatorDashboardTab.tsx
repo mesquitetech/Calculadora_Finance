@@ -62,12 +62,16 @@ interface LoanParameters {
 interface OperatorDashboardTabProps {
   businessParams: BusinessParameters;
   loanParams: LoanParameters;
+  monthlyPayment: number;
+  paymentSchedule: any[];
   onExportReport: () => void;
 }
 
 export function OperatorDashboardTab({
   businessParams,
   loanParams,
+  monthlyPayment,
+  paymentSchedule,
   onExportReport
 }: OperatorDashboardTabProps) {
   // Convert form parameters to the format expected by the calculation engine

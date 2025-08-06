@@ -46,7 +46,18 @@ interface Investor {
 export interface EditableData {
     loanParams: LoanParams;
     investors: Investor[];
-    businessParams: BusinessParameters;
+    businessParams: {
+        assetCost: number;
+        otherExpenses: number;
+        monthlyExpenses: number;
+        lessorProfitMarginPct: number;
+        fixedMonthlyFee: number;
+        adminCommissionPct: number;
+        securityDepositMonths: number;
+        deliveryCosts: number;
+        residualValueRate: number;
+        discountRate: number;
+    };
 }
 
 interface EditCalculationModalProps {
@@ -247,7 +258,7 @@ export function EditCalculationModal({
     }
   };
 
-  const handleBusinessParamChange = (field: keyof BusinessParameters, value: number) => {
+  const handleBusinessParamChange = (field: keyof BusinessParameters | 'lessorProfitMarginPct' | 'fixedMonthlyFee' | 'adminCommissionPct' | 'securityDepositMonths' | 'deliveryCosts' | 'residualValueRate' | 'discountRate', value: number) => {
     if (editedData) {
       setEditedData({
         ...editedData,
@@ -419,6 +430,34 @@ export function EditCalculationModal({
                         />
                         {monthlyExpensesError && <p className="text-xs text-red-500 mt-1">{monthlyExpensesError}</p>}
                         <p className="text-xs text-muted-foreground mt-1">Recurring monthly operating expenses (maintenance, insurance, etc.)</p>
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="lessorProfitMarginPct">Lessor Profit Margin (%)</Label>
+                        <Input id="lessorProfitMarginPct" type="number" step="0.01" value={editedData.businessParams.lessorProfitMarginPct} onChange={(e) => handleBusinessParamChange('lessorProfitMarginPct', parseFloat(e.target.value) || 0)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="fixedMonthlyFee">Fixed Monthly Fee</Label>
+                        <CurrencyInput id="fixedMonthlyFee" value={editedData.businessParams.fixedMonthlyFee} onChange={(value) => handleBusinessParamChange('fixedMonthlyFee', value)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="adminCommissionPct">Admin Commission (%)</Label>
+                        <Input id="adminCommissionPct" type="number" step="0.01" value={editedData.businessParams.adminCommissionPct} onChange={(e) => handleBusinessParamChange('adminCommissionPct', parseFloat(e.target.value) || 0)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="securityDepositMonths">Security Deposit (Months)</Label>
+                        <Input id="securityDepositMonths" type="number" value={editedData.businessParams.securityDepositMonths} onChange={(e) => handleBusinessParamChange('securityDepositMonths', parseInt(e.target.value) || 0)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="deliveryCosts">Delivery Costs</Label>
+                        <CurrencyInput id="deliveryCosts" value={editedData.businessParams.deliveryCosts} onChange={(value) => handleBusinessParamChange('deliveryCosts', value)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="residualValueRate">Residual Value Rate (%)</Label>
+                        <Input id="residualValueRate" type="number" step="0.01" value={editedData.businessParams.residualValueRate} onChange={(e) => handleBusinessParamChange('residualValueRate', parseFloat(e.target.value) || 0)} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="discountRate">Discount Rate (%)</Label>
+                        <Input id="discountRate" type="number" step="0.01" value={editedData.businessParams.discountRate} onChange={(e) => handleBusinessParamChange('discountRate', parseFloat(e.target.value) || 0)} />
                     </div>
                 </div>
             </fieldset>
