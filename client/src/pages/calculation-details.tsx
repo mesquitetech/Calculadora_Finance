@@ -449,15 +449,36 @@ export default function CalculationDetails() {
         </CardContent>
       </Card>
 
-      <TabNavigation 
-        activeMainTab={activeMainTab} 
-        setActiveMainTab={setActiveMainTab}
-        activeLenderSubTab={activeLenderSubTab}
-        setActiveLenderSubTab={setActiveLenderSubTab}
-        activeRenterSubTab={activeRenterSubTab}
-        setActiveRenterSubTab={setActiveRenterSubTab}
-        showSubTabs={true}
-      />
+      <Tabs value={activeMainTab} onValueChange={(value) => setActiveMainTab(value as MainTab)} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="lender-investor">Lender / Investor Results</TabsTrigger>
+          <TabsTrigger value="renter-operator">Renter / Operator Results</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="lender-investor" className="mt-6">
+          <Tabs value={activeLenderSubTab} onValueChange={(value) => setActiveLenderSubTab(value as LenderSubTab)} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="schedule">Payment Schedule</TabsTrigger>
+              <TabsTrigger value="investors">Investor Returns</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="projections">Projections</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </TabsContent>
+        
+        <TabsContent value="renter-operator" className="mt-6">
+          <Tabs value={activeRenterSubTab} onValueChange={(value) => setActiveRenterSubTab(value as RenterSubTab)} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="dashboard">Operator Panel</TabsTrigger>
+              <TabsTrigger value="lessee-quote">Customer Quote</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="cash-flow">Cash Flow</TabsTrigger>
+              <TabsTrigger value="metrics-explained">Metrics Explained</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </TabsContent>
+      </Tabs>
 
       <div className="tab-content min-h-[60vh]">
         {renderMainTabContent()}
