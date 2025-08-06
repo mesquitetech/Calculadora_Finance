@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "wouter";
@@ -10,13 +11,16 @@ import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
+import { OperatorDashboardTab } from "@/components/calculator/OperatorDashboardTab";
+import { LesseeQuoteTab } from "@/components/calculator/LesseeQuoteTab";
 import { RenterAnalysisTab } from "@/components/calculator/RenterAnalysisTab";
+import { RenterMetricsExplainedTab } from "@/components/calculator/RenterMetricsExplainedTab";
+import { TabNavigation, MainTab, LenderSubTab, RenterSubTab } from "@/components/calculator/TabNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { formatCurrency, formatDate, formatPercentage } from "@/lib/finance";
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
-
 
 interface InvestorReturn {
   investorId: number;
@@ -56,6 +60,13 @@ interface CalculationDetails {
     assetCost: number;
     otherExpenses: number;
     monthlyExpenses: number;
+    lessorProfitMarginPct: number;
+    fixedMonthlyFee: number;
+    adminCommissionPct: number;
+    securityDepositMonths: number;
+    deliveryCosts: number;
+    residualValueRate: number;
+    discountRate: number;
   };
 }
 
@@ -63,8 +74,9 @@ export default function CalculationDetails() {
   const { id } = useParams<{ id: string }>();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'lender' | 'renter'>('lender');
-  const [activeRenterSubTab, setActiveRenterSubTab] = useState<'summary' | 'cashflow' | 'income'>('summary');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('lender-investor');
+  const [activeLenderSubTab, setActiveLenderSubTab] = useState<LenderSubTab>('schedule');
+  const [activeRenterSubTab, setActiveRenterSubTab] = useState<RenterSubTab>('dashboard');
   const [interactiveRevenue, setInteractiveRevenue] = useState<number>(0);
 
   const { data, isLoading, error } = useQuery<CalculationDetails>({
@@ -115,6 +127,13 @@ export default function CalculationDetails() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleExportReport = () => {
+    toast({
+      title: "Reporte generado",
+      description: "El análisis del operador ha sido exportado exitosamente",
+    });
   };
 
   if (isLoading) {
@@ -188,11 +207,160 @@ export default function CalculationDetails() {
   const formattedPaymentSchedule = data.paymentSchedule.map(entry => ({
     ...entry,
     date: new Date(entry.date),
-    payment: Number(entry.payment || entry.amount), // Usar payment primero, luego amount como fallback
+    payment: Number(entry.payment || entry.amount),
     principal: Number(entry.principal),
     interest: Number(entry.interest),
     balance: Number(entry.balance)
   }));
+
+  // Transform loan parameters to match home.tsx structure
+  const loanParams = {
+    loanName: data.loanName,
+    totalAmount: data.amount,
+    interestRate: data.interestRate,
+    termMonths: data.termMonths,
+    startDate: startDate,
+    paymentFrequency: data.paymentFrequency
+  };
+
+  const renderMainTabContent = () => {
+    switch (activeMainTab) {
+      case 'lender-investor':
+        switch (activeLenderSubTab) {
+          case 'schedule':
+            return (
+              <PaymentScheduleTab
+                loanAmount={data.amount}
+                monthlyPayment={data.monthlyPayment}
+                totalInterest={data.totalInterest}
+                paymentSchedule={formattedPaymentSchedule}
+              />
+            );
+          case 'investors':
+            return (
+              <InvestorReturnsTab
+                investorReturns={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule} 
+              />
+            );
+          case 'summary':
+            return (
+              <SummaryTab
+                loanAmount={data.amount}
+                interestRate={data.interestRate}
+                termMonths={data.termMonths}
+                monthlyPayment={data.monthlyPayment}
+                totalInterest={data.totalInterest}
+                startDate={startDate}
+                endDate={endDate}
+                investors={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule}
+                onExport={handleExportSummary}
+                paymentFrequency={data.paymentFrequency}
+                periodicPayment={data.monthlyPayment}
+              />
+            );
+          case 'projections':
+            return (
+              <ProjectionsTab
+                loanAmount={data.amount}
+                interestRate={data.interestRate}
+                termMonths={data.termMonths}
+                monthlyPayment={data.monthlyPayment}
+                startDate={startDate}
+              />
+            );
+          case 'reports':
+            return (
+              <ReportsTab
+                loanAmount={data.amount}
+                interestRate={data.interestRate}
+                termMonths={data.termMonths}
+                monthlyPayment={data.monthlyPayment}
+                totalInterest={data.totalInterest}
+                startDate={startDate}
+                endDate={endDate}
+                investors={data.investorReturns}
+                paymentSchedule={formattedPaymentSchedule}
+              />
+            );
+          default:
+            return null;
+        }
+
+      case 'renter-operator':
+        if (!data.businessParams) {
+          return (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground mb-4">Business parameters not available for this calculation.</p>
+              <p className="text-sm text-muted-foreground">Renter analysis requires business parameters to be configured.</p>
+            </div>
+          );
+        }
+
+        switch (activeRenterSubTab) {
+          case 'dashboard':
+            return (
+              <OperatorDashboardTab
+                businessParams={data.businessParams}
+                loanParams={loanParams}
+                monthlyPayment={data.monthlyPayment}
+                paymentSchedule={formattedPaymentSchedule}
+                onExportReport={handleExportReport}
+              />
+            );
+          case 'lessee-quote':
+            return (
+              <LesseeQuoteTab
+                leasingInputs={{
+                  asset_cost_sans_iva: data.businessParams.assetCost,
+                  lease_term_months: data.termMonths,
+                  lessor_profit_margin_pct: data.businessParams.lessorProfitMarginPct,
+                  fixed_monthly_fee: data.businessParams.fixedMonthlyFee,
+                  admin_commission_pct: data.businessParams.adminCommissionPct,
+                  security_deposit_months: data.businessParams.securityDepositMonths,
+                  delivery_costs: data.businessParams.deliveryCosts,
+                  loan_amount: data.amount,
+                  annual_interest_rate: data.interestRate,
+                  monthly_operational_expenses: data.businessParams.monthlyExpenses,
+                  residual_value_rate: data.businessParams.residualValueRate,
+                  discount_rate: data.businessParams.discountRate,
+                }}
+                startDate={startDate}
+                onExportQuote={() => {
+                  toast({
+                    title: "Cotización generada",
+                    description: "La cotización para el cliente ha sido exportada exitosamente",
+                  });
+                }}
+              />
+            );
+          case 'summary':
+          case 'cash-flow':
+          case 'income-statement':
+            return (
+              <RenterAnalysisTab
+                businessParams={data.businessParams}
+                loanParams={loanParams}
+                monthlyPayment={data.monthlyPayment}
+                paymentSchedule={formattedPaymentSchedule}
+                renterConfig={{
+                  discountRate: data.businessParams.discountRate || 6.0,
+                  residualValueRate: data.businessParams.residualValueRate || 20
+                }}
+                onExportReport={handleExportReport}
+              />
+            );
+          case 'metrics-explained':
+            return <RenterMetricsExplainedTab />;
+          default:
+            return null;
+        }
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-8 px-6">
@@ -269,126 +437,19 @@ export default function CalculationDetails() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="lender" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="lender">Lender Analysis</TabsTrigger>
-          <TabsTrigger value="renter">Renter Analysis</TabsTrigger>
-        </TabsList>
+      <TabNavigation 
+        activeMainTab={activeMainTab} 
+        setActiveMainTab={setActiveMainTab}
+        activeLenderSubTab={activeLenderSubTab}
+        setActiveLenderSubTab={setActiveLenderSubTab}
+        activeRenterSubTab={activeRenterSubTab}
+        setActiveRenterSubTab={setActiveRenterSubTab}
+        showSubTabs={true}
+      />
 
-        <TabsContent value="lender">
-          <Tabs defaultValue="schedule" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="schedule">Payment Schedule</TabsTrigger>
-              <TabsTrigger value="investors">Investor Returns</TabsTrigger>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="projections">Projections</TabsTrigger>
-              <TabsTrigger value="banking">Banking</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
-            </TabsList>
-
-        <TabsContent value="schedule">
-              {data && <PaymentScheduleTab
-                loanAmount={data.amount}
-                monthlyPayment={data.monthlyPayment}
-                totalInterest={data.totalInterest}
-                paymentSchedule={formattedPaymentSchedule}
-              />}
-            </TabsContent>
-
-            <TabsContent value="investors">
-              {data && <InvestorReturnsTab
-                investorReturns={data.investorReturns}
-                paymentSchedule={formattedPaymentSchedule} 
-              />}
-            </TabsContent>
-
-            <TabsContent value="summary">
-              {data && <SummaryTab
-                loanAmount={data.amount}
-                interestRate={data.interestRate}
-                termMonths={data.termMonths}
-                monthlyPayment={data.monthlyPayment}
-                totalInterest={data.totalInterest}
-                startDate={startDate}
-                endDate={endDate}
-                investors={data.investorReturns}
-                paymentSchedule={formattedPaymentSchedule}
-                onExport={handleExportSummary}
-              />}
-            </TabsContent>
-
-            <TabsContent value="projections">
-                {data && <ProjectionsTab
-                    loanAmount={data.amount}
-                    interestRate={data.interestRate}
-                    termMonths={data.termMonths}
-                    monthlyPayment={data.monthlyPayment}
-                    startDate={startDate}
-                />}
-            </TabsContent>
-
-            <TabsContent value="banking">
-                {data && <BankerReportsTab
-                    loanAmount={data.amount}
-                    interestRate={data.interestRate}
-                    termMonths={data.termMonths}
-                    monthlyPayment={data.monthlyPayment}
-                    totalInterest={data.totalInterest}
-                    startDate={startDate}
-                    endDate={endDate}
-                    investors={data.investorReturns}
-                />}
-            </TabsContent>
-
-            <TabsContent value="reports">
-              {data && <ReportsTab
-                loanAmount={data.amount}
-                interestRate={data.interestRate}
-                termMonths={data.termMonths}
-                monthlyPayment={data.monthlyPayment}
-                totalInterest={data.totalInterest}
-                startDate={startDate}
-                endDate={endDate}
-                investors={data.investorReturns}
-                paymentSchedule={formattedPaymentSchedule}
-              />}
-            </TabsContent>
-          </Tabs>
-        </TabsContent>
-
-        <TabsContent value="renter">
-          {data && data.businessParams ? (
-            <RenterAnalysisTab
-              businessParams={data.businessParams}
-              loanParams={{
-                loanName: data.name,
-                totalAmount: data.amount,
-                interestRate: data.interestRate,
-                termMonths: data.termMonths,
-                startDate: new Date(data.startDate),
-                paymentFrequency: 'monthly'
-              }}
-              monthlyPayment={data.monthlyPayment}
-              paymentSchedule={formattedPaymentSchedule}
-              renterConfig={{
-                discountRate: data.businessParams.discountRate || 6.0,
-                residualValueRate: data.businessParams.residualValueRate || 20
-              }}
-              onExportReport={() => {
-                toast({
-                  title: "Reporte generado",
-                  description: "El análisis del operador ha sido exportado exitosamente",
-                });
-              }}
-            />
-          ) : (
-            <div className="text-center py-20">
-              <p className="text-muted-foreground mb-4">Business parameters not available for this calculation.</p>
-              <p className="text-sm text-muted-foreground">Renter analysis requires business parameters to be configured.</p>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+      <div className="tab-content min-h-[60vh]">
+        {renderMainTabContent()}
+      </div>
     </div>
   );
 }
