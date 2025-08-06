@@ -139,7 +139,7 @@ export function TabNavigation({
                   : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
-              Panel del Operador
+              Operator Panel
             </button>
             <button
               onClick={() => setActiveRenterSubTab?.('lessee-quote')}
@@ -151,6 +151,7 @@ export function TabNavigation({
             >
               Customer Quote
             </button>
+            {/*  
             <button
               onClick={() => setActiveRenterSubTab?.('summary')}
               className={`flex-none px-3 py-3 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
@@ -171,6 +172,7 @@ export function TabNavigation({
             >
               Metrics Explained
             </button>
+            */}
           </div>
         </div>
       )}
