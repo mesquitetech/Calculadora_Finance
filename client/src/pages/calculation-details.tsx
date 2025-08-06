@@ -219,7 +219,7 @@ export default function CalculationDetails() {
     totalAmount: data.amount,
     interestRate: data.interestRate,
     termMonths: data.termMonths,
-    startDate: startDate,
+    startDate: data.startDate,
     paymentFrequency: data.paymentFrequency
   };
 
@@ -300,9 +300,21 @@ export default function CalculationDetails() {
 
         switch (activeRenterSubTab) {
           case 'dashboard':
+            // Ensure all required business parameters have default values
+            const completeBusinessParams = {
+              ...data.businessParams,
+              lessorProfitMarginPct: data.businessParams.lessorProfitMarginPct || 15,
+              fixedMonthlyFee: data.businessParams.fixedMonthlyFee || 0,
+              adminCommissionPct: data.businessParams.adminCommissionPct || 2,
+              securityDepositMonths: data.businessParams.securityDepositMonths || 1,
+              deliveryCosts: data.businessParams.deliveryCosts || 0,
+              residualValueRate: data.businessParams.residualValueRate || 20,
+              discountRate: data.businessParams.discountRate || 6,
+            };
+            
             return (
               <OperatorDashboardTab
-                businessParams={data.businessParams}
+                businessParams={completeBusinessParams}
                 loanParams={loanParams}
                 monthlyPayment={data.monthlyPayment}
                 paymentSchedule={formattedPaymentSchedule}

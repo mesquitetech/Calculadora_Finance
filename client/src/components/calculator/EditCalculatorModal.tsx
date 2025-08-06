@@ -46,7 +46,18 @@ interface Investor {
 export interface EditableData {
     loanParams: LoanParams;
     investors: Investor[];
-    businessParams: BusinessParameters;
+    businessParams: {
+        assetCost: number;
+        otherExpenses: number;
+        monthlyExpenses: number;
+        lessorProfitMarginPct?: number;
+        fixedMonthlyFee?: number;
+        adminCommissionPct?: number;
+        securityDepositMonths?: number;
+        deliveryCosts?: number;
+        residualValueRate?: number;
+        discountRate?: number;
+    };
 }
 
 interface EditCalculationModalProps {
@@ -420,6 +431,7 @@ export function EditCalculationModal({
                         {monthlyExpensesError && <p className="text-xs text-red-500 mt-1">{monthlyExpensesError}</p>}
                         <p className="text-xs text-muted-foreground mt-1">Recurring monthly operating expenses (maintenance, insurance, etc.)</p>
                     </div>
+                    {/* New fields would be added here, with their respective Labels, Inputs/CurrencyInputs, and error states */}
                 </div>
             </fieldset>
         </div>

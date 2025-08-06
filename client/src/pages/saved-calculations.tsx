@@ -84,6 +84,13 @@ async function updateCalculation(data: EditableData): Promise<void> {
             assetCost: data.businessParams.assetCost,
             otherExpenses: data.businessParams.otherExpenses,
             monthlyExpenses: data.businessParams.monthlyExpenses,
+            lessorProfitMarginPct: data.businessParams.lessorProfitMarginPct,
+            fixedMonthlyFee: data.businessParams.fixedMonthlyFee,
+            adminCommissionPct: data.businessParams.adminCommissionPct,
+            securityDepositMonths: data.businessParams.securityDepositMonths,
+            deliveryCosts: data.businessParams.deliveryCosts,
+            residualValueRate: data.businessParams.residualValueRate,
+            discountRate: data.businessParams.discountRate,
         },
     };
     console.log("Sending update payload:", payload);
@@ -140,6 +147,13 @@ export default function SavedCalculations() {
                 assetCost: fullData.businessParams?.assetCost || 0,
                 otherExpenses: fullData.businessParams?.otherExpenses || 0,
                 monthlyExpenses: fullData.businessParams?.monthlyExpenses || 0,
+                lessorProfitMarginPct: fullData.businessParams?.lessorProfitMarginPct || 15,
+                fixedMonthlyFee: fullData.businessParams?.fixedMonthlyFee || 0,
+                adminCommissionPct: fullData.businessParams?.adminCommissionPct || 2,
+                securityDepositMonths: fullData.businessParams?.securityDepositMonths || 1,
+                deliveryCosts: fullData.businessParams?.deliveryCosts || 0,
+                residualValueRate: fullData.businessParams?.residualValueRate || 20,
+                discountRate: fullData.businessParams?.discountRate || 6,
             }
         };
         setSelectedCalc(editableData);
