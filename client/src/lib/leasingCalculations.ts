@@ -328,29 +328,71 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
 }
 
 /**
- * Calculates the IRR (Internal Rate of Return) using the Newton-Raphson method.
+ * Calculates the IRR (Internal Rate of Return) using the bisection method for better stability.
  */
 export function calculateIRR(cash_flows: number[]): number {
-  const max_iterations = 100;
-  const precision = 1e-7;
-  let rate = 0.1; // Initial guess
-
-  for (let i = 0; i < max_iterations; i++) {
-    let npv = 0;
-    let npv_derivative = 0;
-    for (let t = 0; t < cash_flows.length; t++) {
-      npv += cash_flows[t] / Math.pow(1 + rate, t);
-      npv_derivative -= (t * cash_flows[t]) / Math.pow(1 + rate, t + 1);
-    }
-    if (Math.abs(npv) < precision) {
-      return rate * 100; // Convert to percentage
-    }
-    if (npv_derivative === 0) {
-        break; // Avoid division by zero
-    }
-    rate -= npv / npv_derivative;
+  // Check if cash flows are valid
+  if (!cash_flows || cash_flows.length < 2) {
+    return 0;
   }
-  return rate * 100; // Return last guess if it doesn't converge
+
+  // Check for alternating signs (requirement for IRR)
+  const hasPositive = cash_flows.some(cf => cf > 0);
+  const hasNegative = cash_flows.some(cf => cf < 0);
+  if (!hasPositive || !hasNegative) {
+    return 0;
+  }
+
+  const max_iterations = 1000;
+  const precision = 1e-6;
+  
+  // Use bisection method for more stable convergence
+  let rate_low = -0.99; // Lower bound
+  let rate_high = 10.0;  // Upper bound (1000% annual)
+  
+  // Function to calculate NPV at given rate
+  const calculateNPV = (rate: number): number => {
+    let npv = 0;
+    for (let t = 0; t < cash_flows.length; t++) {
+      if (t === 0) {
+        npv += cash_flows[t]; // Initial investment at t=0
+      } else {
+        npv += cash_flows[t] / Math.pow(1 + rate, t);
+      }
+    }
+    return npv;
+  };
+
+  // Check bounds
+  const npv_low = calculateNPV(rate_low);
+  const npv_high = calculateNPV(rate_high);
+  
+  // If NPV doesn't change sign across bounds, no solution
+  if (npv_low * npv_high > 0) {
+    return 0;
+  }
+
+  // Bisection method
+  for (let i = 0; i < max_iterations; i++) {
+    const rate_mid = (rate_low + rate_high) / 2;
+    const npv_mid = calculateNPV(rate_mid);
+    
+    if (Math.abs(npv_mid) < precision || Math.abs(rate_high - rate_low) < precision) {
+      const annual_irr = rate_mid * 100; // Convert to percentage
+      // Cap unreasonable values
+      if (annual_irr > 500) return 500;
+      if (annual_irr < -90) return -90;
+      return annual_irr;
+    }
+    
+    if (npv_mid * npv_low < 0) {
+      rate_high = rate_mid;
+    } else {
+      rate_low = rate_mid;
+    }
+  }
+  
+  return 0; // Return 0 if no convergence
 }
 
 /**
@@ -400,7 +442,13 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
 
   // Extract net flows for IRR calculation
   const cash_flows_for_irr = cash_flow_schedule.map(entry => entry.net_cash_flow);
-  const internal_rate_of_return = calculateIRR(cash_flows_for_irr);
+  
+  // Validate cash flows before IRR calculation
+  const hasValidCashFlows = cash_flows_for_irr.length > 1 && 
+    cash_flows_for_irr.some(cf => cf > 0) && 
+    cash_flows_for_irr.some(cf => cf < 0);
+    
+  const internal_rate_of_return = hasValidCashFlows ? calculateIRR(cash_flows_for_irr) : 0;
 
   const net_present_value = cash_flow_schedule[cash_flow_schedule.length - 1].cumulative_npv;
   const payback_period_months = calculatePaybackPeriod(cash_flow_schedule);
