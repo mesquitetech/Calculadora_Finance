@@ -183,15 +183,10 @@ export function OperatorDashboardTab({
             </CardHeader>
             <CardContent>
                 <div className={`text-2xl font-bold ${results.internal_rate_of_return > leasingInputs.discount_rate ? 'text-green-600' : 'text-orange-600'}`}>
-                    {(() => {
-                        const irr = results.internal_rate_of_return;
-                        if (!isFinite(irr) || isNaN(irr) || irr === 0) {
-                            return 'N/A';
-                        }
-                        // Cap display at reasonable values
-                        const displayIRR = Math.max(-90, Math.min(500, irr));
-                        return formatPercentage(displayIRR);
-                    })()}
+                    {isFinite(results.internal_rate_of_return) && !isNaN(results.internal_rate_of_return) 
+                        ? formatPercentage(Math.min(results.internal_rate_of_return, 999)) 
+                        : 'N/A'
+                    }
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                     Target: {formatPercentage(leasingInputs.discount_rate)}
