@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentFrequency: loanParams.paymentFrequency || 'monthly',
           monthlyPayment: monthlyPayment,
           totalInterest: totalInterest,
-          endDate: endDate.toISOString(),
+          endDate: endDate,
         }).returning();
 
         // Insert business parameters with ALL values
