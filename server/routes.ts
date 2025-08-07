@@ -10,7 +10,8 @@ import {
 import {
   generatePaymentSchedule,
   calculateInvestorReturns,
-  calculateMonthlyPayment, // Import calculateMonthlyPayment
+  calculateMonthlyPayment,
+  type InvestorReturn, // Import calculateMonthlyPayment
 } from "@/lib/finance";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -57,11 +58,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = paymentSchedule[paymentSchedule.length - 1]?.date || new Date();
 
       // Calculate investor returns
-      const investorReturns = calculateInvestorReturns(
-        investors,
-        loanParams.interestRate,
-        loanParams.termMonths,
-        paymentSchedule
+      const totalInvestment = investors.reduce((sum: number, inv: any) => sum + (Number(inv.investmentAmount) || 0), 0);
+      const investorReturns = investors.map((investor: any) =>
+        calculateInvestorReturns(
+          Number(investor.investmentAmount),
+          totalInvestment,
+          paymentSchedule,
+          investor.id || String(Math.random()),
+          investor.name
+        )
       );
 
       // Save to database with transaction
@@ -109,9 +114,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await tx.insert(paymentSchedule).values(scheduleData);
 
         // Insert investor returns
-        const investorData = investorReturns.map((investor: any, index: number) => ({
+        const investorData = investorReturns.map((investor: InvestorReturn, index: number) => ({
           loanId: loan.id,
-          investorId: index + 1,
+          investorId: typeof investor.investorId === 'string' ? parseInt(investor.investorId) || index + 1 : investor.investorId,
           name: investor.name,
           investmentAmount: investor.investmentAmount,
           share: investor.share,
