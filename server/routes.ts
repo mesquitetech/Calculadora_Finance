@@ -58,7 +58,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = paymentSchedule[paymentSchedule.length - 1]?.date || new Date();
 
       // Calculate investor returns
-      const totalInvestment = investors.reduce((sum: number, inv: any) => sum + (Number(inv.investmentAmount) || 0), 0);
       const investorReturns = investors.map((investor: any) =>
         calculateInvestorReturns(
           Number(investor.investmentAmount),
