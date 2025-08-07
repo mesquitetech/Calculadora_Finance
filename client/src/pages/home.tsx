@@ -1382,23 +1382,7 @@ export default function Home() {
                 />
               )}
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                onClick={openWizard}
-                className="px-6 border-2 hover:bg-blue-50"
-              >
-                <Wand2 className="h-5 w-5 mr-2" />
-                Setup Wizard
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = "/saved-calculations"}
-                className="border-2 hover:bg-purple-50"
-              >
-                View Saved Calculations
-              </Button>
-            </div>
+            
           </div>
         </div>
 
