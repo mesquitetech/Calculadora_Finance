@@ -32,6 +32,7 @@ export interface IStorage {
   getLoan(id: number): Promise<Loan | undefined>;
   createLoan(loan: InsertLoan): Promise<Loan>;
   deleteLoan(id: number): Promise<void>;
+  deleteAllLoans(): Promise<void>;
   updateLoan(id: number, loanData: Partial<InsertLoan>): Promise<Loan>;
 
   // Investor operations

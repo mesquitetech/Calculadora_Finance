@@ -44,8 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const monthlyPayment = calculateMonthlyPayment(
         loanParams.totalAmount,
         loanParams.interestRate,
-        loanParams.termMonths,
-        loanParams.paymentFrequency
+        loanParams.termMonths
       );
 
       const paymentSchedule = generatePaymentSchedule(
@@ -75,43 +74,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Insert loan record
         const [loan] = await tx.insert(loans).values({
           loanName: loanParams.loanName || "Untitled Loan",
-          amount: loanParams.totalAmount,
-          interestRate: loanParams.interestRate,
+          amount: String(loanParams.totalAmount),
+          interestRate: String(loanParams.interestRate),
           termMonths: loanParams.termMonths,
-          startDate: loanParams.startDate,
+          startDate: new Date(loanParams.startDate),
           paymentFrequency: loanParams.paymentFrequency || 'monthly',
-          monthlyPayment: monthlyPayment,
-          totalInterest: totalInterest,
-          endDate: endDate,
+          monthlyPayment: String(monthlyPayment),
+          totalInterest: String(totalInterest),
+          endDate: new Date(endDate),
         }).returning();
 
         // Insert business parameters with ALL values
         if (businessParams) {
           await tx.insert(businessParameters).values({
             loanId: loan.id,
-            assetCost: businessParams.assetCost || 0,
-            otherExpenses: businessParams.otherExpenses || 0,
-            monthlyExpenses: businessParams.monthlyExpenses || 0,
-            lessorProfitMarginPct: businessParams.lessorProfitMarginPct || 15,
-            fixedMonthlyFee: businessParams.fixedMonthlyFee || 0,
-            adminCommissionPct: businessParams.adminCommissionPct || 2,
+            assetCost: String(businessParams.assetCost || 0),
+            otherExpenses: String(businessParams.otherExpenses || 0),
+            monthlyExpenses: String(businessParams.monthlyExpenses || 0),
+            lessorProfitMarginPct: String(businessParams.lessorProfitMarginPct || 15),
+            fixedMonthlyFee: String(businessParams.fixedMonthlyFee || 0),
+            adminCommissionPct: String(businessParams.adminCommissionPct || 2),
             securityDepositMonths: businessParams.securityDepositMonths || 1,
-            deliveryCosts: businessParams.deliveryCosts || 0,
-            residualValueRate: businessParams.residualValueRate || 20,
-            discountRate: businessParams.discountRate || 6,
+            deliveryCosts: String(businessParams.deliveryCosts || 0),
+            residualValueRate: String(businessParams.residualValueRate || 20),
+            discountRate: String(businessParams.discountRate || 6),
           });
         }
 
         // Insert payment schedule
-        const scheduleData = paymentSchedule.map((payment, index) => ({
-          loanId: loan.id,
-          paymentNumber: index + 1,
-          date: typeof payment.date === 'string' ? new Date(payment.date) : payment.date,
-          amount: payment.payment.toString(),
-          principal: payment.principal.toString(),
-          interest: payment.interest.toString(),
-          balance: payment.balance.toString(),
-        }));
+        const scheduleData = paymentSchedule.map((payment, index) => {
+          const paymentDate = payment.date instanceof Date ? payment.date : new Date(payment.date);
+          // Validate the date
+          if (isNaN(paymentDate.getTime())) {
+            throw new Error(`Invalid payment date for payment ${index + 1}: ${payment.date}`);
+          }
+          return {
+            loanId: loan.id,
+            paymentNumber: index + 1,
+            date: paymentDate,
+            amount: payment.payment.toString(),
+            principal: payment.principal.toString(),
+            interest: payment.interest.toString(),
+            balance: payment.balance.toString(),
+          };
+        });
         await tx.insert(payments).values(scheduleData);
 
         // Insert investor data
@@ -132,10 +138,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalInterest,
         paymentSchedule: paymentSchedule.map(p => ({
           ...p,
-          date: p.date.toISOString()
+          date: p.date instanceof Date ? p.date.toISOString() : new Date(p.date).toISOString()
         })),
         investorReturns,
-        endDate: endDate.toISOString(),
+        endDate: endDate instanceof Date ? endDate.toISOString() : new Date(endDate).toISOString(),
       });
 
     } catch (error) {
@@ -197,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 lessorProfitMarginPct: String(updatedBusinessParams.lessorProfitMarginPct || 15),
                 fixedMonthlyFee: String(updatedBusinessParams.fixedMonthlyFee || 0),
                 adminCommissionPct: String(updatedBusinessParams.adminCommissionPct || 2),
-                securityDepositMonths: String(updatedBusinessParams.securityDepositMonths || 1),
+                securityDepositMonths: updatedBusinessParams.securityDepositMonths || 1,
                 deliveryCosts: String(updatedBusinessParams.deliveryCosts || 0),
                 residualValueRate: String(updatedBusinessParams.residualValueRate || 20),
                 discountRate: String(updatedBusinessParams.discountRate || 6),
