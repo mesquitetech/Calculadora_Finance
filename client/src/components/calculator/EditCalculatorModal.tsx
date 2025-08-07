@@ -440,14 +440,8 @@ export function EditCalculationModal({
                             <Input
                                 id="lessor-profit-margin"
                                 type="number"
-                                value={editableData.businessParams.lessorProfitMarginPct || 15}
-                                onChange={(e) => setEditableData(prev => ({
-                                    ...prev,
-                                    businessParams: {
-                                        ...prev.businessParams,
-                                        lessorProfitMarginPct: parseFloat(e.target.value) || 15
-                                    }
-                                }))}
+                                value={editedData.businessParams.lessorProfitMarginPct || 15}
+                                onChange={(e) => handleBusinessParamChange('lessorProfitMarginPct', parseFloat(e.target.value) || 15)}
                                 min={0}
                                 max={100}
                                 step={0.1}
@@ -461,14 +455,8 @@ export function EditCalculationModal({
                         <Label htmlFor="fixed-monthly-fee">Fixed Monthly Fee</Label>
                         <CurrencyInput
                             id="fixed-monthly-fee"
-                            value={editableData.businessParams.fixedMonthlyFee || 0}
-                            onChange={(value) => setEditableData(prev => ({
-                                ...prev,
-                                businessParams: {
-                                    ...prev.businessParams,
-                                    fixedMonthlyFee: value
-                                }
-                            }))}
+                            value={editedData.businessParams.fixedMonthlyFee || 0}
+                            onChange={(value) => handleBusinessParamChange('fixedMonthlyFee', value)}
                             min={0}
                             max={10000}
                         />
@@ -482,14 +470,8 @@ export function EditCalculationModal({
                             <Input
                                 id="admin-commission"
                                 type="number"
-                                value={editableData.businessParams.adminCommissionPct || 2}
-                                onChange={(e) => setEditableData(prev => ({
-                                    ...prev,
-                                    businessParams: {
-                                        ...prev.businessParams,
-                                        adminCommissionPct: parseFloat(e.target.value) || 2
-                                    }
-                                }))}
+                                value={editedData.businessParams.adminCommissionPct || 2}
+                                onChange={(e) => handleBusinessParamChange('adminCommissionPct', parseFloat(e.target.value) || 2)}
                                 min={0}
                                 max={10}
                                 step={0.1}
@@ -504,14 +486,8 @@ export function EditCalculationModal({
                         <Input
                             id="security-deposit"
                             type="number"
-                            value={editableData.businessParams.securityDepositMonths || 1}
-                            onChange={(e) => setEditableData(prev => ({
-                                ...prev,
-                                businessParams: {
-                                    ...prev.businessParams,
-                                    securityDepositMonths: parseInt(e.target.value) || 1
-                                }
-                            }))}
+                            value={editedData.businessParams.securityDepositMonths || 1}
+                            onChange={(e) => handleBusinessParamChange('securityDepositMonths', parseInt(e.target.value) || 1)}
                             min={0}
                             max={12}
                             step={1}
@@ -524,14 +500,8 @@ export function EditCalculationModal({
                         <Label htmlFor="delivery-costs">Delivery Costs</Label>
                         <CurrencyInput
                             id="delivery-costs"
-                            value={editableData.businessParams.deliveryCosts || 0}
-                            onChange={(value) => setEditableData(prev => ({
-                                ...prev,
-                                businessParams: {
-                                    ...prev.businessParams,
-                                    deliveryCosts: value
-                                }
-                            }))}
+                            value={editedData.businessParams.deliveryCosts || 0}
+                            onChange={(value) => handleBusinessParamChange('deliveryCosts', value)}
                             min={0}
                             max={50000}
                         />
@@ -543,14 +513,8 @@ export function EditCalculationModal({
                             <Input
                                 id="residual-value-rate"
                                 type="number"
-                                value={editableData.businessParams.residualValueRate || 20}
-                                onChange={(e) => setEditableData(prev => ({
-                                    ...prev,
-                                    businessParams: {
-                                        ...prev.businessParams,
-                                        residualValueRate: parseFloat(e.target.value) || 20
-                                    }
-                                }))}
+                                value={editedData.businessParams.residualValueRate || 20}
+                                onChange={(e) => handleBusinessParamChange('residualValueRate', parseFloat(e.target.value) || 20)}
                                 min={0}
                                 max={100}
                                 step={0.1}
@@ -567,14 +531,8 @@ export function EditCalculationModal({
                         <Input
                             id="discount-rate"
                             type="number"
-                            value={editableData.businessParams.discountRate || 6}
-                            onChange={(e) => setEditableData(prev => ({
-                                ...prev,
-                                businessParams: {
-                                    ...prev.businessParams,
-                                    discountRate: parseFloat(e.target.value) || 6
-                                }
-                            }))}
+                            value={editedData.businessParams.discountRate || 6}
+                            onChange={(e) => handleBusinessParamChange('discountRate', parseFloat(e.target.value) || 6)}
                             min={0}
                             max={100}
                             step={0.1}

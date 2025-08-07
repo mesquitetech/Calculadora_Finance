@@ -1,4 +1,4 @@
-import { pgTable, text, serial, numeric, timestamp, integer, varchar, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, integer, varchar, primaryKey, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -97,23 +97,19 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
 // Define business parameters table with leasing-specific variables
 export const businessParameters = pgTable("business_parameters", {
   id: serial("id").primaryKey(),
-  loanId: integer("loan_id").notNull().references(() => loans.id, { onDelete: 'cascade' }),
-  
-  // Variables básicas existentes
+  loanId: integer("loan_id").references(() => loans.id, { onDelete: "cascade" }).notNull(),
   assetCost: numeric("asset_cost", { precision: 12, scale: 2 }).notNull(),
   otherExpenses: numeric("other_expenses", { precision: 12, scale: 2 }).notNull(),
   monthlyExpenses: numeric("monthly_expenses", { precision: 12, scale: 2 }).notNull(),
-  
-  // Nuevas variables para arrendamiento puro
-  lessorProfitMarginPct: numeric("lessor_profit_margin_pct", { precision: 5, scale: 2 }).notNull().default("20.00"), // 20%
-  fixedMonthlyFee: numeric("fixed_monthly_fee", { precision: 10, scale: 2 }).notNull().default("194.00"),
-  adminCommissionPct: numeric("admin_commission_pct", { precision: 5, scale: 2 }).notNull().default("1.00"), // 1%
-  securityDepositMonths: integer("security_deposit_months").notNull().default(1),
-  deliveryCosts: numeric("delivery_costs", { precision: 10, scale: 2 }).notNull().default("6320.00"),
-  residualValueRate: numeric("residual_value_rate", { precision: 5, scale: 2 }).notNull().default("15.00"), // 15%
-  discountRate: numeric("discount_rate", { precision: 5, scale: 2 }).notNull().default("4.00"), // 4%
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lessorProfitMarginPct: numeric("lessor_profit_margin_pct", { precision: 5, scale: 2 }).default("15.00"),
+  fixedMonthlyFee: numeric("fixed_monthly_fee", { precision: 10, scale: 2 }).default("0.00"),
+  adminCommissionPct: numeric("admin_commission_pct", { precision: 5, scale: 2 }).default("2.00"),
+  securityDepositMonths: integer("security_deposit_months").default(1),
+  deliveryCosts: numeric("delivery_costs", { precision: 10, scale: 2 }).default("0.00"),
+  residualValueRate: numeric("residual_value_rate", { precision: 5, scale: 2 }).default("20.00"),
+  discountRate: numeric("discount_rate", { precision: 5, scale: 2 }).default("6.00"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertBusinessParametersSchema = createInsertSchema(businessParameters).pick({

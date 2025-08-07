@@ -5,10 +5,12 @@ import { db } from "./db";
 import {
   insertLoanSchema,
   loans,
+  businessParameters, // Import businessParameters schema
 } from "@shared/schema";
 import {
   generatePaymentSchedule,
   calculateInvestorReturns,
+  calculateMonthlyPayment, // Import calculateMonthlyPayment
 } from "@/lib/finance";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -16,78 +18,128 @@ import { fromZodError } from "zod-validation-error";
 import { desc, eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // POST /api/calculate - Crear un nuevo cálculo
+  // POST /api/calculate - Calculate loan details and save
   app.post("/api/calculate", async (req, res) => {
     try {
-      const { loanParams, investors: clientInvestors } = req.body;
-      const validatedLoan = insertLoanSchema.parse({
-        loanName: loanParams.loanName,
-        amount: String(loanParams.totalAmount),
-        interestRate: String(loanParams.interestRate),
-        termMonths: loanParams.termMonths,
-        startDate: new Date(loanParams.startDate),
-        paymentFrequency: loanParams.paymentFrequency,
-      });
+      const { loanParams, investors, businessParams } = req.body;
 
-      if (!Array.isArray(clientInvestors) || clientInvestors.length < 1) {
-        return res.status(400).json({ message: "At least 1 investor is required" });
+      // Input validation
+      if (!loanParams || !investors || !Array.isArray(investors)) {
+        return res.status(400).json({ message: "Invalid input data" });
       }
 
-      const validatedInvestors = clientInvestors.map(investor => ({
-        name: investor.name,
-        investmentAmount: String(investor.investmentAmount),
-      }));
-
-      const totalInvestment = validatedInvestors.reduce((sum, inv) => sum + Number(inv.investmentAmount), 0);
-      if (Math.abs(totalInvestment - Number(validatedLoan.amount)) > 0.01) {
-        return res.status(400).json({ message: "Total investment must match the loan amount" });
+      if (investors.length === 0) {
+        return res.status(400).json({ message: "At least one investor is required" });
       }
 
-      const loan = await storage.createLoan(validatedLoan);
-      const createdInvestors = await Promise.all(
-        validatedInvestors.map(investor => storage.createInvestor({ ...investor, loanId: loan.id }))
+      const totalInvestment = investors.reduce((sum: number, inv: any) => sum + (Number(inv.investmentAmount) || 0), 0);
+      if (Math.abs(totalInvestment - loanParams.totalAmount) > 0.01) {
+        return res.status(400).json({ message: "Total investment must match loan amount" });
+      }
+
+      // Calculate payment schedule and results
+      const monthlyPayment = calculateMonthlyPayment(
+        loanParams.totalAmount,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        loanParams.paymentFrequency
       );
 
       const paymentSchedule = generatePaymentSchedule(
-        Number(loan.amount), Number(loan.interestRate), loan.termMonths, loan.startDate, loan.paymentFrequency
+        loanParams.totalAmount,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        new Date(loanParams.startDate),
+        loanParams.paymentFrequency
       );
 
-      await Promise.all(
-        paymentSchedule.map(p => storage.createPayment({
-          loanId: loan.id, paymentNumber: p.paymentNumber, date: p.date, amount: p.payment.toString(),
-          principal: p.principal.toString(), interest: p.interest.toString(), balance: p.balance.toString(),
-        }))
+      const totalInterest = paymentSchedule.reduce((sum, payment) => sum + payment.interest, 0);
+      const endDate = paymentSchedule[paymentSchedule.length - 1]?.date || new Date();
+
+      // Calculate investor returns
+      const investorReturns = calculateInvestorReturns(
+        investors,
+        loanParams.interestRate,
+        loanParams.termMonths,
+        paymentSchedule
       );
 
-      // Save business parameters if provided
-      if (req.body.businessParams) {
-        const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
-        await storage.createBusinessParameters({
+      // Save to database with transaction
+      const result = await db.transaction(async (tx) => {
+        // Insert loan record
+        const [loan] = await tx.insert(loans).values({
+          loanName: loanParams.loanName || "Untitled Loan",
+          amount: loanParams.totalAmount,
+          interestRate: loanParams.interestRate,
+          termMonths: loanParams.termMonths,
+          startDate: loanParams.startDate,
+          paymentFrequency: loanParams.paymentFrequency || 'monthly',
+          monthlyPayment: monthlyPayment,
+          totalInterest: totalInterest,
+          endDate: endDate.toISOString(),
+        }).returning();
+
+        // Insert business parameters with ALL values
+        if (businessParams) {
+          await tx.insert(businessParameters).values({
+            loanId: loan.id,
+            assetCost: businessParams.assetCost || 0,
+            otherExpenses: businessParams.otherExpenses || 0,
+            monthlyExpenses: businessParams.monthlyExpenses || 0,
+            lessorProfitMarginPct: businessParams.lessorProfitMarginPct || 15,
+            fixedMonthlyFee: businessParams.fixedMonthlyFee || 0,
+            adminCommissionPct: businessParams.adminCommissionPct || 2,
+            securityDepositMonths: businessParams.securityDepositMonths || 1,
+            deliveryCosts: businessParams.deliveryCosts || 0,
+            residualValueRate: businessParams.residualValueRate || 20,
+            discountRate: businessParams.discountRate || 6,
+          });
+        }
+
+        // Insert payment schedule
+        const scheduleData = paymentSchedule.map((payment, index) => ({
           loanId: loan.id,
-          assetCost: String(assetCost || 0),
-          otherExpenses: String(otherExpenses || 0),
-          monthlyExpenses: String(monthlyExpenses || 0)
-        });
-      }
+          paymentNumber: index + 1,
+          date: payment.date.toISOString(),
+          amount: payment.payment.toString(),
+          principal: payment.principal.toString(),
+          interest: payment.interest.toString(),
+          balance: payment.balance.toString(),
+        }));
+        await tx.insert(paymentSchedule).values(scheduleData);
 
-      const investorReturns = createdInvestors.map(investor =>
-        calculateInvestorReturns(Number(investor.investmentAmount), totalInvestment, paymentSchedule, String(investor.id), investor.name)
-      );
+        // Insert investor returns
+        const investorData = investorReturns.map((investor: any, index: number) => ({
+          loanId: loan.id,
+          investorId: index + 1,
+          name: investor.name,
+          investmentAmount: investor.investmentAmount,
+          share: investor.share,
+          totalReturn: investor.totalReturn,
+          totalInterest: investor.totalInterest,
+          roi: investor.roi,
+        }));
+        await tx.insert(investorReturns).values(investorData);
 
-      res.status(200).json({
-        loanId: loan.id, 
-        monthlyPayment: paymentSchedule.length > 0 ? paymentSchedule[0].payment : 0,
-        totalInterest: paymentSchedule.reduce((sum, p) => sum + p.interest, 0),
-        paymentSchedule: paymentSchedule,
-        investorReturns, 
-        endDate: paymentSchedule[paymentSchedule.length - 1].date,
+        return loan;
       });
+
+      // Respond with calculation results
+      res.status(201).json({
+        loanId: result.id,
+        monthlyPayment,
+        totalInterest,
+        paymentSchedule: paymentSchedule.map(p => ({
+          ...p,
+          date: p.date.toISOString()
+        })),
+        investorReturns,
+        endDate: endDate.toISOString(),
+      });
+
     } catch (error) {
-      console.error("Calculation error:", error);
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: fromZodError(error).message });
-      }
-      res.status(500).json({ message: "Failed to calculate investment returns" });
+      console.error("Calculate endpoint error:", error);
+      res.status(500).json({ message: "Internal server error during calculation" });
     }
   });
 
@@ -99,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Invalid ID format" });
         }
         console.log("Update request body:", JSON.stringify(req.body, null, 2));
-        const { loanParams, investors: updatedInvestors } = req.body;
+        const { loanParams, investors: updatedInvestors, businessParams: updatedBusinessParams } = req.body; // Destructure businessParams
         const validatedLoan = insertLoanSchema.parse({
             loanName: loanParams.loanName, amount: String(loanParams.amount),
             interestRate: String(loanParams.interestRate), termMonths: loanParams.termMonths,
@@ -114,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         await storage.deletePaymentsByLoanId(id);
         await storage.deleteInvestorsByLoanId(id);
-        await storage.deleteBusinessParametersByLoanId(id);
+        await storage.deleteBusinessParametersByLoanId(id); // Delete existing business parameters
         const loan = await storage.updateLoan(id, validatedLoan);
         await Promise.all(
             updatedInvestors.map(investor =>
@@ -133,30 +185,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             )
         );
 
-        // Save business parameters if provided
-        if (req.body.businessParams) {
-            const { assetCost, otherExpenses, monthlyExpenses } = req.body.businessParams;
-            console.log("Updating business parameters:", req.body.businessParams);
-            
-            // Check if business parameters exist
-            const existingBusinessParams = await storage.getBusinessParametersByLoanId(id);
-            
-            if (existingBusinessParams) {
-                // Update existing parameters
-                await storage.updateBusinessParameters(id, {
-                    assetCost: String(assetCost || 0),
-                    otherExpenses: String(otherExpenses || 0),
-                    monthlyExpenses: String(monthlyExpenses || 0)
-                });
-            } else {
-                // Create new parameters
-                await storage.createBusinessParameters({
-                    loanId: id,
-                    assetCost: String(assetCost || 0),
-                    otherExpenses: String(otherExpenses || 0),
-                    monthlyExpenses: String(monthlyExpenses || 0)
-                });
-            }
+        // Save updated business parameters if provided
+        if (updatedBusinessParams) {
+            console.log("Updating business parameters:", updatedBusinessParams);
+            await storage.createBusinessParameters({ // Create new business parameters
+                loanId: id,
+                assetCost: String(updatedBusinessParams.assetCost || 0),
+                otherExpenses: String(updatedBusinessParams.otherExpenses || 0),
+                monthlyExpenses: String(updatedBusinessParams.monthlyExpenses || 0),
+                lessorProfitMarginPct: String(updatedBusinessParams.lessorProfitMarginPct || 15),
+                fixedMonthlyFee: String(updatedBusinessParams.fixedMonthlyFee || 0),
+                adminCommissionPct: String(updatedBusinessParams.adminCommissionPct || 2),
+                securityDepositMonths: String(updatedBusinessParams.securityDepositMonths || 1),
+                deliveryCosts: String(updatedBusinessParams.deliveryCosts || 0),
+                residualValueRate: String(updatedBusinessParams.residualValueRate || 20),
+                discountRate: String(updatedBusinessParams.discountRate || 6),
+            });
         }
 
         res.status(200).json({ message: "Calculation updated successfully" });
@@ -173,7 +217,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/calculations", async (req, res) => {
     try {
       const allLoans = await db.select().from(loans).orderBy(desc(loans.createdAt));
-      res.status(200).json(allLoans.map(loan => ({...loan, amount: Number(loan.amount), interestRate: Number(loan.interestRate)})));
+      const loansWithBusinessParams = await Promise.all(allLoans.map(async (loan) => {
+        const businessParamsRecord = await storage.getBusinessParametersByLoanId(loan.id);
+        return {
+          ...loan,
+          amount: Number(loan.amount),
+          interestRate: Number(loan.interestRate),
+          businessParams: businessParamsRecord ? {
+            assetCost: Number(businessParamsRecord.assetCost),
+            otherExpenses: Number(businessParamsRecord.otherExpenses),
+            monthlyExpenses: Number(businessParamsRecord.monthlyExpenses),
+            lessorProfitMarginPct: Number(businessParamsRecord.lessorProfitMarginPct) || 15,
+            fixedMonthlyFee: Number(businessParamsRecord.fixedMonthlyFee) || 0,
+            adminCommissionPct: Number(businessParamsRecord.adminCommissionPct) || 2,
+            securityDepositMonths: Number(businessParamsRecord.securityDepositMonths) || 1,
+            deliveryCosts: Number(businessParamsRecord.deliveryCosts) || 0,
+            residualValueRate: Number(businessParamsRecord.residualValueRate) || 20,
+            discountRate: Number(businessParamsRecord.discountRate) || 6,
+          } : undefined,
+        };
+      }));
+      res.status(200).json(loansWithBusinessParams);
     } catch (error) {
       console.error("Error fetching calculations:", error);
       res.status(500).json({ message: "Failed to fetch calculations" });
@@ -252,9 +316,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const settings = await storage.createOrUpdateUserSettings(settingsData);
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: "Settings saved successfully",
-        settingsId: settings.id 
+        settingsId: settings.id
       });
     } catch (error) {
       console.error("Error saving user settings:", error);
@@ -273,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const investors = await storage.getInvestorsByLoanId(id);
       const paymentScheduleFromDb = await storage.getPaymentsByLoanId(id);
-      const businessParams = await storage.getBusinessParametersByLoanId(id);
+      const businessParamsRecord = await storage.getBusinessParametersByLoanId(id); // Fetch business parameters
 
       // --- INICIO DE LA CORRECCIÓN ---
       // 1. Mapear los datos de la BD al formato que el frontend espera.
@@ -292,10 +356,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. Calcular los retornos usando el calendario ya formateado.
       const investorReturns = investors.map(investor =>
         calculateInvestorReturns(
-            Number(investor.investmentAmount), 
-            totalInvestment, 
-            paymentSchedule, 
-            String(investor.id), 
+            Number(investor.investmentAmount),
+            totalInvestment,
+            paymentSchedule,
+            String(investor.id),
             investor.name
         )
       );
@@ -313,14 +377,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentSchedule: paymentSchedule,
         investorReturns,
         endDate: paymentSchedule.length > 0 ? paymentSchedule[paymentSchedule.length - 1].date : new Date(),
-        businessParams: businessParams ? {
-          assetCost: Number(businessParams.assetCost),
-          otherExpenses: Number(businessParams.otherExpenses),
-          monthlyExpenses: Number(businessParams.monthlyExpenses)
+        businessParams: businessParamsRecord ? { // Include all business parameters
+          assetCost: Number(businessParamsRecord.assetCost),
+          otherExpenses: Number(businessParamsRecord.otherExpenses),
+          monthlyExpenses: Number(businessParamsRecord.monthlyExpenses),
+          lessorProfitMarginPct: Number(businessParamsRecord.lessorProfitMarginPct) || 15,
+          fixedMonthlyFee: Number(businessParamsRecord.fixedMonthlyFee) || 0,
+          adminCommissionPct: Number(businessParamsRecord.adminCommissionPct) || 2,
+          securityDepositMonths: Number(businessParamsRecord.securityDepositMonths) || 1,
+          deliveryCosts: Number(businessParamsRecord.deliveryCosts) || 0,
+          residualValueRate: Number(businessParamsRecord.residualValueRate) || 20,
+          discountRate: Number(businessParamsRecord.discountRate) || 6,
         } : {
           assetCost: 0,
           otherExpenses: 0,
-          monthlyExpenses: 0
+          monthlyExpenses: 0,
+          lessorProfitMarginPct: 15,
+          fixedMonthlyFee: 0,
+          adminCommissionPct: 2,
+          securityDepositMonths: 1,
+          deliveryCosts: 0,
+          residualValueRate: 20,
+          discountRate: 6,
         },
       });
     } catch (error) {
