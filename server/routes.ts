@@ -5,7 +5,9 @@ import { db } from "./db";
 import {
   insertLoanSchema,
   loans,
-  businessParameters, // Import businessParameters schema
+  businessParameters,
+  payments,
+  investors as investorsTable, // Import businessParameters schema
 } from "@shared/schema";
 import {
   generatePaymentSchedule,
@@ -104,26 +106,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const scheduleData = paymentSchedule.map((payment, index) => ({
           loanId: loan.id,
           paymentNumber: index + 1,
-          date: payment.date.toISOString(),
+          date: typeof payment.date === 'string' ? new Date(payment.date) : payment.date,
           amount: payment.payment.toString(),
           principal: payment.principal.toString(),
           interest: payment.interest.toString(),
           balance: payment.balance.toString(),
         }));
-        await tx.insert(paymentSchedule).values(scheduleData);
+        await tx.insert(payments).values(scheduleData);
 
-        // Insert investor returns
-        const investorData = investorReturns.map((investor: InvestorReturn, index: number) => ({
+        // Insert investor data
+        const investorData = investors.map((investor: any) => ({
           loanId: loan.id,
-          investorId: typeof investor.investorId === 'string' ? parseInt(investor.investorId) || index + 1 : investor.investorId,
           name: investor.name,
-          investmentAmount: investor.investmentAmount,
-          share: investor.share,
-          totalReturn: investor.totalReturn,
-          totalInterest: investor.totalInterest,
-          roi: investor.roi,
+          investmentAmount: investor.investmentAmount.toString(),
         }));
-        await tx.insert(investorReturns).values(investorData);
+        await tx.insert(investorsTable).values(investorData);
 
         return loan;
       });
