@@ -24,6 +24,9 @@ export const loans = pgTable("loans", {
   termMonths: integer("term_months").notNull(),
   startDate: timestamp("start_date").notNull(),
   paymentFrequency: text("payment_frequency").notNull().default("monthly"),
+  monthlyPayment: numeric("monthly_payment", { precision: 12, scale: 2 }),
+  totalInterest: numeric("total_interest", { precision: 12, scale: 2 }),
+  endDate: timestamp("end_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
