@@ -14,14 +14,10 @@ export interface BusinessParameters {
   otherExpenses: number;
   monthlyExpenses: number;
   
-  // New variables for pure leasing
-  lessorProfitMarginPct: number; // Operator profit margin (%)
-  fixedMonthlyFee: number; // Fixed administrative fee
-  adminCommissionPct: number; // Opening commission (%)
-  securityDepositMonths: number; // Security deposit months
-  deliveryCosts: number; // Processing and delivery costs
-  residualValueRate: number; // Residual value (%)
-  discountRate: number; // Discount rate for NPV (%)
+  // Simplified leasing variables
+  profitMarginPesos: number; // Desired profit margin in pesos (replaces percentage)
+  fixedMonthlyFee: number; // Monthly administration expenses
+  residualValueRate: number; // Residual value percentage
 }
 
 interface BusinessParametersCardProps {

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -39,11 +40,8 @@ interface SetupWizardProps {
 }
 
 type WizardStep =
-  | 'loan-basic'
-  | 'loan-details'
-  | 'business-params'
-  | 'investors'
-  | 'review';
+  | 'lease-data'
+  | 'financial-data';
 
 export function SetupWizard({
   isOpen,
@@ -53,7 +51,7 @@ export function SetupWizard({
   initialInvestors,
   initialBusinessParams,
 }: SetupWizardProps) {
-  const [currentStep, setCurrentStep] = useState<WizardStep>('loan-basic');
+  const [currentStep, setCurrentStep] = useState<WizardStep>('lease-data');
 
   // State for loan parameters
   const [loanParams, setLoanParams] = useState<LoanParameters>(initialLoanParams);
@@ -98,19 +96,10 @@ export function SetupWizard({
   // Navigation functions
   const goToNextStep = () => {
     switch (currentStep) {
-      case 'loan-basic':
-        if (isLoanNameValid && isLoanAmountValid) setCurrentStep('loan-details');
+      case 'lease-data':
+        if (isLoanNameValid && isLoanAmountValid) setCurrentStep('financial-data');
         break;
-      case 'loan-details':
-        setCurrentStep('business-params');
-        break;
-      case 'business-params':
-        setCurrentStep('investors');
-        break;
-      case 'investors':
-        setCurrentStep('review');
-        break;
-      case 'review':
+      case 'financial-data':
         handleSave();
         break;
     }
@@ -118,19 +107,18 @@ export function SetupWizard({
 
   const goToPreviousStep = () => {
     switch (currentStep) {
-      case 'loan-details':
-        setCurrentStep('loan-basic');
-        break;
-      case 'business-params':
-        setCurrentStep('loan-details');
-        break;
-      case 'investors':
-        setCurrentStep('business-params');
-        break;
-      case 'review':
-        setCurrentStep('investors');
+      case 'financial-data':
+        setCurrentStep('lease-data');
         break;
     }
+  };
+
+  // Navigation handler aliases
+  const handleBack = goToPreviousStep;
+  const handleNext = goToNextStep;
+  const handleFinish = () => {
+    handleSave();
+    onClose();
   };
 
   // Handlers
@@ -211,402 +199,267 @@ export function SetupWizard({
     }
   };
 
+  const handleDownPaymentChange = (value: number) => {
+    setLoanParams(prev => ({ ...prev, downPayment: value }));
+  };
+
+  const handleResidualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, residualValueRate: value }));
+  };
+
+  const handleProfitMarginChange = (values: number[]) => {
+    setBusinessParams(prev => ({ ...prev, profitMarginPesos: values[0] }));
+  };
+
+  const handleMonthlyAdminChange = (value: number) => {
+    setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }));
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
-      case 'loan-basic':
+      case 'lease-data':
         return (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center mb-6">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <DollarSign className="h-10 w-10 text-blue-700" />
               </div>
-              <h2 className="text-2xl font-bold text-center">Loan Information</h2>
+              <h2 className="text-2xl font-bold text-center">Lease Data (For the Client)</h2>
               <p className="text-muted-foreground text-center max-w-md mt-2">
-                Let's start with the basic loan information: name and amount.
+                Configure the basic lease information and terms.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="loanName">Loan Name</Label>
-                <Input
-                  id="loanName"
-                  value={loanParams.loanName}
-                  onChange={handleLoanNameChange}
-                  placeholder="e.g., Downtown Office Renovation"
-                  className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
-                />
-                {loanNameError && (
-                  <p className="text-sm text-red-500 mt-1">{loanNameError}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="assetCost">Asset Cost</Label>
-                <CurrencyInput
-                  id="asset-cost"
-                  name="asset-cost"
-                  value={loanParams.assetCost}
-                  onChange={handleAmountChange}
-                  min={1000}
-                  max={100000000}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Enter the full amount needed for the financing project.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'loan-details':
-        return (
-          <div className="space-y-6 py-4">
-            <div className="flex flex-col items-center justify-center mb-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <CreditCard className="h-10 w-10 text-blue-700" />
-              </div>
-              <h2 className="text-2xl font-bold text-center">Loan Details</h2>
-              <p className="text-muted-foreground text-center max-w-md mt-2">
-                Now let's set up the terms and conditions for this loan.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="loanName">Lease Name</Label>
                   <Input
-                    id="interest-rate"
-                    name="interest-rate"
-                    type="number"
-                    value={loanParams.interestRate}
-                    onChange={handleInterestRateChange}
-                    min={0}
-                    max={999}
-                    step={0.01}
-                    className="pr-12"
-                    placeholder="Interest rate"
+                    id="loanName"
+                    value={loanParams.loanName}
+                    onChange={handleLoanNameChange}
+                    placeholder="e.g., Vehicle Lease Project"
+                    className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                  {loanNameError && (
+                    <p className="text-sm text-red-500 mt-1">{loanNameError}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assetCost">Car Value (without VAT)</Label>
+                  <CurrencyInput
+                    id="asset-cost"
+                    name="asset-cost"
+                    value={loanParams.assetCost}
+                    onChange={handleAmountChange}
+                    min={1000}
+                    max={100000000}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Total vehicle cost without VAT.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="downPayment">Client Initial Payment</Label>
+                  <CurrencyInput
+                    id="down-payment"
+                    name="down-payment"
+                    value={loanParams.downPayment}
+                    onChange={handleDownPaymentChange}
+                    min={0}
+                    max={loanParams.assetCost}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Down payment amount from the client.
+                  </p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="termMonths">Term Length (months)</Label>
-                <Input
-                  id="loan-term"
-                  name="loan-term"
-                  type="number"
-                  value={loanParams.termMonths}
-                  onChange={handleTermMonthsChange}
-                  min={1}
-                  max={360}
-                  placeholder="Enter loan term in months"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentFrequency">Payment Frequency</Label>
-                <Select
-                  value={loanParams.paymentFrequency}
-                  onValueChange={(value) => handleLoanParamChange('paymentFrequency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="semi-annual">Semi-Annual</SelectItem>
-                      <SelectItem value="annual">Annual</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn("w-full justify-start text-left font-normal", !loanParams.startDate && "text-muted-foreground")}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {loanParams.startDate ? format(loanParams.startDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={loanParams.startDate}
-                      onSelect={(date) => handleLoanParamChange('startDate', date || new Date())}
-                      initialFocus
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="termMonths">Term (in Months)</Label>
+                  <Input
+                    id="loan-term"
+                    name="loan-term"
+                    type="number"
+                    value={loanParams.termMonths}
+                    onChange={handleTermMonthsChange}
+                    min={1}
+                    max={360}
+                    placeholder="Enter lease term in months"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Number of months in the contract.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="residualValue">Residual Value Percentage (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="residual-value"
+                      name="residual-value"
+                      type="number"
+                      value={businessParams.residualValueRate}
+                      onChange={handleResidualValueChange}
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      className="pr-12"
+                      placeholder="Residual value"
                     />
-                  </PopoverContent>
-                </Popover>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Percentage of car value remaining as debt at the end.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="interestRate">Annual Interest Rate for Investors (%)</Label>
+                  <div className="relative">
+                    <Input
+                      id="interest-rate"
+                      name="interest-rate"
+                      type="number"
+                      value={loanParams.interestRate}
+                      onChange={handleInterestRateChange}
+                      min={0}
+                      max={999}
+                      step={0.01}
+                      className="pr-12"
+                      placeholder="Interest rate"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your real financial cost.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         );
 
-      case 'business-params':
+      case 'financial-data':
+        const loanAmount = loanParams.assetCost - loanParams.downPayment;
         return (
           <div className="space-y-6 py-4">
             <div className="flex flex-col items-center justify-center mb-6">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Building2 className="h-10 w-10 text-blue-700" />
               </div>
-              <h2 className="text-2xl font-bold text-center">Business Parameters</h2>
+              <h2 className="text-2xl font-bold text-center">Financial Data (Internal for the Lessor)</h2>
               <p className="text-muted-foreground text-center max-w-md mt-2">
-                Configure the business parameters for operational analysis.
+                Configure your internal financial parameters and profit margins.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="assetCost">Asset Cost</Label>
-                <CurrencyInput
-                  id="asset-cost"
-                  name="asset-cost"
-                  value={businessParams.assetCost}
-                  onChange={(value) => handleBusinessParamChange('assetCost', value)}
-                  min={0}
-                  max={100000000}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Cost of the asset being financed.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="otherExpenses">Other Expenses</Label>
-                <CurrencyInput
-                  id="other-expenses"
-                  name="other-expenses"
-                  value={businessParams.otherExpenses}
-                  onChange={(value) => handleBusinessParamChange('otherExpenses', value)}
-                  min={0}
-                  max={100000000}
-                />
-                <p className="text-sm text-muted-foreground">
-                  One-time expenses added to the total project cost.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="monthlyExpenses">Monthly Expenses</Label>
-                <CurrencyInput
-                  id="monthly-expenses"
-                  name="monthly-expenses"
-                  value={businessParams.monthlyExpenses}
-                  onChange={(value) => handleBusinessParamChange('monthlyExpenses', value)}
-                  min={0}
-                  max={100000000}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Recurring monthly operational expenses.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'investors':
-        return (
-          <div className="space-y-6 py-4">
-            <div className="flex flex-col items-center justify-center mb-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <Users className="h-10 w-10 text-blue-700" />
-              </div>
-              <h2 className="text-2xl font-bold text-center">Investor Details</h2>
-              <p className="text-muted-foreground text-center max-w-md mt-2">
-                Add information about the investors contributing to this project.
-              </p>
-              <div className="flex border rounded-md p-1 mt-4">
-                <button
-                  onClick={() => setInputMode('amount')}
-                  className={`px-3 py-1 text-sm rounded-sm ${inputMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
-                >
-                  Amount
-                </button>
-                <button
-                  onClick={() => setInputMode('percentage')}
-                  className={`px-3 py-1 text-sm rounded-sm ${inputMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
-                >
-                  Percentage
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-              {investors.map((investor, index) => (
-                <div key={investor.id} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-medium">Investor {index + 1}</h3>
-                    {investors.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveInvestor(investor.id)}
-                      >
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`investor-name-${investor.id}`}>Name</Label>
-                    <Input
-                      id={`investor-name-${investor.id}`}
-                      value={investor.name}
-                      onChange={(e) => handleInvestorChange(investor.id, 'name', e.target.value)}
-                      placeholder="Investor name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`investor-amount-${investor.id}`}>
-                      {inputMode === 'amount' ? 'Investment Amount' : 'Investment Percentage'}
-                    </Label>
-                    {inputMode === 'amount' ? (
-                      <CurrencyInput
-                        id={`investor-amount-${investor.id}`}
-                        value={investor.investmentAmount}
-                        onChange={(value) => handleInvestorChange(investor.id, 'investmentAmount', value)}
-                        placeholder="Investment amount"
-                      />
-                    ) : (
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          value={((investor.investmentAmount / (loanParams.assetCost - loanParams.downPayment)) * 100).toFixed(2)}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value);
-                            if (!isNaN(value) && value >= 0 && value <= 100) {
-                              handleInvestorPercentageChange(investor.id, value);
-                            }
-                          }}
-                          min={0}
-                          max={100}
-                          step={0.01}
-                          placeholder="Percentage"
-                          className="pr-8"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleAddInvestor}
-                disabled={investors.length >= 20}
-              >
-                + Add Another Investor
-              </Button>
-
-              <div className={cn(
-                "p-4 rounded-lg mt-4",
-                investmentMatchesLoan ? "bg-green-50 text-green-700 border border-green-200" : "bg-amber-50 text-amber-700 border border-amber-200"
-              )}>
+            <div className="space-y-6">
+              {/* Calculated Loan Amount Display */}
+              <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span>Total Investment:</span>
-                  <span className="font-bold">${totalInvestment.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center mt-1">
-                  <span>Loan Amount:</span>
-                  <span className="font-bold">${(loanParams.assetCost - loanParams.downPayment).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center mt-1">
-                  <span>Difference:</span>
-                  <span className={cn(
-                    "font-bold",
-                    !investmentMatchesLoan ? "text-red-600" : "text-green-600"
-                  )}>
-                    ${Math.abs(totalInvestment - (loanParams.assetCost - loanParams.downPayment)).toLocaleString()}
+                  <span className="font-medium">Loan Amount to Investors:</span>
+                  <span className="text-2xl font-bold text-blue-700">
+                    ${loanAmount.toLocaleString()}
                   </span>
                 </div>
-                {!investmentMatchesLoan && (
-                  <p className="text-sm mt-2">
-                    The total investment amount must equal the loan amount.
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  Capital to be financed internally (Car Value - Initial Payment)
+                </p>
               </div>
-            </div>
-          </div>
-        );
 
-      case 'review':
-        return (
-          <div className="space-y-6 py-4">
-            <div className="flex flex-col items-center justify-center mb-6">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <CalendarIcon2 className="h-10 w-10 text-blue-700" />
-              </div>
-              <h2 className="text-2xl font-bold text-center">Review Your Financing Plan</h2>
-              <p className="text-muted-foreground text-center max-w-md mt-2">
-                Please review the details before finalizing the calculation.
-              </p>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profitMargin">Desired Financial Profit Margin (USD)</Label>
+                    <div className="space-y-3">
+                      <Slider
+                        value={[businessParams.profitMarginPesos]}
+                        min={0}
+                        max={10000}
+                        step={100}
+                        onValueChange={handleProfitMarginChange}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>$0</span>
+                        <span className="font-medium text-blue-600">
+                          ${businessParams.profitMarginPesos.toLocaleString()}
+                        </span>
+                        <span>$10,000</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      How much you want to earn from the rate difference (e.g., $500).
+                    </p>
+                  </div>
 
-            <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2">
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-medium mb-3">Loan Details</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">Loan Name:</div>
-                  <div className="font-medium">{loanParams.loanName}</div>
-
-                  <div className="text-muted-foreground">Loan Amount:</div>
-                  <div className="font-medium">${(loanParams.assetCost - loanParams.downPayment).toLocaleString()}</div>
-
-                  <div className="text-muted-foreground">Interest Rate:</div>
-                  <div className="font-medium">{loanParams.interestRate}%</div>
-
-                  <div className="text-muted-foreground">Term Length:</div>
-                  <div className="font-medium">{loanParams.termMonths} months</div>
-
-                  <div className="text-muted-foreground">Payment Frequency:</div>
-                  <div className="font-medium capitalize">{loanParams.paymentFrequency}</div>
-
-                  <div className="text-muted-foreground">Start Date:</div>
-                  <div className="font-medium">{format(loanParams.startDate, "PPP")}</div>
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyAdmin">Monthly Administration Expenses (USD)</Label>
+                    <CurrencyInput
+                      id="monthly-admin"
+                      name="monthly-admin"
+                      value={businessParams.fixedMonthlyFee}
+                      onChange={handleMonthlyAdminChange}
+                      min={0}
+                      max={10000}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Your second layer of utility, administrative costs.
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-medium mb-3">Business Parameters</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">Asset Cost:</div>
-                  <div className="font-medium">${businessParams.assetCost.toLocaleString()}</div>
-
-                  <div className="text-muted-foreground">Other Expenses:</div>
-                  <div className="font-medium">${businessParams.otherExpenses.toLocaleString()}</div>
-
-                  <div className="text-muted-foreground">Monthly Expenses:</div>
-                  <div className="font-medium">${businessParams.monthlyExpenses.toLocaleString()}</div>
-                </div>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-medium mb-3">Investors</h3>
-                {investors.map((investor) => (
-                  <div key={investor.id} className="mb-4 pb-4 border-b last:border-0 last:mb-0 last:pb-0">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-muted-foreground">Name:</div>
-                      <div className="font-medium">{investor.name}</div>
-
-                      <div className="text-muted-foreground">Investment Amount:</div>
-                      <div className="font-medium">${investor.investmentAmount.toLocaleString()}</div>
-
-                      <div className="text-muted-foreground">Share Percentage:</div>
-                      <div className="font-medium">
-                        {((investor.investmentAmount / (loanParams.assetCost - loanParams.downPayment)) * 100).toFixed(2)}%
+                <div className="space-y-4">
+                  {/* Summary Box */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-medium mb-3">Financial Summary</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Car Value (no VAT):</span>
+                        <span className="font-medium">${loanParams.assetCost.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Client Initial Payment:</span>
+                        <span className="font-medium">${loanParams.downPayment.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-muted-foreground">Loan Amount:</span>
+                        <span className="font-bold">${loanAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Interest Rate:</span>
+                        <span className="font-medium">{loanParams.interestRate}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Term:</span>
+                        <span className="font-medium">{loanParams.termMonths} months</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Residual Value:</span>
+                        <span className="font-medium">{businessParams.residualValueRate}%</span>
                       </div>
                     </div>
                   </div>
-                ))}
+
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="font-medium mb-3 text-green-800">Profit Configuration</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Profit Margin:</span>
+                        <span className="font-bold text-green-700">${businessParams.profitMarginPesos.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monthly Admin:</span>
+                        <span className="font-medium">${businessParams.fixedMonthlyFee.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -615,23 +468,16 @@ export function SetupWizard({
   };
 
   const steps = [
-    { id: 'loan-basic', label: 'Loan Info' },
-    { id: 'loan-details', label: 'Loan Details' },
-    { id: 'business-params', label: 'Business' },
-    { id: 'investors', label: 'Investors' },
-    { id: 'review', label: 'Review' },
+    { id: 'lease-data', label: 'Lease Data' },
+    { id: 'financial-data', label: 'Financial Data' },
   ];
 
   const isNextDisabled = () => {
     switch (currentStep) {
-      case 'loan-basic':
+      case 'lease-data':
         return !isLoanNameValid || !isLoanAmountValid;
-      case 'loan-details':
-        return !loanDetailsValid;
-      case 'business-params':
-        return !businessParamsValid;
-      case 'investors':
-        return !investorsValid;
+      case 'financial-data':
+        return false;
       default:
         return false;
     }
@@ -641,9 +487,9 @@ export function SetupWizard({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Financing Setup Wizard</DialogTitle>
+          <DialogTitle>Leasing Setup Wizard</DialogTitle>
           <DialogDescription>
-            Complete the steps below to set up your financing calculation.
+            Complete the steps below to set up your leasing calculation.
           </DialogDescription>
         </DialogHeader>
 
@@ -666,37 +512,68 @@ export function SetupWizard({
                   className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
                     currentStep === step.id ? "bg-blue-600 text-white" :
-                    steps.findIndex(s => s.id === currentStep) > index ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"
+                    steps.findIndex(s => s.id === currentStep) > index ? "bg-blue-600 text-white" :
+                    "bg-gray-200 text-gray-600"
                   )}
                 >
-                  {index + 1}
+                  {steps.findIndex(s => s.id === currentStep) > index ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    index + 1
+                  )}
                 </div>
-                <span className="text-xs mt-1">{step.label}</span>
+                <span className="text-xs font-medium mt-2 text-center">{step.label}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-1">
+        <div className="flex-1 overflow-auto px-1">
           {renderStepContent()}
         </div>
 
-        <DialogFooter className="pt-4 border-t flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={currentStep === 'loan-basic' ? onClose : goToPreviousStep}
+        <div className="flex justify-between pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={handleBack}
+            disabled={currentStep === 'lease-data'}
           >
-            {currentStep === 'loan-basic' ? 'Cancel' : 'Back'}
+            Back
           </Button>
-
-          <Button
-            onClick={goToNextStep}
-            disabled={isNextDisabled()}
-          >
-            {currentStep === 'review' ? 'Finish' : 'Next'}
-          </Button>
-        </DialogFooter>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            {currentStep === 'financial-data' ? (
+              <Button 
+                onClick={handleFinish}
+                disabled={isNextDisabled()}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Complete Setup
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleNext}
+                disabled={isNextDisabled()}
+              >
+                Next
+              </Button>
+            )}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+const nextStepMap: Record<string, string> = {
+  'lease-data': 'financial-data',
+};
+
+const prevStepMap: Record<string, string> = {
+  'financial-data': 'lease-data',
+};
+
+export default SetupWizard;
