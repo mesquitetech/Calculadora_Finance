@@ -144,7 +144,7 @@ export default function Home() {
         console.error('Error parsing saved business parameters:', error);
       }
     }
-    
+
     // Load advanced config from localStorage
     const savedAdvancedConfig = localStorage.getItem('advancedConfig');
     if (savedAdvancedConfig) {
@@ -383,7 +383,7 @@ export default function Home() {
             return { ...investor, totalInterest: 0, totalReturn: investor.investmentAmount, monthlyReturns: [] };
         }
 
-        const numericMonthlyReturns = investor.monthlyReturns.map((ret: any) => 
+        const numericMonthlyReturns = investor.monthlyReturns.map((ret: any) =>
             typeof ret === 'object' ? Number(ret.monthlyReturn || 0) : Number(ret || 0)
         );
 
@@ -1432,6 +1432,10 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex items-center space-x-4">
+              <AdvancedConfigModal
+                config={advancedConfig}
+                onConfigChange={setAdvancedConfig}
+              />
               {activeMainTab === 'renter-operator' && (
                 <RenterConfigModal
                   config={renterConfig}

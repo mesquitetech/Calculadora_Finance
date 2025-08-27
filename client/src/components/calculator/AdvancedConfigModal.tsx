@@ -47,7 +47,10 @@ export function AdvancedConfigModal({ config, onConfigChange }: AdvancedConfigMo
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Advanced Configuration Parameters</DialogTitle>
+          <DialogTitle>Advanced Configuration</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            Configure parameters that are rarely modified during calculations
+          </p>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
