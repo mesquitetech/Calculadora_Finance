@@ -62,8 +62,6 @@ export function BusinessParametersCard({
     setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }));
   };
 
-  
-
   const handleDeliveryCostsChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, deliveryCosts: value }));
   };
