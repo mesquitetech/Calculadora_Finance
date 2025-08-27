@@ -1,0 +1,143 @@
+I need you to perform a complete refactoring of my InvestmentTracker application. The goal is to transform it from its current "cost-plus-margin" model into a precise leasing calculator that replicates the financial logic found in my specific Excel (COTIZADOR MESQUITE.xlsx) and PDF (ABCLEASING202585849530.pdf) examples.
+
+Please implement the following changes and functionalities:
+
+Phase 1: Overhaul the Core Calculation Engine (client/src/lib/leasingCalculations.ts)
+
+This is the most critical phase. The current calculation logic is incorrect for our business model and must be replaced entirely.
+
+1.1. Deprecate Existing Calculation Functions: Remove or comment out the current primary function calculateLeasingFinancials and its helper functions like calculateLessorMonthlyProfit, calculateBaseRentAmortization, etc. They are based on a "cost-plus" model we are abandoning.
+
+1.2. Implement Excel-Equivalent Financial Functions: Create new, standalone TypeScript functions that replicate the exact behavior of the following Excel financial functions:
+
+PMT(rate, nper, pv, [fv], [type]): To calculate the fixed monthly payment for a loan. The existing calculateLoanMonthlyPayment is a good starting point, but it must be enhanced to correctly handle the fv (future value) parameter, which is essential for residual value calculations.
+
+IPMT(rate, per, nper, pv, [fv], [type]): To calculate the interest portion of a payment for a specific period (per). This function is completely missing and must be created from scratch.
+
+PPMT(rate, per, nper, pv, [fv], [type]): To calculate the principal portion of a payment for a specific period (per). This is also missing and needs to be created.
+
+1.3. Create the Main Calculation Orchestrator: Develop a new primary function, e.g., generateLeasingModels(inputs). This function will be the new heart of the application and will perform the following steps:
+
+It must take a single inputs object containing the core variables from the Excel/PDF (Asset Value, Down Payment, Term, Client Interest Rate, Residual Value %, Investor Loan Amount, Investor Interest Rate).
+
+It will use the new PMT, IPMT, and PPMT functions to generate two separate and complete amortization schedules.
+
+1.4. Implement the "Client Quotation Model":
+
+Purpose: Generate the amortization schedule that is shown to the client.
+
+Logic:
+
+Calculate presentValue as assetValue - downPayment.
+
+Calculate futureValue as assetValue * residualValueRate%. This value will be negative as it represents a final balloon payment.
+
+Loop from period 1 to termMonths. In each iteration, call PMT (once, as it's constant), IPMT, and PPMT to calculate the payment, interest, and principal for that specific month.
+
+Track the outstandingBalance (previousBalance - principal).
+
+Critical Requirement: The final outstandingBalance at the end of the term must equal the calculated futureValue.
+
+1.5. Implement the "Lessor Cost Model":
+
+Purpose: Generate the internal amortization schedule to understand the cost of financing.
+
+Logic:
+
+Calculate presentValue as the investorLoanAmount.
+
+The futureValue for this model is always zero.
+
+Loop from period 1 to termMonths and calculate the payment, interest, and principal for the investors' loan.
+
+Critical Requirement: The final outstandingBalance at the end of the term must be zero.
+
+1.6. Calculate Lessor's Profitability:
+
+After generating both models, calculate the grossMonthlyMargin as: (Client PMT - Lessor PMT).
+
+The function should return an object containing both complete amortization schedules and the calculated profitability metrics.
+
+Phase 2: Refactor the Frontend User Interface (client/src/pages/home.tsx)
+
+The user input form must be completely redesigned to match the new calculation engine.
+
+2.1. Remove Obsolete Input Fields: Delete all UI components and corresponding state variables (businessParams) for inputs that are no longer needed, such as:
+
+lessorProfitMarginPct
+
+fixedMonthlyFee
+
+adminCommissionPct
+
+securityDepositMonths
+
+deliveryCosts, otherExpenses, monthlyExpenses
+
+discountRate
+
+2.2. Add Required Input Fields: Create a new, clean form that captures the essential inputs for the Excel-based model. This will likely involve creating a new state object to manage these inputs.
+
+assetValue: (Currency Input) The total value of the car/asset without VAT.
+
+downPayment: (Currency Input) The initial amount paid by the client.
+
+termMonths: (Number Input) The loan term in months.
+
+clientAnnualInterestRate: (Percentage Input) The yearly interest rate for the client's quote.
+
+residualValuePercentage: (Percentage Input) The percentage of the asset value that will remain as a final payment.
+
+2.3. Simplify the Investor Loan Section: The "Financing & Investors" section is good, but ensure it captures two key inputs for the Lessor Cost Model:
+
+investorLoanAmount: The total amount being financed by investors.
+
+investorAnnualInterestRate: The interest rate for the investor loan.
+
+The existing investor distribution logic (splitting the total loan among multiple investors) is a good feature and can remain.
+
+2.4. Update State Management: The React state (useState) in the Home component must be refactored to hold the new, simplified input structure. The complex businessParams state should be replaced.
+
+Phase 3: Create a High-Fidelity PDF Generation Module
+
+The current PDF generation is for a different report type. A new, dedicated module is required.
+
+3.1. Create a New PDF Generator File: Add a new file, e.g., client/src/lib/leasingQuotePDF.ts.
+
+3.2. Design a Pixel-Perfect Layout: Using jsPDF, create a function that builds a PDF document to look exactly like the ABCLEASING202585849530.pdf sample. This requires meticulous control over the (x, y) coordinates of every text element and line.
+
+3.3. Implement Dynamic Data Mapping: The function must accept the results from the new generateLeasingModels function. It will then map this data to the correct locations in the PDF layout.
+
+3.4. Replicate All PDF Sections: The new module must generate all sections from the sample PDF, including:
+
+Header with company name, title, folio, and date.
+
+Vehicle and client information.
+
+The "Conceptos Financiados" table.
+
+The "Pago Inicial" table. Note: This table in the PDF contains some declarative fields (like Seguro primer año and Comisión por apertura). These should be added as new input fields on the frontend so they can be included in the PDF.
+
+The "Renta Mensual" table. The values here (Renta básica, Gastos administración) should be derived from the Client Quotation Model's calculated payment.
+
+The "Valor Residual" section, displaying the calculated final payment amount.
+
+The footer with terms and conditions and contact information.
+
+3.5. Integrate with UI: Add a "Generate Quote PDF" button on the results page that triggers this new PDF generation function.
+
+Phase 4: API, Database, and Final Integration
+
+The backend and data persistence layers need to be updated to support the new data model.
+
+4.1. Update Database Schema (shared/schema.ts): The businessParameters table is now obsolete. It should be replaced or heavily modified to store the new, simpler set of inputs (Asset Value, Down Payment, rates, etc.). The existing loans and investors tables are likely still relevant.
+
+4.2. Refactor API Endpoints (server/routes.ts):
+
+The main /api/calculate endpoint must be updated to accept the new, simplified input object.
+
+It should call the new calculation engine instead of the old one.
+
+The data it saves to the database must match the updated schema.
+
+4.3. Update Frontend Data Fetching: Ensure the component that displays saved calculations (saved-calculations.tsx) correctly fetches and displays the new data structure. The "Load" functionality must correctly pre-fill the refactored input form.
