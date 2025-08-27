@@ -40,16 +40,25 @@ export function OperatorDashboardTab({
   operatorResults,
   onExportReport
 }: OperatorDashboardTabProps) {
-  
+
+  // Early return if operatorMetrics is undefined
+  if (!operatorResults) {
+    return (
+      <div className="p-4">
+        <p>Loading operator metrics...</p>
+      </div>
+    );
+  }
+
   // Calculate additional metrics for charts
   const monthlyNetCashFlow = operatorResults.clientBaseRent - operatorResults.monthlyPaymentToInvestors;
-  
+
   // Generate cumulative cash flow data for charts
   const cumulativeCashFlowData = Array.from({ length: operatorResults.clientSchedule.length }, (_, i) => {
     const month = i + 1;
     const cumulativeFlow = monthlyNetCashFlow * month;
     const cumulativeNPV = operatorResults.netPresentValue * (month / operatorResults.clientSchedule.length);
-    
+
     return {
       month,
       cumulativeFlow,
@@ -60,7 +69,7 @@ export function OperatorDashboardTab({
   const cumulativeNPVData = Array.from({ length: operatorResults.clientSchedule.length }, (_, i) => {
     const month = i + 1;
     const cumulativeNPV = operatorResults.netPresentValue * (month / operatorResults.clientSchedule.length);
-    
+
     return {
       month,
       cumulativeNPV
