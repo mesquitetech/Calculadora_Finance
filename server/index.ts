@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { createServer } from "http";
-import routes from "./routes";
+import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -38,11 +37,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Usar las rutas como middleware
-  app.use("/api", routes);
-  
-  // Crear el servidor HTTP
-  const server = createServer(app);
+  const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
