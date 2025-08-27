@@ -1,6 +1,12 @@
 import express from "express";
 import { storage } from "./storage";
 import { generateLeasingModels, LeasingInputs } from "../client/src/lib/leasingCalculations";
+import {
+  generatePaymentSchedule,
+  calculateInvestorReturns,
+  calculateMonthlyPayment,
+  type InvestorReturn,
+} from "../client/src/lib/finance";
 
 const router = express.Router();
 
@@ -9,7 +15,85 @@ router.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// ===== NUEVOS ENDPOINTS PARA LEASING =====
+// ===== ORIGINAL INVESTOR LOAN ENDPOINTS =====
+
+// POST /calculate - Calculate loan details and save
+router.post("/calculate", async (req, res) => {
+  try {
+    const { loanParams, investors, businessParams } = req.body;
+
+    // Input validation
+    if (!loanParams || !investors || !Array.isArray(investors)) {
+      return res.status(400).json({ message: "Invalid input data" });
+    }
+
+    if (investors.length === 0) {
+      return res.status(400).json({ message: "At least one investor is required" });
+    }
+
+    const totalInvestment = investors.reduce((sum: number, inv: any) => sum + (Number(inv.investmentAmount) || 0), 0);
+    if (Math.abs(totalInvestment - loanParams.totalAmount) > 0.01) {
+      return res.status(400).json({ message: "Total investment must match loan amount" });
+    }
+
+    // Calculate payment schedule and results
+    const monthlyPayment = calculateMonthlyPayment(
+      loanParams.totalAmount,
+      loanParams.interestRate,
+      loanParams.termMonths
+    );
+
+    const paymentSchedule = generatePaymentSchedule(
+      loanParams.totalAmount,
+      loanParams.interestRate,
+      loanParams.termMonths,
+      new Date(loanParams.startDate),
+      loanParams.paymentFrequency
+    );
+
+    const totalInterest = paymentSchedule.reduce((sum, payment) => sum + payment.interest, 0);
+    const endDate = paymentSchedule[paymentSchedule.length - 1]?.date || new Date();
+
+    // Calculate investor returns
+    const investorReturns = investors.map((investor: any) =>
+      calculateInvestorReturns(
+        Number(investor.investmentAmount),
+        totalInvestment,
+        paymentSchedule,
+        investor.id || String(Math.random()),
+        investor.name
+      )
+    );
+
+    // Return calculation results
+    res.json({
+      success: true,
+      loanData: {
+        loanName: loanParams.loanName || "Untitled Loan",
+        amount: loanParams.totalAmount,
+        interestRate: loanParams.interestRate,
+        termMonths: loanParams.termMonths,
+        startDate: loanParams.startDate,
+        paymentFrequency: loanParams.paymentFrequency || 'monthly',
+        monthlyPayment: monthlyPayment,
+        totalInterest: totalInterest,
+        endDate: endDate,
+      },
+      paymentSchedule: paymentSchedule,
+      investorReturns: investorReturns,
+      businessParams: businessParams
+    });
+
+  } catch (error) {
+    console.error("Error calculating loan:", error);
+    res.status(500).json({ 
+      error: "Failed to calculate loan", 
+      details: error instanceof Error ? error.message : "Unknown error" 
+    });
+  }
+});
+
+// ===== LEASING ENDPOINTS =====
 
 // Crear/calcular nueva cotización de leasing
 router.post("/leasing-calculate", async (req, res) => {
