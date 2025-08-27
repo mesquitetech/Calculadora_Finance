@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -19,13 +18,15 @@ interface DatePickerProps {
   setDate: (date: Date | undefined) => void
   placeholder?: string
   disabled?: boolean
+  className?: string
 }
 
-export function DatePicker({ 
-  date, 
-  setDate, 
+export function DatePicker({
+  date,
+  setDate,
   placeholder = "Pick a date",
-  disabled = false 
+  disabled = false,
+  className
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -41,7 +42,8 @@ export function DatePicker({
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
+            className
           )}
           disabled={disabled}
         >
