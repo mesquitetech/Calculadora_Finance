@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +18,20 @@ import {
   formatCurrency,
   formatPercentage 
 } from "@/lib/leasingCalculations";
+import { generateCustomerQuote, CustomerQuoteData } from '@/lib/customerQuoteGenerator';
 
 interface LesseeQuoteTabProps {
   leasingInputs: LeasingInputs;
   startDate: Date;
   onExportQuote: () => void;
+  loanName: string; 
 }
 
 export function LesseeQuoteTab({
   leasingInputs,
   startDate,
-  onExportQuote
+  onExportQuote,
+  loanName
 }: LesseeQuoteTabProps) {
   // Validate inputs before calculation - ensure we have meaningful defaults
   const validatedInputs = {
@@ -48,13 +50,39 @@ export function LesseeQuoteTab({
   };
 
   const results = calculateLeasingFinancials(validatedInputs, startDate);
-  
+
   // Calculate VAT (16%)
   const vat_rate = 0.16;
   const monthly_rent_with_vat = (results.total_monthly_rent_sans_iva || 0) * (1 + vat_rate);
   const initial_payment_with_vat = ((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0)) * (1 + vat_rate) + (results.initial_security_deposit || 0);
-  
+
   const total_contract_value = (monthly_rent_with_vat * (validatedInputs.lease_term_months || 0)) + initial_payment_with_vat;
+
+  const handleExportQuote = () => {
+    try {
+      const endDate = new Date(startDate.getTime() + validatedInputs.lease_term_months * 30 * 24 * 60 * 60 * 1000);
+
+      const quoteData: CustomerQuoteData = {
+        loanName: loanName, // You can get this from form if available
+        assetCost: validatedInputs.asset_cost_sans_iva,
+        downPayment: validatedInputs.asset_cost_sans_iva - validatedInputs.loan_amount,
+        loanAmount: validatedInputs.loan_amount,
+        interestRate: validatedInputs.annual_interest_rate,
+        termMonths: validatedInputs.lease_term_months,
+        monthlyPayment: results.monthly_payment,
+        totalInterest: results.total_interest_cost,
+        totalAmount: results.monthly_payment * validatedInputs.lease_term_months,
+        startDate: startDate,
+        endDate: endDate
+      };
+
+      const doc = generateCustomerQuote(quoteData);
+      doc.save(`Customer_Quote_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating quote PDF:', error);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -68,7 +96,7 @@ export function LesseeQuoteTab({
             Professional proposal for the end client
           </p>
         </div>
-        <Button onClick={onExportQuote} className="flex items-center gap-2">
+        <Button onClick={handleExportQuote} className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export Quote
         </Button>
