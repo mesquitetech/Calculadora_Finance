@@ -66,8 +66,8 @@ export default function Home() {
   const [advancedConfig, setAdvancedConfig] = useState<AdvancedConfig>({
     residualValueRate: 25,
     discountRate: 4,
-    adminCommissionPct: 0,
-    securityDepositMonths: 0
+    adminCommissionPct: 1,
+    securityDepositMonths: 1
   });
 
   // Generate or get session ID
@@ -209,8 +209,8 @@ export default function Home() {
     adminCommissionPct: 1.0, // 1% comisión por apertura (now from advancedConfig)
     securityDepositMonths: 1, // 1 mes de depósito (now from advancedConfig)
     deliveryCosts: 7500.0, // Costos de trámites y entrega
-    residualValueRate: 20.0, // 20% valor residual (now from advancedConfig)
-    discountRate: 6.0, // 6% tasa de descuento (now from advancedConfig)
+    residualValueRate: 25.0, // 25% valor residual (now from advancedConfig)
+    discountRate: 4.0, // 4% tasa de descuento (now from advancedConfig)
   });
 
   const [calculationResults, setCalculationResults] = useState<{
