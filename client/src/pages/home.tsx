@@ -762,39 +762,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
-                  <Label htmlFor="admin-commission">Opening Commission (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="admin-commission"
-                      type="number"
-                      value={advancedConfig.adminCommissionPct} // Use advancedConfig value
-                      onChange={(e) => setAdvancedConfig(prev => ({ ...prev, adminCommissionPct: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={10}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <Label htmlFor="security-deposit">Deposit (months)</Label>
-                  <Input
-                    id="security-deposit"
-                    type="number"
-                    value={advancedConfig.securityDepositMonths} // Use advancedConfig value
-                    onChange={(e) => setAdvancedConfig(prev => ({ ...prev, securityDepositMonths: parseInt(e.target.value) || 0 }))}
-                    min={0}
-                    max={12}
-                    step={1}
-                    disabled={isCalculating}
-                  />
-                </div>
-              </div>
+              
 
               <div className="form-group">
                 <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
