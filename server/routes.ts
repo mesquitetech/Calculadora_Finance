@@ -13,7 +13,9 @@ import {
   generatePaymentSchedule,
   calculateInvestorReturns,
   calculateMonthlyPayment,
-  type InvestorReturn, // Import calculateMonthlyPayment
+  calculateNewLeasingFlow,
+  type InvestorReturn,
+  type NewCalculationResult, // Import calculateMonthlyPayment
 } from "@/lib/finance";
 import { z } from "zod";
 import { ZodError } from "zod";
@@ -21,7 +23,7 @@ import { fromZodError } from "zod-validation-error";
 import { desc, eq } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // POST /api/calculate - Calculate loan details and save
+  // POST /api/calculate - Calculate loan details and save using NEW CALCULATION ENGINE
   app.post("/api/calculate", async (req, res) => {
     try {
       const { loanParams, investors, businessParams } = req.body;
@@ -40,38 +42,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Total investment must match loan amount" });
       }
 
-      // Calculate payment schedule and results
-      const monthlyPayment = calculateMonthlyPayment(
-        loanParams.totalAmount,
-        loanParams.interestRate,
-        loanParams.termMonths
-      );
+      // Extract necessary parameters for new calculation engine
+      const assetCost = businessParams?.assetCost || loanParams.totalAmount;
+      const downPayment = assetCost - loanParams.totalAmount; // Calculate down payment
+      const financialMarginPesos = businessParams?.profitMarginPesos || 500; // Default margin
+      const residualValueRate = businessParams?.residualValueRate || 25; // Default 25%
+      const discountRate = businessParams?.discountRate || 4; // Default 4%
 
-      const paymentSchedule = generatePaymentSchedule(
-        loanParams.totalAmount,
-        loanParams.interestRate,
+      // Use NEW CALCULATION ENGINE
+      const newResults = calculateNewLeasingFlow(
+        assetCost,
+        downPayment,
+        loanParams.interestRate, // This is the investor rate
         loanParams.termMonths,
         new Date(loanParams.startDate),
-        loanParams.paymentFrequency
+        investors.map(inv => ({
+          id: inv.id || String(Math.random()),
+          name: inv.name,
+          investmentAmount: Number(inv.investmentAmount)
+        })),
+        financialMarginPesos,
+        residualValueRate,
+        discountRate
       );
 
+      // Use investor schedule for backward compatibility (panel de inversionistas se mantiene igual)
+      const paymentSchedule = newResults.investorSchedule;
+      const monthlyPayment = newResults.monthlyPaymentToInvestors;
       const totalInterest = paymentSchedule.reduce((sum, payment) => sum + payment.interest, 0);
       const endDate = paymentSchedule[paymentSchedule.length - 1]?.date || new Date();
 
-      // Calculate investor returns
-      const investorReturns = investors.map((investor: any) =>
-        calculateInvestorReturns(
-          Number(investor.investmentAmount),
-          totalInvestment,
-          paymentSchedule,
-          investor.id || String(Math.random()),
-          investor.name
-        )
-      );
-
       // Save to database with transaction
       const result = await db.transaction(async (tx) => {
-        // Insert loan record
+        // Insert loan record with investor data (maintain backward compatibility)
         const [loan] = await tx.insert(loans).values({
           loanName: loanParams.loanName || "Untitled Loan",
           amount: String(loanParams.totalAmount),
@@ -84,11 +87,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endDate: new Date(endDate),
         }).returning();
 
-        // Insert business parameters with ALL values
+        // Insert business parameters with new operator values
         if (businessParams) {
           await tx.insert(businessParameters).values({
             loanId: loan.id,
-            assetCost: String(businessParams.assetCost || 0),
+            assetCost: String(assetCost),
             otherExpenses: String(businessParams.otherExpenses || 0),
             monthlyExpenses: String(businessParams.monthlyExpenses || 0),
             lessorProfitMarginPct: String(businessParams.lessorProfitMarginPct || 15),
@@ -96,15 +99,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             adminCommissionPct: String(businessParams.adminCommissionPct || 2),
             securityDepositMonths: businessParams.securityDepositMonths || 1,
             deliveryCosts: String(businessParams.deliveryCosts || 0),
-            residualValueRate: String(businessParams.residualValueRate || 20),
-            discountRate: String(businessParams.discountRate || 6),
+            residualValueRate: String(residualValueRate),
+            discountRate: String(discountRate),
           });
         }
 
-        // Insert payment schedule
+        // Insert investor payment schedule (for investor panel)
         const scheduleData = paymentSchedule.map((payment, index) => {
           const paymentDate = payment.date instanceof Date ? payment.date : new Date(payment.date);
-          // Validate the date
           if (isNaN(paymentDate.getTime())) {
             throw new Error(`Invalid payment date for payment ${index + 1}: ${payment.date}`);
           }
@@ -131,17 +133,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return loan;
       });
 
-      // Respond with calculation results
+      // Respond with NEW CALCULATION RESULTS
       res.status(201).json({
         loanId: result.id,
-        monthlyPayment,
-        totalInterest,
-        paymentSchedule: paymentSchedule.map(p => ({
+        monthlyPayment, // For investor panel (unchanged)
+        totalInterest,  // For investor panel (unchanged)
+        paymentSchedule: paymentSchedule.map(p => ({ // For investor panel (unchanged)
           ...p,
           date: p.date instanceof Date ? p.date.toISOString() : new Date(p.date).toISOString()
         })),
-        investorReturns,
+        investorReturns: newResults.investorReturns, // For investor panel (unchanged)
         endDate: endDate instanceof Date ? endDate.toISOString() : new Date(endDate).toISOString(),
+        
+        // NEW OPERATOR RESULTS
+        operatorResults: {
+          fixedCost: newResults.fixedCost,
+          financialMargin: newResults.financialMargin,
+          clientBaseRent: newResults.clientBaseRent,
+          clientRate: newResults.clientRate,
+          clientSchedule: newResults.clientSchedule.map(p => ({
+            ...p,
+            date: p.date instanceof Date ? p.date.toISOString() : new Date(p.date).toISOString()
+          })),
+          residualValue: newResults.residualValue,
+          netPresentValue: newResults.netPresentValue,
+          internalRateOfReturn: newResults.internalRateOfReturn,
+          paybackPeriodMonths: newResults.paybackPeriodMonths,
+          totalProjectProfit: newResults.totalProjectProfit,
+          expectedResidualValue: newResults.expectedResidualValue,
+          monthlyPaymentToInvestors: newResults.monthlyPaymentToInvestors
+        }
       });
 
     } catch (error) {

@@ -19,7 +19,7 @@ import { TabNavigation, MainTab, LenderSubTab, RenterSubTab } from "@/components
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
-import { formatCurrency, formatDate, formatPercentage } from "@/lib/finance";
+import { formatCurrency, formatDate, formatPercentage, type OperatorResults } from "@/lib/finance";
 import { generateProjectSummaryReport } from "@/lib/simplePdfGenerator";
 
 interface InvestorReturn {
@@ -68,6 +68,7 @@ interface CalculationDetails {
     residualValueRate: number;
     discountRate: number;
   };
+  operatorResults?: OperatorResults; // NEW: Operator results from the new calculation engine
 }
 
 export default function CalculationDetails() {
@@ -207,7 +208,7 @@ export default function CalculationDetails() {
   const formattedPaymentSchedule = data.paymentSchedule.map(entry => ({
     ...entry,
     date: new Date(entry.date),
-    payment: Number(entry.payment || entry.amount),
+    payment: Number(entry.amount), // Use 'amount' field which exists in PaymentScheduleEntry
     principal: Number(entry.principal),
     interest: Number(entry.interest),
     balance: Number(entry.balance)
@@ -219,7 +220,7 @@ export default function CalculationDetails() {
     totalAmount: data.amount,
     interestRate: data.interestRate,
     termMonths: data.termMonths,
-    startDate: data.startDate,
+    startDate: new Date(data.startDate), // Convert string to Date
     paymentFrequency: data.paymentFrequency
   };
 
@@ -300,25 +301,19 @@ export default function CalculationDetails() {
 
         switch (activeRenterSubTab) {
           case 'dashboard':
-            // Ensure all required business parameters have default values
-            const completeBusinessParams = {
-              ...data.businessParams,
-              lessorProfitMarginPct: data.businessParams.lessorProfitMarginPct || 15,
-              fixedMonthlyFee: data.businessParams.fixedMonthlyFee || 0,
-              adminCommissionPct: data.businessParams.adminCommissionPct || 2,
-              securityDepositMonths: data.businessParams.securityDepositMonths || 1,
-              deliveryCosts: data.businessParams.deliveryCosts || 0,
-              residualValueRate: data.businessParams.residualValueRate || 20,
-              discountRate: data.businessParams.discountRate || 6,
-            };
+            // Check if operatorResults are available from the NEW calculation engine
+            if (!data.operatorResults) {
+              return (
+                <div className="text-center py-20">
+                  <p className="text-muted-foreground mb-4">Operator results not available for this calculation.</p>
+                  <p className="text-sm text-muted-foreground">This calculation was made with the old system. Please recalculate to view operator analysis.</p>
+                </div>
+              );
+            }
             
             return (
               <OperatorDashboardTab
-                businessParams={completeBusinessParams}
-                loanParams={loanParams}
-                monthlyPayment={data.monthlyPayment}
-                paymentSchedule={formattedPaymentSchedule}
-                investors={data.investorReturns}
+                operatorResults={data.operatorResults}
                 onExportReport={handleExportReport}
               />
             );
@@ -333,12 +328,14 @@ export default function CalculationDetails() {
                   admin_commission_pct: data.businessParams.adminCommissionPct,
                   security_deposit_months: data.businessParams.securityDepositMonths,
                   delivery_costs: data.businessParams.deliveryCosts,
+                  other_initial_expenses: data.businessParams.otherExpenses, // Add missing field
                   loan_amount: data.amount,
                   annual_interest_rate: data.interestRate,
                   monthly_operational_expenses: data.businessParams.monthlyExpenses,
                   residual_value_rate: data.businessParams.residualValueRate,
                   discount_rate: data.businessParams.discountRate,
                 }}
+                loanName={data.loanName} // Add missing loanName property
                 startDate={startDate}
                 onExportQuote={() => {
                   toast({

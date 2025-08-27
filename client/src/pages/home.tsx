@@ -407,7 +407,29 @@ export default function Home() {
         totalInterest: data.totalInterest,
         paymentSchedule: paymentSchedule,
         investorReturns: transformedInvestorReturns,
-        endDate: new Date(data.endDate)
+        endDate: new Date(data.endDate),
+        // NEW OPERATOR RESULTS
+        operatorResults: data.operatorResults ? {
+          fixedCost: data.operatorResults.fixedCost,
+          financialMargin: data.operatorResults.financialMargin,
+          clientBaseRent: data.operatorResults.clientBaseRent,
+          clientRate: data.operatorResults.clientRate,
+          clientSchedule: data.operatorResults.clientSchedule.map((payment: any) => ({
+            ...payment,
+            date: new Date(payment.date),
+            payment: Number(payment.payment || payment.amount),
+            principal: Number(payment.principal),
+            interest: Number(payment.interest),
+            balance: Number(payment.balance)
+          })),
+          residualValue: data.operatorResults.residualValue,
+          netPresentValue: data.operatorResults.netPresentValue,
+          internalRateOfReturn: data.operatorResults.internalRateOfReturn,
+          paybackPeriodMonths: data.operatorResults.paybackPeriodMonths,
+          totalProjectProfit: data.operatorResults.totalProjectProfit,
+          expectedResidualValue: data.operatorResults.expectedResidualValue,
+          monthlyPaymentToInvestors: data.operatorResults.monthlyPaymentToInvestors
+        } : undefined
       };
     },
     onSuccess: (data) => {
