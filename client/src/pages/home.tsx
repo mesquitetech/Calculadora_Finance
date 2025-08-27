@@ -7,14 +7,13 @@ import { Footer } from "@/components/calculator/Footer";
 import { AboutFooter } from "@/components/calculator/AboutFooter";
 import { Link, useLocation } from "wouter";
 import { TabNavigation, MainTab, LenderSubTab, RenterSubTab } from "@/components/calculator/TabNavigation";
-import { LoanParameters } from "@/components/calculator/LoanParametersCard";
+import { LoanParameters, LoanParametersCard } from "@/components/calculator/LoanParametersCard";
 import { Investor } from "@/components/calculator/InvestorsCard";
-import { BusinessParameters } from "@/components/calculator/BusinessParametersCard";
+import { BusinessParameters, BusinessParametersCard } from "@/components/calculator/BusinessParametersCard";
 import { PaymentScheduleTab } from "@/components/calculator/PaymentScheduleTab";
 import { InvestorReturnsTab } from "@/components/calculator/InvestorReturnsTab";
 import { SummaryTab } from "@/components/calculator/SummaryTab";
 import { ReportsTab } from "@/components/calculator/ReportsTab";
-import { SetupWizard } from "@/components/calculator/SetupWizard";
 import { ProjectionsTab } from "@/components/calculator/ProjectionsTab";
 import { BankerReportsTab } from "@/components/calculator/BankerReportsTab";
 import { RenterAnalysisTab } from "@/components/calculator/RenterAnalysisTab";
@@ -107,6 +106,7 @@ export default function Home() {
               deliveryCosts: data.businessParams.deliveryCosts > 0 ? data.businessParams.deliveryCosts : prev.deliveryCosts,
               residualValueRate: data.businessParams.residualValueRate > 0 ? data.businessParams.residualValueRate : prev.residualValueRate,
               discountRate: data.businessParams.discountRate > 0 ? data.businessParams.discountRate : prev.discountRate,
+              profitMarginPesos: data.businessParams.profitMarginPesos > 0 ? data.businessParams.profitMarginPesos : prev.profitMarginPesos,
             }));
           }
           if (data.renterConfig) {
@@ -139,6 +139,7 @@ export default function Home() {
           deliveryCosts: parsed.deliveryCosts > 0 ? parsed.deliveryCosts : prev.deliveryCosts,
           residualValueRate: parsed.residualValueRate > 0 ? parsed.residualValueRate : prev.residualValueRate,
           discountRate: parsed.discountRate > 0 ? parsed.discountRate : prev.discountRate,
+          profitMarginPesos: parsed.profitMarginPesos > 0 ? parsed.profitMarginPesos : prev.profitMarginPesos,
         }));
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
@@ -211,6 +212,7 @@ export default function Home() {
     deliveryCosts: 7500.0, // Costos de trámites y entrega
     residualValueRate: 25.0, // 25% valor residual (now from advancedConfig)
     discountRate: 4.0, // 4% tasa de descuento (now from advancedConfig)
+    profitMarginPesos: 500, // New field for peso-based profit margin
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -239,6 +241,10 @@ export default function Home() {
 
   const handleValidationChange = useCallback((newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
     setValidations(newValidations);
+  }, []);
+
+  const handleResidualValueChange = useCallback((value: number) => {
+    setBusinessParams(prev => ({ ...prev, residualValueRate: value }));
   }, []);
 
   useEffect(() => {
@@ -1163,85 +1169,48 @@ export default function Home() {
       case 'input':
         return (
           <div className="px-4 sm:px-6">
-            <div className="max-w-4xl mx-auto">
-              {/* Step Indicators */}
-              <div className="flex items-center justify-center mb-8">
-                <div className="flex items-center space-x-4">
-                  {[
-                    { id: 'asset-leasing', label: 'Asset & Leasing', icon: Car },
-                    { id: 'financing-investors', label: 'Financing & Investors', icon: Users },
-                    { id: 'review-calculate', label: 'Review & Calculate', icon: Calculator }
-                  ].map((step, index) => {
-                    const isActive = currentWizardStep === step.id;
-                    const isCompleted = index < ['asset-leasing', 'financing-investors', 'review-calculate'].indexOf(currentWizardStep);
-                    const StepIcon = step.icon;
+            <div className="max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Lease Data Section */}
+                <LoanParametersCard
+                  loanParams={loanParams}
+                  setLoanParams={setLoanParams}
+                  isCalculating={isCalculating}
+                  onValidationChange={handleValidationChange}
+                  residualValueRate={businessParams.residualValueRate}
+                  onResidualValueChange={handleResidualValueChange}
+                />
 
-                    return (
-                      <div key={step.id} className="flex items-center">
-                        {index > 0 && (
-                          <div className={`w-12 h-0.5 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />
-                        )}
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
-                              isActive ? "bg-blue-600 text-white" :
-                              isCompleted ? "bg-green-600 text-white" : "bg-gray-200 text-gray-600"
-                            )}
-                          >
-                            <StepIcon className="h-5 w-5" />
-                          </div>
-                          <span className="text-xs mt-2 text-center max-w-[80px]">{step.label}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* Financial Data Section */}
+                <BusinessParametersCard
+                  businessParams={businessParams}
+                  setBusinessParams={setBusinessParams}
+                  isCalculating={isCalculating}
+                  loanAmount={loanParams.assetCost - loanParams.downPayment}
+                />
               </div>
 
-              {/* Main Wizard Card */}
-              <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50/50">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold text-center">
-                    {currentWizardStep === 'asset-leasing' && 'Asset & Leasing Configuration'}
-                    {currentWizardStep === 'financing-investors' && 'Financing & Investors Setup'}
-                    {currentWizardStep === 'review-calculate' && 'Review & Calculate'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-8">
-                  {renderWizardStep()}
-                </CardContent>
-
-                {/* Navigation Footer */}
-                <div className="border-t p-6 flex justify-between items-center">
-                  <Button
-                    variant="outline"
-                    onClick={goToPreviousStep}
-                    disabled={currentWizardStep === 'asset-leasing'}
-                    className="flex items-center gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-
-                  <div className="text-sm text-muted-foreground">
-                    Step {['asset-leasing', 'financing-investors', 'review-calculate'].indexOf(currentWizardStep) + 1} of 3
-                  </div>
-
-                  <Button
-                    onClick={goToNextStep}
-                    disabled={
-                      (currentWizardStep === 'asset-leasing' && !isStep1Valid()) ||
-                      (currentWizardStep === 'financing-investors' && !isStep2Valid()) ||
-                      currentWizardStep === 'review-calculate'
-                    }
-                    className="flex items-center gap-2"
-                  >
-                    Next
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
+              {/* Calculate Button */}
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleCalculate}
+                  disabled={!inputsValid || calculateMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                  size="lg"
+                >
+                  {calculateMutation.isPending ? (
+                    <>
+                      <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></span>
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="mr-2 h-5 w-5" />
+                      Calculate Lease
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -1438,15 +1407,6 @@ export default function Home() {
       <Footer />
 
       <AboutFooter />
-
-      <SetupWizard
-        isOpen={wizardOpen}
-        onClose={closeWizard}
-        onSave={handleWizardSave}
-        initialLoanParams={loanParams}
-        initialInvestors={investors}
-        initialBusinessParams={businessParams}
-      />
     </div>
   );
 }
