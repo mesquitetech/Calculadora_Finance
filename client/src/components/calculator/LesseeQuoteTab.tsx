@@ -90,7 +90,7 @@ export function LesseeQuoteTab({
         <div>
           <h2 className="text-3xl font-bold flex items-center gap-2">
             <Car className="h-8 w-8 text-blue-600" />
-            Leasing Quote
+            Customer Quote
           </h2>
           <p className="text-muted-foreground mt-1">
             Professional proposal for the end client
