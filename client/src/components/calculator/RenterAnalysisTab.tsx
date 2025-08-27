@@ -36,12 +36,9 @@ import {
   Bar
 } from "recharts";
 import { 
-  calculateLeasingFinancials, 
-  LeasingInputs, 
   formatCurrency,
-  formatPercentage,
-  formatMonths 
-} from "@/lib/leasingCalculations";
+  formatPercentage 
+} from "@/lib/leasingCalculations"; // Solo funciones de utilidad disponibles
 import { PaymentScheduleEntry } from "@/lib/finance";
 import { 
   calculateNPV, 

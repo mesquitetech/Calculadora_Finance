@@ -1,172 +1,93 @@
 import {
-  User,
-  InsertUser,
-  Loan,
-  InsertLoan,
-  Investor,
-  InsertInvestor,
-  Payment,
-  InsertPayment,
-  UserSettings,
-  InsertUserSettings,
-  BusinessParametersDB,
-  InsertBusinessParameters,
-  users,
-  loans,
-  investors,
-  payments,
+  leasingQuotations,
   userSettings,
-  businessParameters
+  InsertLeasingQuotation,
+  LeasingQuotation,
+  InsertUserSettings,
+  UserSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
-// Interface for storage operations, defining the contract for storage classes.
+// Interface simplificada para operaciones de almacenamiento de leasing
 export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Operaciones de cotizaciones de leasing
+  getLeasingQuotation(id: number): Promise<LeasingQuotation | undefined>;
+  getLeasingQuotationByFolio(folio: string): Promise<LeasingQuotation | undefined>;
+  createLeasingQuotation(quotation: InsertLeasingQuotation): Promise<LeasingQuotation>;
+  updateLeasingQuotation(id: number, quotationData: Partial<InsertLeasingQuotation>): Promise<LeasingQuotation>;
+  deleteLeasingQuotation(id: number): Promise<void>;
+  getAllLeasingQuotations(): Promise<LeasingQuotation[]>;
 
-  // Loan operations
-  getLoan(id: number): Promise<Loan | undefined>;
-  createLoan(loan: InsertLoan): Promise<Loan>;
-  deleteLoan(id: number): Promise<void>;
-  deleteAllLoans(): Promise<void>;
-  updateLoan(id: number, loanData: Partial<InsertLoan>): Promise<Loan>;
-
-  // Investor operations
-  getInvestorsByLoanId(loanId: number): Promise<Investor[]>;
-  createInvestor(investor: InsertInvestor): Promise<Investor>;
-  deleteInvestorsByLoanId(loanId: number): Promise<void>;
-
-  // Payment operations
-  getPaymentsByLoanId(loanId: number): Promise<Payment[]>;
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  deletePaymentsByLoanId(loanId: number): Promise<void>;
-
-  // User Settings operations
+  // Operaciones de configuración de usuario
   getUserSettings(sessionId: string): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(settings: InsertUserSettings): Promise<UserSettings>;
-
-  // Business Parameters operations
-  getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined>;
-  createBusinessParameters(businessParams: InsertBusinessParameters): Promise<BusinessParametersDB>;
-  updateBusinessParameters(loanId: number, businessParams: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB>;
-  deleteBusinessParametersByLoanId(loanId: number): Promise<void>;
 }
 
-
-// In-memory storage implementation (for testing or development)
+// Implementación de almacenamiento en memoria (para desarrollo/testing)
 export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private loans: Map<number, Loan> = new Map();
-  private investors: Map<number, Investor> = new Map();
-  private payments: Map<number, Payment> = new Map();
+  private leasingQuotations: Map<number, LeasingQuotation> = new Map();
   private userSettings: Map<number, UserSettings> = new Map();
-  private businessParams: Map<number, BusinessParametersDB> = new Map();
 
-  private userId: number = 1;
-  private loanId: number = 1;
-  private investorId: number = 1;
-  private paymentId: number = 1;
+  private quotationId: number = 1;
   private userSettingsId: number = 1;
-  private businessParamsId: number = 1;
 
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  // Métodos de cotizaciones de leasing
+  async getLeasingQuotation(id: number): Promise<LeasingQuotation | undefined> {
+    return this.leasingQuotations.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+  async getLeasingQuotationByFolio(folio: string): Promise<LeasingQuotation | undefined> {
+    return Array.from(this.leasingQuotations.values()).find(quotation => quotation.folio === folio);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-
-  // Loan methods
-  async getLoan(id: number): Promise<Loan | undefined> {
-    return this.loans.get(id);
-  }
-
-  async createLoan(insertLoan: InsertLoan): Promise<Loan> {
-    const id = this.loanId++;
+  async createLeasingQuotation(insertQuotation: InsertLeasingQuotation): Promise<LeasingQuotation> {
+    const id = this.quotationId++;
     const now = new Date();
-    const loan: Loan = {
-      ...insertLoan,
+    const quotation: LeasingQuotation = {
+      ...insertQuotation,
       id,
       createdAt: now,
-      paymentFrequency: insertLoan.paymentFrequency || 'monthly'
+      updatedAt: now,
+      // Campos opcionales con valores por defecto
+      firstYearInsurance: insertQuotation.firstYearInsurance || "0.00",
+      openingCommission: insertQuotation.openingCommission || "0.00",
+      adminExpenses: insertQuotation.adminExpenses || "0.00",
+      clientMonthlyPayment: null,
+      lessorMonthlyPayment: null,
+      grossMonthlyMargin: null,
+      totalProfit: null,
+      profitMarginPercentage: null,
     };
-    this.loans.set(id, loan);
-    return loan;
+    this.leasingQuotations.set(id, quotation);
+    return quotation;
   }
 
-  async deleteLoan(id: number): Promise<void> {
-    this.deleteInvestorsByLoanId(id);
-    this.deletePaymentsByLoanId(id);
-    this.deleteBusinessParametersByLoanId(id);
-    this.loans.delete(id);
-  }
-
-  async updateLoan(id: number, loanData: Partial<InsertLoan>): Promise<Loan> {
-    const loan = this.loans.get(id);
-    if (!loan) {
-      throw new Error(`Loan with id ${id} not found`);
+  async updateLeasingQuotation(id: number, quotationData: Partial<InsertLeasingQuotation>): Promise<LeasingQuotation> {
+    const quotation = this.leasingQuotations.get(id);
+    if (!quotation) {
+      throw new Error(`Leasing quotation with id ${id} not found`);
     }
-    const updatedLoan = { ...loan, ...loanData };
-    this.loans.set(id, updatedLoan as Loan);
-    return updatedLoan as Loan;
+    const updatedQuotation = { 
+      ...quotation, 
+      ...quotationData, 
+      updatedAt: new Date() 
+    };
+    this.leasingQuotations.set(id, updatedQuotation as LeasingQuotation);
+    return updatedQuotation as LeasingQuotation;
   }
 
-  // Investor methods
-  async getInvestorsByLoanId(loanId: number): Promise<Investor[]> {
-    return Array.from(this.investors.values()).filter(investor => investor.loanId === loanId);
+  async deleteLeasingQuotation(id: number): Promise<void> {
+    this.leasingQuotations.delete(id);
   }
 
-  async createInvestor(insertInvestor: InsertInvestor): Promise<Investor> {
-    const id = this.investorId++;
-    const now = new Date();
-    const investor: Investor = { ...insertInvestor, id, createdAt: now };
-    this.investors.set(id, investor);
-    return investor;
+  async getAllLeasingQuotations(): Promise<LeasingQuotation[]> {
+    return Array.from(this.leasingQuotations.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
-  async deleteInvestorsByLoanId(loanId: number): Promise<void> {
-      const investorsToDelete = await this.getInvestorsByLoanId(loanId);
-      for (const investor of investorsToDelete) {
-          this.investors.delete(investor.id);
-      }
-  }
-
-  // Payment methods
-  async getPaymentsByLoanId(loanId: number): Promise<Payment[]> {
-    return Array.from(this.payments.values())
-      .filter(payment => payment.loanId === loanId)
-      .sort((a, b) => a.paymentNumber - b.paymentNumber);
-  }
-
-  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
-    const id = this.paymentId++;
-    const now = new Date();
-    const payment: Payment = { ...insertPayment, id, createdAt: now };
-    this.payments.set(id, payment);
-    return payment;
-  }
-
-  async deletePaymentsByLoanId(loanId: number): Promise<void> {
-      const paymentsToDelete = await this.getPaymentsByLoanId(loanId);
-      for (const payment of paymentsToDelete) {
-          this.payments.delete(payment.id);
-      }
-  }
-
-  // User Settings methods
+  // Métodos de configuración de usuario
   async getUserSettings(sessionId: string): Promise<UserSettings | undefined> {
     return Array.from(this.userSettings.values()).find(settings => settings.sessionId === sessionId);
   }
@@ -195,115 +116,43 @@ export class MemStorage implements IStorage {
       return settings;
     }
   }
+}
 
-  // Business Parameters methods
-  async getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined> {
-    return Array.from(this.businessParams.values()).find(params => params.loanId === loanId);
+// Implementación de almacenamiento en base de datos (para producción)
+export class DatabaseStorage implements IStorage {
+  // Métodos de cotizaciones de leasing
+  async getLeasingQuotation(id: number): Promise<LeasingQuotation | undefined> {
+    return await db.query.leasingQuotations.findFirst({ where: eq(leasingQuotations.id, id) });
   }
 
-  async createBusinessParameters(insertBusinessParams: InsertBusinessParameters): Promise<BusinessParametersDB> {
-    const id = this.businessParamsId++;
-    const now = new Date();
-    const businessParams: BusinessParametersDB = {
-      ...insertBusinessParams,
-      id,
-      createdAt: now
-    };
-    this.businessParams.set(id, businessParams);
-    return businessParams;
+  async getLeasingQuotationByFolio(folio: string): Promise<LeasingQuotation | undefined> {
+    return await db.query.leasingQuotations.findFirst({ where: eq(leasingQuotations.folio, folio) });
   }
 
-  async updateBusinessParameters(loanId: number, businessParamsData: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB> {
-    const existing = await this.getBusinessParametersByLoanId(loanId);
-    if (!existing) {
-      throw new Error(`Business parameters for loan ${loanId} not found`);
-    }
-    const updated = { ...existing, ...businessParamsData };
-    this.businessParams.set(existing.id, updated);
+  async createLeasingQuotation(insertQuotation: InsertLeasingQuotation): Promise<LeasingQuotation> {
+    const [quotation] = await db.insert(leasingQuotations).values(insertQuotation).returning();
+    return quotation;
+  }
+
+  async updateLeasingQuotation(id: number, quotationData: Partial<InsertLeasingQuotation>): Promise<LeasingQuotation> {
+    const [updated] = await db.update(leasingQuotations)
+      .set({ ...quotationData, updatedAt: new Date() })
+      .where(eq(leasingQuotations.id, id))
+      .returning();
     return updated;
   }
 
-  async deleteBusinessParametersByLoanId(loanId: number): Promise<void> {
-    const existing = await this.getBusinessParametersByLoanId(loanId);
-    if (existing) {
-      this.businessParams.delete(existing.id);
-    }
-  }
-}
-
-// Database storage implementation (for production)
-
-export class DatabaseStorage implements IStorage {
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    return await db.query.users.findFirst({ where: eq(users.id, id) });
+  async deleteLeasingQuotation(id: number): Promise<void> {
+    await db.delete(leasingQuotations).where(eq(leasingQuotations.id, id));
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return await db.query.users.findFirst({ where: eq(users.username, username) });
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
-  }
-
-  // Loan methods
-  async getLoan(id: number): Promise<Loan | undefined> {
-    return await db.query.loans.findFirst({ where: eq(loans.id, id) });
-  }
-
-  async createLoan(insertLoan: InsertLoan): Promise<Loan> {
-    const [loan] = await db.insert(loans).values(insertLoan).returning();
-    return loan;
-  }
-
-  async deleteLoan(id: number): Promise<void> {
-    await 
-      db.delete(loans).where(eq(loans.id, id));
-  }
-
-  async deleteAllLoans(): Promise<void> {
-    await db.delete(loans);  
-  }
-
-  async updateLoan(id: number, loanData: Partial<InsertLoan>): Promise<Loan> {
-    const [updatedLoan] = await db.update(loans).set(loanData).where(eq(loans.id, id)).returning();
-    return updatedLoan;
-  }
-
-  // Investor methods
-  async getInvestorsByLoanId(loanId: number): Promise<Investor[]> {
-    return await db.query.investors.findMany({ where: eq(investors.loanId, loanId) });
-  }
-
-  async createInvestor(insertInvestor: InsertInvestor): Promise<Investor> {
-    const [investor] = await db.insert(investors).values(insertInvestor).returning();
-    return investor;
-  }
-
-  async deleteInvestorsByLoanId(loanId: number): Promise<void> {
-    await db.delete(investors).where(eq(investors.loanId, loanId));
-  }
-
-  // Payment methods
-  async getPaymentsByLoanId(loanId: number): Promise<Payment[]> {
-    return await db.query.payments.findMany({
-      where: eq(payments.loanId, loanId),
-      orderBy: (payments, { asc }) => [asc(payments.paymentNumber)],
+  async getAllLeasingQuotations(): Promise<LeasingQuotation[]> {
+    return await db.query.leasingQuotations.findMany({
+      orderBy: (leasingQuotations, { desc }) => [desc(leasingQuotations.createdAt)],
     });
   }
 
-  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
-    const [payment] = await db.insert(payments).values(insertPayment).returning();
-    return payment;
-  }
-
-  async deletePaymentsByLoanId(loanId: number): Promise<void> {
-    await db.delete(payments).where(eq(payments.loanId, loanId));
-  }
-
-  // User Settings methods
+  // Métodos de configuración de usuario
   async getUserSettings(sessionId: string): Promise<UserSettings | undefined> {
     return await db.query.userSettings.findFirst({ where: eq(userSettings.sessionId, sessionId) });
   }
@@ -322,29 +171,7 @@ export class DatabaseStorage implements IStorage {
       return created;
     }
   }
-
-  // Business Parameters methods
-  async getBusinessParametersByLoanId(loanId: number): Promise<BusinessParametersDB | undefined> {
-    return await db.query.businessParameters.findFirst({ where: eq(businessParameters.loanId, loanId) });
-  }
-
-  async createBusinessParameters(insertBusinessParams: InsertBusinessParameters): Promise<BusinessParametersDB> {
-    const [businessParam] = await db.insert(businessParameters).values(insertBusinessParams).returning();
-    return businessParam;
-  }
-
-  async updateBusinessParameters(loanId: number, businessParamsData: Partial<InsertBusinessParameters>): Promise<BusinessParametersDB> {
-    const [updated] = await db.update(businessParameters)
-      .set(businessParamsData)
-      .where(eq(businessParameters.loanId, loanId))
-      .returning();
-    return updated;
-  }
-
-  async deleteBusinessParametersByLoanId(loanId: number): Promise<void> {
-    await db.delete(businessParameters).where(eq(businessParameters.loanId, loanId));
-  }
 }
 
-// Create and export a single storage instance for the application to use.
-export const storage: IStorage = new DatabaseStorage();
+// Crear y exportar una instancia única de almacenamiento para que la aplicación use
+export const storage: IStorage = new MemStorage(); // Cambiar a DatabaseStorage para producción

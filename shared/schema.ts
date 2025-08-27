@@ -97,43 +97,68 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).pick({
   renterConfig: true,
 });
 
-// Define business parameters table with leasing-specific variables
-export const businessParameters = pgTable("business_parameters", {
+// Define leasing quotations table for simplified leasing model
+export const leasingQuotations = pgTable("leasing_quotations", {
   id: serial("id").primaryKey(),
-  loanId: integer("loan_id").references(() => loans.id, { onDelete: "cascade" }).notNull(),
-  assetCost: numeric("asset_cost", { precision: 12, scale: 2 }).notNull(),
-  otherExpenses: numeric("other_expenses", { precision: 12, scale: 2 }).notNull(),
-  monthlyExpenses: numeric("monthly_expenses", { precision: 12, scale: 2 }).notNull(),
-  lessorProfitMarginPct: numeric("lessor_profit_margin_pct", { precision: 5, scale: 2 }).default("15.00"),
-  fixedMonthlyFee: numeric("fixed_monthly_fee", { precision: 10, scale: 2 }).default("0.00"),
-  adminCommissionPct: numeric("admin_commission_pct", { precision: 5, scale: 2 }).default("2.00"),
-  securityDepositMonths: integer("security_deposit_months").default(1),
-  deliveryCosts: numeric("delivery_costs", { precision: 10, scale: 2 }).default("0.00"),
-  residualValueRate: numeric("residual_value_rate", { precision: 5, scale: 2 }).default("20.00"),
-  discountRate: numeric("discount_rate", { precision: 5, scale: 2 }).default("6.00"),
+  
+  // Información del cliente
+  clientName: text("client_name").notNull(),
+  vehicleInfo: text("vehicle_info").notNull(),
+  promoter: text("promoter"),
+  phone: text("phone"),
+  folio: text("folio").notNull().unique(),
+  city: text("city"),
+  
+  // Variables financieras principales
+  assetValue: numeric("asset_value", { precision: 12, scale: 2 }).notNull(),
+  downPayment: numeric("down_payment", { precision: 12, scale: 2 }).notNull(),
+  termMonths: integer("term_months").notNull(),
+  clientAnnualInterestRate: numeric("client_annual_interest_rate", { precision: 5, scale: 2 }).notNull(),
+  residualValuePercentage: numeric("residual_value_percentage", { precision: 5, scale: 2 }).notNull(),
+  
+  // Variables del préstamo del inversionista
+  investorLoanAmount: numeric("investor_loan_amount", { precision: 12, scale: 2 }).notNull(),
+  investorAnnualInterestRate: numeric("investor_annual_interest_rate", { precision: 5, scale: 2 }).notNull(),
+  
+  // Campos adicionales para el PDF
+  firstYearInsurance: numeric("first_year_insurance", { precision: 12, scale: 2 }).default("0.00"),
+  openingCommission: numeric("opening_commission", { precision: 12, scale: 2 }).default("0.00"),
+  adminExpenses: numeric("admin_expenses", { precision: 12, scale: 2 }).default("0.00"),
+  
+  // Resultados calculados
+  clientMonthlyPayment: numeric("client_monthly_payment", { precision: 12, scale: 2 }),
+  lessorMonthlyPayment: numeric("lessor_monthly_payment", { precision: 12, scale: 2 }),
+  grossMonthlyMargin: numeric("gross_monthly_margin", { precision: 12, scale: 2 }),
+  totalProfit: numeric("total_profit", { precision: 12, scale: 2 }),
+  profitMarginPercentage: numeric("profit_margin_percentage", { precision: 5, scale: 2 }),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertBusinessParametersSchema = createInsertSchema(businessParameters).pick({
-  loanId: true,
-  assetCost: true,
-  otherExpenses: true,
-  monthlyExpenses: true,
-  lessorProfitMarginPct: true,
-  fixedMonthlyFee: true,
-  adminCommissionPct: true,
-  securityDepositMonths: true,
-  deliveryCosts: true,
-  residualValueRate: true,
-  discountRate: true,
+export const insertLeasingQuotationSchema = createInsertSchema(leasingQuotations).pick({
+  clientName: true,
+  vehicleInfo: true,
+  promoter: true,
+  phone: true,
+  folio: true,
+  city: true,
+  assetValue: true,
+  downPayment: true,
+  termMonths: true,
+  clientAnnualInterestRate: true,
+  residualValuePercentage: true,
+  investorLoanAmount: true,
+  investorAnnualInterestRate: true,
+  firstYearInsurance: true,
+  openingCommission: true,
+  adminExpenses: true,
 });
 
 // Define Relations
-export const loansRelations = relations(loans, ({ many, one }) => ({
+export const loansRelations = relations(loans, ({ many }) => ({
   investors: many(investors),
   payments: many(payments),
-  businessParameters: one(businessParameters),
 }));
 
 export const investorsRelations = relations(investors, ({ one }) => ({
@@ -150,11 +175,8 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
-export const businessParametersRelations = relations(businessParameters, ({ one }) => ({
-  loan: one(loans, {
-    fields: [businessParameters.loanId],
-    references: [loans.id],
-  }),
+export const leasingQuotationsRelations = relations(leasingQuotations, ({ many }) => ({
+  // Las cotizaciones de leasing son independientes y no tienen relaciones directas con loans
 }));
 
 // Type definitions
@@ -173,5 +195,5 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
 
-export type InsertBusinessParameters = z.infer<typeof insertBusinessParametersSchema>;
-export type BusinessParametersDB = typeof businessParameters.$inferSelect;
+export type InsertLeasingQuotation = z.infer<typeof insertLeasingQuotationSchema>;
+export type LeasingQuotation = typeof leasingQuotations.$inferSelect;
