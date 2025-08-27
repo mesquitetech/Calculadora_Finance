@@ -33,10 +33,14 @@ export function DatePicker({
   const handleSelect = React.useCallback((selectedDate: Date | undefined) => {
     setDate(selectedDate)
     setOpen(false)
-  }, [setDate, setOpen])
+  }, [setDate])
+
+  const handleOpenChange = React.useCallback((newOpen: boolean) => {
+    setOpen(newOpen)
+  }, [])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}

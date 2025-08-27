@@ -313,25 +313,23 @@ export default function Home() {
 
   // Recalculate amounts when totalRequired changes (loan amount changes)
   useEffect(() => {
-    // This effect should now trigger based on assetCost and downPayment
-    // and update investor amounts accordingly.
-    // The concept of 'totalAmount' for investors might need to be re-evaluated
-    // if it's no longer directly tied to a 'loan amount'.
-    // For now, assuming investors are funded based on assetCost.
-
     if (loanParams.assetCost > 0) {
+      const financedAmount = loanParams.assetCost - loanParams.downPayment;
       const updatedInvestors = investors.map(investor => ({
         ...investor,
-        // Distribute investment based on asset cost if down payment is accounted for elsewhere
-        // Or distribute based on assetCost minus downPayment if that's the financed amount
-        investmentAmount: (investor.percentage / 100) * (loanParams.assetCost - loanParams.downPayment)
+        investmentAmount: (investor.percentage / 100) * financedAmount
       }));
-      setInvestors(updatedInvestors);
-
-      // Ensure loanParams.totalAmount reflects the financed amount if needed elsewhere
-      // For now, we'll use assetCost for investor distribution and rely on other fields for loan details.
+      
+      // Only update if there's actually a change to prevent infinite loops
+      const hasChanged = investors.some((investor, index) => 
+        Math.abs(investor.investmentAmount - updatedInvestors[index].investmentAmount) > 0.01
+      );
+      
+      if (hasChanged) {
+        setInvestors(updatedInvestors);
+      }
     }
-  }, [loanParams.assetCost, loanParams.downPayment, investors]); // Depend on assetCost and downPayment
+  }, [loanParams.assetCost, loanParams.downPayment]); // Removed investors from dependencies to prevent loops
 
   // Calculate total investment whenever investors change
   useEffect(() => {
