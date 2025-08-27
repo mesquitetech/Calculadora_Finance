@@ -1,0 +1,46 @@
+: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render.
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NUSGWLPL.js?v=d2a79081:1929:13
+    at https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=d2a79081:117:13
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=d2a79081:38:15)
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=d2a79081:38:15)
+    at Popper (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-NUSGWLPL.js?v=d2a79081:1921:11)
+    at Popover (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-popover.js?v=d2a79081:66:5)
+    at DatePicker (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/date-picker.tsx:31:3)
+    at div
+    at div
+    at div
+    at div
+    at _c9 (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at div
+    at div
+    at main
+    at div
+    at Home (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/pages/home.tsx:56:45)
+    at Route (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d2a79081:338:16)
+    at Switch (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=d2a79081:394:17)
+    at Router
+    at Provider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=d2a79081:38:15)
+    at TooltipProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=d2a79081:65:5)
+    at ThemeProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/src/components/calculator/ThemeProvider.tsx:25:3)
+    at QueryClientProvider (https://3c083816-926a-423b-b048-03ac867d341e-00-3g4eql442gbaa.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=d2a79081:2875:3)
+    at App
+printWarning @ react-dom.development.js:86
+error @ react-dom.development.js:60
+checkForNestedUpdates @ react-dom.development.js:27339
+scheduleUpdateOnFiber @ react-dom.development.js:25514
+dispatchSetState @ react-dom.development.js:16708
+(anonymous) @ popper.tsx:84
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+(anonymous) @ react-dom.development.js:26808
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533Understand this error
