@@ -64,10 +64,10 @@ export default function Home() {
 
   // Advanced configuration state
   const [advancedConfig, setAdvancedConfig] = useState<AdvancedConfig>({
-    residualValueRate: 20.0,
-    discountRate: 6.0,
-    adminCommissionPct: 1.0,
-    securityDepositMonths: 1
+    residualValueRate: 25,
+    discountRate: 4,
+    adminCommissionPct: 0,
+    securityDepositMonths: 0
   });
 
   // Generate or get session ID
@@ -319,12 +319,12 @@ export default function Home() {
         ...investor,
         investmentAmount: (investor.percentage / 100) * financedAmount
       }));
-      
+
       // Only update if there's actually a change to prevent infinite loops
       const hasChanged = investors.some((investor, index) => 
         Math.abs(investor.investmentAmount - updatedInvestors[index].investmentAmount) > 0.01
       );
-      
+
       if (hasChanged) {
         setInvestors(updatedInvestors);
       }
@@ -759,7 +759,7 @@ export default function Home() {
                 </div>
               </div>
 
-              
+
 
               <div className="form-group">
                 <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
