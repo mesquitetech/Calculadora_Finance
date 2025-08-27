@@ -185,13 +185,12 @@ export default function Home() {
 
   const [loanParams, setLoanParams] = useState<LoanParameters>({
     loanName: "Equipment Leasing Project",
-    totalAmount: 150000,
+    assetCost: 150000,
+    downPayment: 0,
     interestRate: 8.5,
     termMonths: 48,
     startDate: todayDate,
-    paymentFrequency: 'monthly',
-    downPayment: 0, // Added downPayment field
-    assetCost: 150000 // Added assetCost field, initial value matches totalAmount
+    paymentFrequency: 'monthly'
   });
 
   // Load investors from server storage
@@ -430,7 +429,7 @@ export default function Home() {
   const handleCalculate = () => {
     const financedAmount = loanParams.assetCost - loanParams.downPayment;
 
-    if (Math.abs(loanParams.totalAmount - financedAmount) >= 0.01) {
+    if (Math.abs((loanParams.assetCost - loanParams.downPayment) - financedAmount) >= 0.01) {
       toast({
         title: "Amount Mismatch",
         description: "Total financed amount must exactly match the loan amount.",
@@ -469,7 +468,7 @@ export default function Home() {
 
     try {
       const doc = generateProjectSummaryReport(
-        loanParams.totalAmount, // This should now represent the financed amount
+        loanParams.assetCost - loanParams.downPayment, // This should now represent the financed amount
         loanParams.interestRate,
         loanParams.termMonths,
         loanParams.startDate,
@@ -1180,7 +1179,7 @@ export default function Home() {
                     const StepIcon = step.icon;
 
                     return (
-                      <React.Fragment key={step.id}>
+                      <div key={step.id} className="flex items-center">
                         {index > 0 && (
                           <div className={`w-12 h-0.5 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}`} />
                         )}
@@ -1196,7 +1195,7 @@ export default function Home() {
                           </div>
                           <span className="text-xs mt-2 text-center max-w-[80px]">{step.label}</span>
                         </div>
-                      </React.Fragment>
+                      </div>
                     );
                   })}
                 </div>

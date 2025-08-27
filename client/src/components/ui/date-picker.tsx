@@ -33,7 +33,7 @@ export function DatePicker({
   const handleSelect = React.useCallback((selectedDate: Date | undefined) => {
     setDate(selectedDate)
     setOpen(false)
-  }, [setDate])
+  }, [setDate, setOpen])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

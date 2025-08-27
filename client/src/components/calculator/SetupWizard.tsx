@@ -69,7 +69,7 @@ export function SetupWizard({
     initialInvestors.length > 0
       ? initialInvestors
       : [
-          { id: 1, name: "Investor 1", investmentAmount: 0 }
+          { id: 1, name: "Investor 1", investmentAmount: 0, percentage: 0 }
         ]
   );
 
@@ -78,7 +78,8 @@ export function SetupWizard({
 
   // Validation logic
   const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
-  const isLoanAmountValid = loanParams.totalAmount >= 1000;
+  const totalAmount = loanParams.assetCost - loanParams.downPayment;
+  const isLoanAmountValid = totalAmount >= 1000;
 
   // Loan name change handler with validation
   const handleLoanNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +151,8 @@ export function SetupWizard({
   };
 
   const handleInvestorPercentageChange = (id: number, percentage: number) => {
-    const amount = (percentage / 100) * loanParams.totalAmount;
+    const totalAmount = loanParams.assetCost - loanParams.downPayment;
+    const amount = (percentage / 100) * totalAmount;
     setInvestors(prev =>
       prev.map(investor =>
         investor.id === id ? { ...investor, investmentAmount: amount, percentage } : investor
@@ -162,7 +164,7 @@ export function SetupWizard({
     const newId = investors.length > 0 ? Math.max(...investors.map(i => i.id)) + 1 : 1;
     setInvestors([
       ...investors,
-      { id: newId, name: `Investor ${newId}`, investmentAmount: 0 }
+      { id: newId, name: `Investor ${newId}`, investmentAmount: 0, percentage: 0 }
     ]);
   };
 
@@ -178,7 +180,8 @@ export function SetupWizard({
   };
 
   const totalInvestment = investors.reduce((sum, inv) => sum + inv.investmentAmount, 0);
-  const investmentMatchesLoan = Math.abs(totalInvestment - loanParams.totalAmount) < 0.01;
+  const loanTotalAmount = loanParams.assetCost - loanParams.downPayment;
+  const investmentMatchesLoan = Math.abs(totalInvestment - loanTotalAmount) < 0.01;
 
   // Validation state
   const loanDetailsValid =
@@ -191,7 +194,7 @@ export function SetupWizard({
     investmentMatchesLoan;
 
   const handleAmountChange = (value: number) => {
-    setLoanParams(prev => ({ ...prev, totalAmount: value }));
+    setLoanParams(prev => ({ ...prev, assetCost: value }));
   };
 
   const handleInterestRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,11 +242,11 @@ export function SetupWizard({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="totalAmount">Total Loan Amount</Label>
+                <Label htmlFor="assetCost">Asset Cost</Label>
                 <CurrencyInput
-                  id="total-amount"
-                  name="total-amount"
-                  value={loanParams.totalAmount}
+                  id="asset-cost"
+                  name="asset-cost"
+                  value={loanParams.assetCost}
                   onChange={handleAmountChange}
                   min={1000}
                   max={100000000}
@@ -475,7 +478,7 @@ export function SetupWizard({
                       <div className="relative">
                         <Input
                           type="number"
-                          value={((investor.investmentAmount / loanParams.totalAmount) * 100).toFixed(2)}
+                          value={((investor.investmentAmount / (loanParams.assetCost - loanParams.downPayment)) * 100).toFixed(2)}
                           onChange={(e) => {
                             const value = parseFloat(e.target.value);
                             if (!isNaN(value) && value >= 0 && value <= 100) {
@@ -514,7 +517,7 @@ export function SetupWizard({
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <span>Loan Amount:</span>
-                  <span className="font-bold">${loanParams.totalAmount.toLocaleString()}</span>
+                  <span className="font-bold">${(loanParams.assetCost - loanParams.downPayment).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <span>Difference:</span>
@@ -522,7 +525,7 @@ export function SetupWizard({
                     "font-bold",
                     !investmentMatchesLoan ? "text-red-600" : "text-green-600"
                   )}>
-                    ${Math.abs(totalInvestment - loanParams.totalAmount).toLocaleString()}
+                    ${Math.abs(totalInvestment - (loanParams.assetCost - loanParams.downPayment)).toLocaleString()}
                   </span>
                 </div>
                 {!investmentMatchesLoan && (
@@ -556,7 +559,7 @@ export function SetupWizard({
                   <div className="font-medium">{loanParams.loanName}</div>
 
                   <div className="text-muted-foreground">Loan Amount:</div>
-                  <div className="font-medium">${loanParams.totalAmount.toLocaleString()}</div>
+                  <div className="font-medium">${(loanParams.assetCost - loanParams.downPayment).toLocaleString()}</div>
 
                   <div className="text-muted-foreground">Interest Rate:</div>
                   <div className="font-medium">{loanParams.interestRate}%</div>
@@ -599,7 +602,7 @@ export function SetupWizard({
 
                       <div className="text-muted-foreground">Share Percentage:</div>
                       <div className="font-medium">
-                        {((investor.investmentAmount / loanParams.totalAmount) * 100).toFixed(2)}%
+                        {((investor.investmentAmount / (loanParams.assetCost - loanParams.downPayment)) * 100).toFixed(2)}%
                       </div>
                     </div>
                   </div>
