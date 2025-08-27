@@ -42,6 +42,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { AdvancedConfigModal, type AdvancedConfig } from "@/components/calculator/AdvancedConfigModal";
 
 type WizardStep = 'asset-leasing' | 'financing-investors' | 'review-calculate';
 
@@ -57,8 +58,16 @@ export default function Home() {
 
   // Renter configuration state
   const [renterConfig, setRenterConfig] = useState<RenterConfig>({
-    discountRate: 6.0,
+    discountRate: 4,
     residualValueRate: 20
+  });
+
+  // Advanced configuration state
+  const [advancedConfig, setAdvancedConfig] = useState<AdvancedConfig>({
+    residualValueRate: 20.0,
+    discountRate: 6.0,
+    adminCommissionPct: 1.0,
+    securityDepositMonths: 1
   });
 
   // Generate or get session ID
@@ -103,6 +112,10 @@ export default function Home() {
           if (data.renterConfig) {
             setRenterConfig(data.renterConfig);
           }
+          // Load advanced settings if available
+          if (data.advancedConfig) {
+            setAdvancedConfig(data.advancedConfig);
+          }
         }
       } catch (error) {
         console.error('Error loading settings from server:', error);
@@ -131,9 +144,37 @@ export default function Home() {
         console.error('Error parsing saved business parameters:', error);
       }
     }
+    
+    // Load advanced config from localStorage
+    const savedAdvancedConfig = localStorage.getItem('advancedConfig');
+    if (savedAdvancedConfig) {
+      try {
+        setAdvancedConfig(JSON.parse(savedAdvancedConfig));
+      } catch (error) {
+        console.error('Error parsing saved advanced config:', error);
+      }
+    }
+
 
     loadSettings();
   }, [sessionId]);
+
+  // Sync business parameters with advanced config
+  useEffect(() => {
+    setBusinessParams(prev => ({
+      ...prev,
+      residualValueRate: advancedConfig.residualValueRate,
+      discountRate: advancedConfig.discountRate,
+      adminCommissionPct: advancedConfig.adminCommissionPct,
+      securityDepositMonths: advancedConfig.securityDepositMonths
+    }));
+  }, [advancedConfig]);
+
+  // Save advanced config to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('advancedConfig', JSON.stringify(advancedConfig));
+  }, [advancedConfig]);
+
 
   const today = new Date();
   const todayDate = new Date(
@@ -148,7 +189,9 @@ export default function Home() {
     interestRate: 8.5,
     termMonths: 48,
     startDate: todayDate,
-    paymentFrequency: 'monthly'
+    paymentFrequency: 'monthly',
+    downPayment: 0, // Added downPayment field
+    assetCost: 150000 // Added assetCost field, initial value matches totalAmount
   });
 
   // Load investors from server storage
@@ -159,16 +202,16 @@ export default function Home() {
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    assetCost: 150000, // Igual al loan amount
+    assetCost: 150000, // Initial value, will be synced with loanParams.assetCost
     otherExpenses: 5000, // Gastos iniciales adicionales
     monthlyExpenses: 0, // Gastos operativos mensuales
     lessorProfitMarginPct: 18.0, // 18% margen de ganancia
     fixedMonthlyFee: 250.0, // Cuota administrativa fija
-    adminCommissionPct: 1.0, // 1% comisión por apertura
-    securityDepositMonths: 1, // 1 mes de depósito
+    adminCommissionPct: 1.0, // 1% comisión por apertura (now from advancedConfig)
+    securityDepositMonths: 1, // 1 mes de depósito (now from advancedConfig)
     deliveryCosts: 7500.0, // Costos de trámites y entrega
-    residualValueRate: 20.0, // 20% valor residual
-    discountRate: 6.0, // 6% tasa de descuento
+    residualValueRate: 20.0, // 20% valor residual (now from advancedConfig)
+    discountRate: 6.0, // 6% tasa de descuento (now from advancedConfig)
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -200,8 +243,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Check if asset cost is valid (not less than loan amount)
-    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
+    // Validation: Asset cost must be greater than or equal to down payment
+    const assetCostValid = businessParams.assetCost >= loanParams.downPayment;
+    // Validation: Down payment must be non-negative and not exceed asset cost
+    const downPaymentValid = loanParams.downPayment >= 0 && loanParams.downPayment <= loanParams.assetCost;
+
 
     const isButtonEnabled =
       validations.isLoanNameValid &&
@@ -210,10 +256,11 @@ export default function Home() {
       loanParams.termMonths > 0 &&
       investors.length >= 1 &&
       investors.every(investor => investor.name.trim() !== "") &&
-      assetCostValid;
+      assetCostValid &&
+      downPaymentValid;
 
     setInputsValid(isButtonEnabled);
-  }, [loanParams, investors, validations, businessParams.assetCost]);
+  }, [loanParams, investors, validations, businessParams.assetCost, loanParams.downPayment, loanParams.assetCost]);
 
   // Set break-even revenue when calculation results become available
   useEffect(() => {
@@ -267,20 +314,25 @@ export default function Home() {
 
   // Recalculate amounts when totalRequired changes (loan amount changes)
   useEffect(() => {
-    if (loanParams.totalAmount > 0) {
+    // This effect should now trigger based on assetCost and downPayment
+    // and update investor amounts accordingly.
+    // The concept of 'totalAmount' for investors might need to be re-evaluated
+    // if it's no longer directly tied to a 'loan amount'.
+    // For now, assuming investors are funded based on assetCost.
+
+    if (loanParams.assetCost > 0) {
       const updatedInvestors = investors.map(investor => ({
         ...investor,
-        investmentAmount: (investor.percentage / 100) * loanParams.totalAmount
+        // Distribute investment based on asset cost if down payment is accounted for elsewhere
+        // Or distribute based on assetCost minus downPayment if that's the financed amount
+        investmentAmount: (investor.percentage / 100) * (loanParams.assetCost - loanParams.downPayment)
       }));
       setInvestors(updatedInvestors);
 
-      // Sync asset cost with loan amount
-      setBusinessParams(prev => ({
-        ...prev,
-        assetCost: loanParams.totalAmount
-      }));
+      // Ensure loanParams.totalAmount reflects the financed amount if needed elsewhere
+      // For now, we'll use assetCost for investor distribution and rely on other fields for loan details.
     }
-  }, [loanParams.totalAmount]);
+  }, [loanParams.assetCost, loanParams.downPayment, investors]); // Depend on assetCost and downPayment
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -290,20 +342,29 @@ export default function Home() {
     );
     setTotalInvestment(total);
 
-    // Clear error if investments match required amount
-    if (Math.abs(total - loanParams.totalAmount) < 0.01) {
+    // Clear error if investments match the financed amount (assetCost - downPayment)
+    const financedAmount = loanParams.assetCost - loanParams.downPayment;
+    if (Math.abs(total - financedAmount) < 0.01) {
       setInvestorError(null);
     } else if (investors.length > 0) {
-      setInvestorError("Total investment amount must match the required loan amount.");
+      setInvestorError("Total investment amount must match the financed amount (Asset Cost - Down Payment).");
     }
-  }, [investors, loanParams.totalAmount]);
+  }, [investors, loanParams.assetCost, loanParams.downPayment]);
+
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/calculate", {
-        loanParams,
+        loanParams: { // Pass relevant loan parameters
+          ...loanParams,
+          totalAmount: loanParams.assetCost - loanParams.downPayment, // Calculate financed amount
+          residualValueRate: advancedConfig.residualValueRate, // Include advanced config values
+          discountRate: advancedConfig.discountRate,
+          adminCommissionPct: advancedConfig.adminCommissionPct,
+          securityDepositMonths: advancedConfig.securityDepositMonths,
+        },
         investors,
-        businessParams,
+        businessParams, // Note: businessParams might not be directly used if parameters are moved to advancedConfig/loanParams
         paymentFrequency: loanParams.paymentFrequency,
       });
       const data = await response.json();
@@ -367,15 +428,12 @@ export default function Home() {
   });
 
   const handleCalculate = () => {
-    const totalInvestment = investors.reduce(
-      (sum, investor) => sum + investor.investmentAmount,
-      0
-    );
+    const financedAmount = loanParams.assetCost - loanParams.downPayment;
 
-    if (Math.abs(totalInvestment - loanParams.totalAmount) >= 0.01) {
+    if (Math.abs(loanParams.totalAmount - financedAmount) >= 0.01) {
       toast({
         title: "Amount Mismatch",
-        description: "Total investment amount must exactly match the loan amount.",
+        description: "Total financed amount must exactly match the loan amount.",
         variant: "destructive",
       });
       return;
@@ -411,7 +469,7 @@ export default function Home() {
 
     try {
       const doc = generateProjectSummaryReport(
-        loanParams.totalAmount,
+        loanParams.totalAmount, // This should now represent the financed amount
         loanParams.interestRate,
         loanParams.termMonths,
         loanParams.startDate,
@@ -472,14 +530,16 @@ export default function Home() {
   // Validation for each step
   const isStep1Valid = () => {
     const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
-    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
-    return isLoanNameValid && loanParams.totalAmount >= 1000 && assetCostValid;
+    const assetCostValid = loanParams.assetCost >= 1000; // Asset cost should be at least 1000
+    const downPaymentValid = loanParams.downPayment >= 0 && loanParams.downPayment <= loanParams.assetCost; // Down payment validation
+    return isLoanNameValid && assetCostValid && downPaymentValid;
   };
 
   const isStep2Valid = () => {
     const isLoanDetailsValid = loanParams.interestRate > 0 && loanParams.termMonths > 0 && !termError;
-    const investmentDifference = Math.abs(totalInvestment - loanParams.totalAmount);
-    const isInvestorsValid = investors.length >= 1 && 
+    const financedAmount = loanParams.assetCost - loanParams.downPayment;
+    const investmentDifference = Math.abs(totalInvestment - financedAmount);
+    const isInvestorsValid = investors.length >= 1 &&
                             investors.every(investor => investor.name.trim() !== "") &&
                             investmentDifference < 0.01;
     return isLoanDetailsValid && isInvestorsValid;
@@ -493,9 +553,15 @@ export default function Home() {
 
     const newInvestorNumber = investors.length + 1;
 
+    // Calculate the financed amount to set initial investment amount and percentage
+    const financedAmount = loanParams.assetCost - loanParams.downPayment;
+    const initialInvestment = financedAmount > 0 ? financedAmount / (investors.length + 1) : 0;
+    const initialPercentage = financedAmount > 0 ? (100 / (investors.length + 1)) : 0;
+
+
     setInvestors([
       ...investors,
-      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0, percentage: 0 }
+      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: initialInvestment, percentage: initialPercentage }
     ]);
   };
 
@@ -513,8 +579,10 @@ export default function Home() {
       investors.map(investor => {
         if (investor.id === id) {
           const updated = { ...investor, [field]: value };
-          if (field === 'investmentAmount' && loanParams.totalAmount > 0) {
-            updated.percentage = (Number(value) / loanParams.totalAmount) * 100;
+          // When investment amount changes, update percentage based on the financed amount
+          if (field === 'investmentAmount' && loanParams.assetCost > loanParams.downPayment) {
+            const financedAmount = loanParams.assetCost - loanParams.downPayment;
+            updated.percentage = (Number(value) / financedAmount) * 100;
           }
           return updated;
         }
@@ -540,9 +608,10 @@ export default function Home() {
         setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
       }
 
-      const amount = (percentage / 100) * loanParams.totalAmount;
+      const financedAmount = loanParams.assetCost - loanParams.downPayment;
+      const amount = (percentage / 100) * financedAmount;
       setInvestors(
-        investors.map(investor => 
+        investors.map(investor =>
           investor.id === id ? { ...investor, investmentAmount: amount, percentage: percentage } : investor
         )
       );
@@ -591,20 +660,56 @@ export default function Home() {
                   {loanNameError && <p className="text-xs text-red-500 mt-1">{loanNameError}</p>}
                 </div>
 
+                {/* Asset Cost Input */}
                 <div className="form-group">
-                  <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="asset-cost">Asset Cost (without VAT) <span className="text-destructive">*</span></Label>
                   <CurrencyInput
-                    id="total-amount"
-                    value={loanParams.totalAmount}
-                    onChange={(value) => setLoanParams(prev => ({ ...prev, totalAmount: value }))}
+                    id="asset-cost"
+                    value={loanParams.assetCost}
+                    onChange={(value) => setLoanParams(prev => ({ ...prev, assetCost: value }))}
                     min={1000}
                     max={100000000}
                     disabled={isCalculating}
                     required
+                    className={cn(loanParams.assetCost < 1000 && "border-red-500 focus-visible:ring-red-500")}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Minimum: $1,000 Maximum: $100,000,000</p>
+                  <p className="text-xs text-muted-foreground mt-1">Minimum: $1,000</p>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Down Payment Input */}
+                <div className="form-group">
+                  <Label htmlFor="down-payment">Down Payment (Enganche) <span className="text-destructive">*</span></Label>
+                  <CurrencyInput
+                    id="down-payment"
+                    value={loanParams.downPayment}
+                    onChange={(value) => setLoanParams(prev => ({ ...prev, downPayment: value }))}
+                    min={0}
+                    max={loanParams.assetCost} // Max down payment is asset cost
+                    disabled={isCalculating}
+                    required
+                    className={cn(loanParams.downPayment < 0 || loanParams.downPayment > loanParams.assetCost && "border-red-500 focus-visible:ring-red-500")}
+                  />
+                  {loanParams.downPayment < 0 || loanParams.downPayment > loanParams.assetCost ? (
+                    <p className="text-xs text-red-500 mt-1">Down payment must be between $0 and Asset Cost.</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">Up to {formatCurrency(loanParams.assetCost)}</p>
+                  )}
+                </div>
+
+                {/* Financed Amount Display */}
+                <div className="form-group">
+                  <Label htmlFor="financed-amount">Financed Amount</Label>
+                  <div className="flex h-10 items-center rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+                    <span className="text-muted-foreground w-full">
+                      {formatCurrency(loanParams.assetCost - loanParams.downPayment)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Calculated as Asset Cost - Down Payment</p>
+                </div>
+              </div>
+
 
               <div className="form-group">
                 <Label>Start Date <span className="text-destructive">*</span></Label>
@@ -613,70 +718,6 @@ export default function Home() {
                   setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
                   disabled={isCalculating}
                 />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Asset Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-blue-600" />
-                <h3 className="font-semibold text-sm">Asset Information</h3>
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
-                <CurrencyInput
-                  id="asset-cost"
-                  value={businessParams.assetCost}
-                  onChange={(value) => setBusinessParams(prev => ({ ...prev, assetCost: value }))}
-                  min={0}
-                  max={100000000}
-                  disabled={isCalculating}
-                  className={businessParams.assetCost < loanParams.totalAmount ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {businessParams.assetCost < loanParams.totalAmount && (
-                  <p className="text-xs text-red-500 mt-1">Asset cost cannot be less than loan amount</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
-                  <Label htmlFor="residual-value">Residual Value (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="residual-value"
-                      type="number"
-                      value={businessParams.residualValueRate}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, residualValueRate: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <Label htmlFor="discount-rate">Discount Rate (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="discount-rate"
-                      type="number"
-                      value={businessParams.discountRate}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, discountRate: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -728,8 +769,8 @@ export default function Home() {
                     <Input
                       id="admin-commission"
                       type="number"
-                      value={businessParams.adminCommissionPct}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, adminCommissionPct: parseFloat(e.target.value) || 0 }))}
+                      value={advancedConfig.adminCommissionPct} // Use advancedConfig value
+                      onChange={(e) => setAdvancedConfig(prev => ({ ...prev, adminCommissionPct: parseFloat(e.target.value) || 0 }))}
                       min={0}
                       max={10}
                       step={0.1}
@@ -745,8 +786,8 @@ export default function Home() {
                   <Input
                     id="security-deposit"
                     type="number"
-                    value={businessParams.securityDepositMonths}
-                    onChange={(e) => setBusinessParams(prev => ({ ...prev, securityDepositMonths: parseInt(e.target.value) || 0 }))}
+                    value={advancedConfig.securityDepositMonths} // Use advancedConfig value
+                    onChange={(e) => setAdvancedConfig(prev => ({ ...prev, securityDepositMonths: parseInt(e.target.value) || 0 }))}
                     min={0}
                     max={12}
                     step={1}
@@ -801,7 +842,7 @@ export default function Home() {
       case 'financing-investors':
         return (
           <div className="space-y-8">
-            {/* Loan Details Section */}
+            {/* Financing Details Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4"><Calculator className="h-5 w-5 text-purple-600" />
                 <h3 className="text-lg font-semibold">Financing Details</h3>
@@ -894,8 +935,8 @@ export default function Home() {
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {investors.map((investor, index) => (
-                  <div 
-                    key={investor.id} 
+                  <div
+                    key={investor.id}
                     className="investor-entry rounded-lg p-3 border"
                   >
                     <div className="flex justify-between items-center mb-2">
@@ -972,22 +1013,22 @@ export default function Home() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total Investment:</span>
                     <span className={`font-bold ${
-                      Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
+                      Math.abs(loanParams.assetCost - loanParams.downPayment - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
                     }`}>
                       {formatCurrency(totalInvestment)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Required:</span>
+                    <span className="font-medium">Financed Amount:</span>
                     <span className="font-bold text-gray-900">
-                      {formatCurrency(loanParams.totalAmount)}
+                      {formatCurrency(loanParams.assetCost - loanParams.downPayment)}
                     </span>
                   </div>
-                  {Math.abs(loanParams.totalAmount - totalInvestment) >= 0.01 && (
+                  {Math.abs(loanParams.assetCost - loanParams.downPayment - totalInvestment) >= 0.01 && (
                     <div className="flex justify-between items-center pt-1 border-t">
                       <span className="font-medium text-orange-600">Difference:</span>
                       <span className="font-bold text-orange-600">
-                        {(loanParams.totalAmount - totalInvestment) > 0 ? "+" : ""}{formatCurrency(loanParams.totalAmount - totalInvestment)}
+                        {(loanParams.assetCost - loanParams.downPayment - totalInvestment) > 0 ? "+" : ""}{formatCurrency(loanParams.assetCost - loanParams.downPayment - totalInvestment)}
                       </span>
                     </div>
                   )}
@@ -1024,8 +1065,16 @@ export default function Home() {
                     <span className="text-sm font-medium">{loanParams.loanName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Amount:</span>
-                    <span className="text-sm font-medium">{formatCurrency(loanParams.totalAmount)}</span>
+                    <span className="text-sm">Asset Cost:</span>
+                    <span className="text-sm font-medium">{formatCurrency(loanParams.assetCost)}</span>
+                  </div>
+                   <div className="flex justify-between">
+                    <span className="text-sm">Down Payment:</span>
+                    <span className="text-sm font-medium">{formatCurrency(loanParams.downPayment)}</span>
+                  </div>
+                   <div className="flex justify-between">
+                    <span className="text-sm">Financed Amount:</span>
+                    <span className="text-sm font-medium">{formatCurrency(loanParams.assetCost - loanParams.downPayment)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Start Date:</span>
@@ -1036,20 +1085,24 @@ export default function Home() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Asset Information</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Leasing Parameters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Asset Cost:</span>
-                    <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Residual Value:</span>
-                    <span className="text-sm font-medium">{businessParams.residualValueRate}%</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-sm">Profit Margin:</span>
                     <span className="text-sm font-medium">{businessParams.lessorProfitMarginPct}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Monthly Fee:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.fixedMonthlyFee)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Delivery Costs:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.deliveryCosts)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Other Initial Expenses:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.otherExpenses)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -1068,8 +1121,12 @@ export default function Home() {
                     <span className="text-sm font-medium">{loanParams.termMonths} months</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Monthly Fee:</span>
-                    <span className="text-sm font-medium">{formatCurrency(businessParams.fixedMonthlyFee)}</span>
+                    <span className="text-sm">Residual Value:</span>
+                    <span className="text-sm font-medium">{advancedConfig.residualValueRate}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Discount Rate:</span>
+                    <span className="text-sm font-medium">{advancedConfig.discountRate}%</span>
                   </div>
                 </CardContent>
               </Card>
@@ -1089,8 +1146,8 @@ export default function Home() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Match Status:</span>
-                    <Badge variant={Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "default" : "destructive"}>
-                      {Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
+                    <Badge variant={Math.abs(loanParams.assetCost - loanParams.downPayment - totalInvestment) < 0.01 ? "default" : "destructive"}>
+                      {Math.abs(loanParams.assetCost - loanParams.downPayment - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -1238,7 +1295,7 @@ export default function Home() {
           case 'schedule':
             return (
               <PaymentScheduleTab
-                loanAmount={loanParams.totalAmount}
+                loanAmount={loanParams.assetCost - loanParams.downPayment} // Pass financed amount
                 monthlyPayment={calculationResults.monthlyPayment}
                 totalInterest={calculationResults.totalInterest}
                 paymentSchedule={calculationResults.paymentSchedule}
@@ -1254,7 +1311,7 @@ export default function Home() {
           case 'summary':
             return (
               <SummaryTab
-                loanAmount={loanParams.totalAmount}
+                loanAmount={loanParams.assetCost - loanParams.downPayment} // Pass financed amount
                 interestRate={loanParams.interestRate}
                 termMonths={loanParams.termMonths}
                 monthlyPayment={calculationResults.monthlyPayment}
@@ -1271,7 +1328,7 @@ export default function Home() {
           case 'projections':
             return (
               <ProjectionsTab
-                loanAmount={loanParams.totalAmount}
+                loanAmount={loanParams.assetCost - loanParams.downPayment} // Pass financed amount
                 interestRate={loanParams.interestRate}
                 termMonths={loanParams.termMonths}
                 monthlyPayment={calculationResults.monthlyPayment}
@@ -1281,7 +1338,7 @@ export default function Home() {
           case 'reports':
             return (
               <ReportsTab
-                loanAmount={loanParams.totalAmount}
+                loanAmount={loanParams.assetCost - loanParams.downPayment} // Pass financed amount
                 interestRate={loanParams.interestRate}
                 termMonths={loanParams.termMonths}
                 monthlyPayment={calculationResults.monthlyPayment}
@@ -1321,18 +1378,18 @@ export default function Home() {
             return (
               <LesseeQuoteTab
                 leasingInputs={{
-                  asset_cost_sans_iva: businessParams.assetCost,
+                  asset_cost_sans_iva: loanParams.assetCost, // Use asset cost
                   lease_term_months: loanParams.termMonths,
                   lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
                   fixed_monthly_fee: businessParams.fixedMonthlyFee,
-                  admin_commission_pct: businessParams.adminCommissionPct,
-                  security_deposit_months: businessParams.securityDepositMonths,
+                  admin_commission_pct: advancedConfig.adminCommissionPct, // Use advanced config
+                  security_deposit_months: advancedConfig.securityDepositMonths, // Use advanced config
                   delivery_costs: businessParams.deliveryCosts,
-                  loan_amount: loanParams.totalAmount,
+                  loan_amount: loanParams.assetCost - loanParams.downPayment, // Financed amount
                   annual_interest_rate: loanParams.interestRate,
                   monthly_operational_expenses: businessParams.monthlyExpenses,
-                  residual_value_rate: businessParams.residualValueRate,
-                  discount_rate: businessParams.discountRate,
+                  residual_value_rate: advancedConfig.residualValueRate, // Use advanced config
+                  discount_rate: advancedConfig.discountRate, // Use advanced config
                 }}
                 startDate={loanParams.startDate}
                 onExportQuote={() => {
@@ -1394,8 +1451,8 @@ export default function Home() {
           </div>
         </div>
 
-        <TabNavigation 
-          activeMainTab={activeMainTab} 
+        <TabNavigation
+          activeMainTab={activeMainTab}
           setActiveMainTab={setActiveMainTab}
           activeLenderSubTab={activeLenderSubTab}
           setActiveLenderSubTab={setActiveLenderSubTab}

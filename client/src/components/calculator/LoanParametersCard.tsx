@@ -15,7 +15,8 @@ import { cn } from "@/lib/utils";
 
 export interface LoanParameters {
   loanName: string,
-  totalAmount: number;
+  assetCost: number;
+  downPayment: number;
   interestRate: number;
   termMonths: number;
   startDate: Date;
@@ -74,8 +75,16 @@ export function LoanParametersCard({
     setLoanParams(prev => ({ ...prev, loanName: e.target.value }));
   }, [setLoanParams]);
 
-  const handleAmountChange = useCallback((value: number) => {
-    setLoanParams(prev => ({ ...prev, totalAmount: value }));
+  const handleAssetCostChange = useCallback((value: number) => {
+    setLoanParams(prev => ({ 
+      ...prev, 
+      assetCost: value,
+      downPayment: Math.min(prev.downPayment, value) // Ensure down payment doesn't exceed asset cost
+    }));
+  }, [setLoanParams]);
+
+  const handleDownPaymentChange = useCallback((value: number) => {
+    setLoanParams(prev => ({ ...prev, downPayment: value }));
   }, [setLoanParams]);
 
   const handleInterestRateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,18 +139,33 @@ export function LoanParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
+            <Label htmlFor="asset-cost">Asset Cost <span className="text-destructive">*</span></Label>
             <CurrencyInput
-              id="total-amount"
-              name="total-amount"
-              value={loanParams.totalAmount}
-              onChange={handleAmountChange}
+              id="asset-cost"
+              name="asset-cost"
+              value={loanParams.assetCost}
+              onChange={handleAssetCostChange}
               min={1000}
               max={100000000}
               disabled={isCalculating}
               required
             />
             <p className="text-xs text-muted-foreground mt-1">Minimum required amount: $1,000 Maximum: $100,000,000</p>
+          </div>
+
+          <div className="form-group">
+            <Label htmlFor="down-payment">Down Payment (Enganche) <span className="text-destructive">*</span></Label>
+            <CurrencyInput
+              id="down-payment"
+              name="down-payment"
+              value={loanParams.downPayment}
+              onChange={handleDownPaymentChange}
+              min={0}
+              max={loanParams.assetCost}
+              disabled={isCalculating}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">Amount paid upfront. Maximum: Asset Cost</p>
           </div>
 
           <div className="form-group">
