@@ -76,7 +76,7 @@ export function RenterMetricsExplainedTab() {
                 <span className="text-yellow-600">Good return</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Low IRR (<8%):</span>
+                <span>Low IRR (&lt;8%):</span>
                 <span className="text-red-600">Poor return</span>
               </div>
             </div>
