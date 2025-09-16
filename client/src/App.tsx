@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import SavedCalculations from "@/pages/saved-calculations";
 import CalculationDetails from "@/pages/calculation-details";
 import { ThemeProvider } from "./components/calculator/ThemeProvider";
+import { CalculationProvider } from "./contexts/CalculationContext";
 
 function Router() {
   return (
@@ -24,10 +25,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <CalculationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </CalculationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
