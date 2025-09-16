@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -18,15 +19,13 @@ interface DatePickerProps {
   setDate: (date: Date | undefined) => void
   placeholder?: string
   disabled?: boolean
-  className?: string
 }
 
-export function DatePicker({
-  date,
-  setDate,
+export function DatePicker({ 
+  date, 
+  setDate, 
   placeholder = "Pick a date",
-  disabled = false,
-  className
+  disabled = false 
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -35,19 +34,14 @@ export function DatePicker({
     setOpen(false)
   }, [setDate])
 
-  const handleOpenChange = React.useCallback((newOpen: boolean) => {
-    setOpen(newOpen)
-  }, [])
-
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground",
-            className
+            !date && "text-muted-foreground"
           )}
           disabled={disabled}
         >

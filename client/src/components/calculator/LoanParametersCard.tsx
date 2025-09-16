@@ -12,12 +12,10 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { DollarSign, Percent } from "lucide-react";
 
 export interface LoanParameters {
   loanName: string,
-  assetCost: number;
-  downPayment: number;
+  totalAmount: number;
   interestRate: number;
   termMonths: number;
   startDate: Date;
@@ -29,17 +27,13 @@ interface LoanParametersCardProps {
   setLoanParams: React.Dispatch<React.SetStateAction<LoanParameters>>;
   isCalculating: boolean;
   onValidationChange: (validations: { isLoanNameValid: boolean; isTermValid: boolean }) => void;
-  residualValueRate: number;
-  onResidualValueChange: (value: number) => void;
 }
 
 export function LoanParametersCard({
   loanParams,
   setLoanParams,
   isCalculating,
-  onValidationChange,
-  residualValueRate,
-  onResidualValueChange
+  onValidationChange
 }: LoanParametersCardProps) {
   const [loanNameError, setLoanNameError] = useState('');
   const [termError, setTermError] = useState('');
@@ -80,16 +74,8 @@ export function LoanParametersCard({
     setLoanParams(prev => ({ ...prev, loanName: e.target.value }));
   }, [setLoanParams]);
 
-  const handleAssetCostChange = useCallback((value: number) => {
-    setLoanParams(prev => ({ 
-      ...prev, 
-      assetCost: value,
-      downPayment: Math.min(prev.downPayment, value) // Ensure down payment doesn't exceed asset cost
-    }));
-  }, [setLoanParams]);
-
-  const handleDownPaymentChange = useCallback((value: number) => {
-    setLoanParams(prev => ({ ...prev, downPayment: value }));
+  const handleAmountChange = useCallback((value: number) => {
+    setLoanParams(prev => ({ ...prev, totalAmount: value }));
   }, [setLoanParams]);
 
   const handleInterestRateChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,141 +109,90 @@ export function LoanParametersCard({
     }));
   }, [setLoanParams]);
 
-  const handleResidualValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
-    onResidualValueChange(value);
-  }, [onResidualValueChange]);
-
   return (
     <Card className="col-span-1">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-bold mb-4 text-foreground flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Lease Data (For the Client)
-        </h2>
+        <h2 className="text-lg font-bold mb-4 text-foreground">Loan Parameters</h2>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="form-group">
-                <Label htmlFor="loan-name">Lease Name <span className="text-destructive">*</span></Label>
-                <Input
-                  id="loan-name"
-                  name="loan-name"
-                  type="text"
-                  value={loanParams.loanName}
-                  onChange={handleTitleChange}
-                  disabled={isCalculating}
-                  required
-                  placeholder="e.g., Vehicle Lease Project"
-                  className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
-                />
-                {loanNameError && <p className="text-xs text-red-500 mt-1">{loanNameError}</p>}
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="asset-cost">Car Value (without VAT) <span className="text-destructive">*</span></Label>
-                <CurrencyInput
-                  id="asset-cost"
-                  name="asset-cost"
-                  value={loanParams.assetCost}
-                  onChange={handleAssetCostChange}
-                  min={1000}
-                  max={100000000}
-                  disabled={isCalculating}
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">Total vehicle cost without VAT.</p>
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="down-payment">Client Initial Payment <span className="text-destructive">*</span></Label>
-                <CurrencyInput
-                  id="down-payment"
-                  name="down-payment"
-                  value={loanParams.downPayment}
-                  onChange={handleDownPaymentChange}
-                  min={0}
-                  max={loanParams.assetCost}
-                  disabled={isCalculating}
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">Down payment amount from the client.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="form-group">
-                <Label htmlFor="loan-term">Term (in Months) <span className="text-destructive">*</span></Label>
-                <Input
-                  id="loan-term"
-                  name="loan-term"
-                  type="number"
-                  value={loanParams.termMonths.toString()}
-                  onChange={handleTermMonthsChange}
-                  min={1}
-                  max={360}
-                  placeholder="Enter lease term in months"
-                  disabled={isCalculating}
-                  required
-                  className={cn(termError && "border-red-500")}
-                />
-                <p className="text-xs text-muted-foreground mt-1">Number of months in the contract.</p>
-                {termError && <p className="text-xs text-red-500 mt-1">{termError}</p>}
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="residual-value">Residual Value Percentage (%) <span className="text-destructive">*</span></Label>
-                <div className="relative">
-                  <Input
-                    id="residual-value"
-                    name="residual-value"
-                    type="number"
-                    value={residualValueRate}
-                    onChange={handleResidualValueChange}
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    className="pr-12"
-                    placeholder="Residual value"
-                    disabled={isCalculating}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Percentage of car value remaining as debt at the end.</p>
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="interest-rate">Annual Interest Rate for Investors (%) <span className="text-destructive">*</span></Label>
-                <div className="relative">
-                  <Input
-                    id="interest-rate"
-                    name="interest-rate"
-                    type="number"
-                    value={loanParams.interestRate.toString()}
-                    onChange={handleInterestRateChange}
-                    min={0}
-                    max={999}
-                    step={0.01}
-                    className="pr-12"
-                    placeholder="Interest rate"
-                    disabled={isCalculating}
-                    required
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Your real financial cost.</p>
-              </div>
-            </div>
+          <div className="form-group">
+            <Label htmlFor="loan-name">Loan Name <span className="text-destructive">*</span></Label>
+            <Input
+              id="loan-name"
+              name="loan-name"
+              type="text"
+              value={loanParams.loanName}
+              onChange={handleTitleChange}
+              disabled={isCalculating}
+              required
+              className={cn(loanNameError && "border-red-500 focus-visible:ring-red-500")}
+            />
+            {loanNameError && <p className="text-xs text-red-500 mt-1">{loanNameError}</p>}
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg mt-4">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Financed Amount</span>
-              <span className="text-lg font-bold text-blue-700">
-                ${(loanParams.assetCost - loanParams.downPayment).toLocaleString()}
-              </span>
+          <div className="form-group">
+            <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
+            <CurrencyInput
+              id="total-amount"
+              name="total-amount"
+              value={loanParams.totalAmount}
+              onChange={handleAmountChange}
+              min={1000}
+              max={100000000}
+              disabled={isCalculating}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">Minimum required amount: $1,000 Maximum: $100,000,000</p>
+          </div>
+
+          <div className="form-group">
+            <Label htmlFor="interest-rate">Annual Interest Rate (%) <span className="text-destructive">*</span></Label>
+            <div className="relative">
+              <Input
+                id="interest-rate"
+                name="interest-rate"
+                type="number"
+                value={loanParams.interestRate.toString()}
+                onChange={handleInterestRateChange}
+                min={0}
+                max={999}
+                step={0.01}
+                className="pr-12"
+                placeholder="0.00"
+                disabled={isCalculating}
+                required
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span className="text-muted-foreground">%</span>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Calculated as Asset Cost - Down Payment</p>
+            <p className="text-xs text-muted-foreground mt-1">Maximum interest rate: 999%</p>
+          </div>
+
+          <div className="form-group">
+            <Label htmlFor="loan-term">Loan Term (Months) <span className="text-destructive">*</span></Label>
+            <Input
+              id="loan-term"
+              name="loan-term"
+              type="number"
+              value={loanParams.termMonths.toString()}
+              onChange={handleTermMonthsChange}
+              min={1}
+              max={1200}
+              placeholder="Enter loan term in months"
+              disabled={isCalculating}
+              required
+              className={cn(termError && "border-red-500")}
+            />
+            {termError && <p className="text-xs text-red-500 mt-1">{termError}</p>}
+          </div>
+
+          <div className="form-group">
+            <Label>Start Date <span className="text-destructive">*</span></Label>
+            <DatePicker
+              date={loanParams.startDate}
+              setDate={handleStartDateChange}
+              disabled={isCalculating}
+            />
           </div>
 
           {/* Payment Frequency - Temporarily disabled

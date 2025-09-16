@@ -1,35 +1,35 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
+  Calculator, 
+  FileText, 
   Download, 
   Car, 
-  FileText,
-  Building2,
-  Phone,
-  Mail
+  CreditCard, 
+  Calendar,
+  DollarSign,
+  Shield
 } from "lucide-react";
 import { 
   calculateLeasingFinancials, 
   LeasingInputs, 
   formatCurrency,
-  formatDate 
+  formatPercentage 
 } from "@/lib/leasingCalculations";
-import { generateCustomerQuote, CustomerQuoteData } from '@/lib/customerQuoteGenerator';
 
 interface LesseeQuoteTabProps {
   leasingInputs: LeasingInputs;
   startDate: Date;
   onExportQuote: () => void;
-  loanName: string; 
 }
 
 export function LesseeQuoteTab({
   leasingInputs,
   startDate,
-  onExportQuote,
-  loanName
+  onExportQuote
 }: LesseeQuoteTabProps) {
   // Validate inputs before calculation - ensure we have meaningful defaults
   const validatedInputs = {
@@ -43,214 +43,249 @@ export function LesseeQuoteTab({
     loan_amount: Number(leasingInputs.loan_amount) || 100000,
     annual_interest_rate: Number(leasingInputs.annual_interest_rate) || 10,
     monthly_operational_expenses: Number(leasingInputs.monthly_operational_expenses) || 0,
-    residual_value_rate: Number(leasingInputs.residual_value_rate) || 25,
+    residual_value_rate: Number(leasingInputs.residual_value_rate) || 15,
     discount_rate: Number(leasingInputs.discount_rate) || 4,
   };
 
   const results = calculateLeasingFinancials(validatedInputs, startDate);
-
-  // Calculate end date
-  const endDate = new Date(startDate.getTime() + validatedInputs.lease_term_months * 30 * 24 * 60 * 60 * 1000);
-
-  const handleExportQuote = () => {
-    try {
-      const quoteData: CustomerQuoteData = {
-        loanName: loanName,
-        assetCost: validatedInputs.asset_cost_sans_iva,
-        downPayment: validatedInputs.asset_cost_sans_iva - validatedInputs.loan_amount,
-        loanAmount: validatedInputs.loan_amount,
-        interestRate: validatedInputs.annual_interest_rate,
-        termMonths: validatedInputs.lease_term_months,
-        monthlyPayment: results.monthly_payment,
-        totalInterest: results.total_interest_cost,
-        totalAmount: results.monthly_payment * validatedInputs.lease_term_months,
-        startDate: startDate,
-        endDate: endDate
-      };
-
-      const doc = generateCustomerQuote(quoteData);
-      doc.save(`Customer_Quote_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (error) {
-      console.error('Error generating quote PDF:', error);
-    }
-  };
+  
+  // Calculate VAT (16%)
+  const vat_rate = 0.16;
+  const monthly_rent_with_vat = (results.total_monthly_rent_sans_iva || 0) * (1 + vat_rate);
+  const initial_payment_with_vat = ((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0)) * (1 + vat_rate) + (results.initial_security_deposit || 0);
+  
+  const total_contract_value = (monthly_rent_with_vat * (validatedInputs.lease_term_months || 0)) + initial_payment_with_vat;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 bg-white">
-      {/* Header Actions */}
-      <div className="flex items-center justify-between border-b pb-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold flex items-center gap-2">
             <Car className="h-8 w-8 text-blue-600" />
-            Customer Quote Preview
+            Leasing Quote
           </h2>
           <p className="text-muted-foreground mt-1">
-            Preview of the PDF that will be generated for the client
+            Professional proposal for the end client
           </p>
         </div>
-        <Button onClick={handleExportQuote} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+        <Button onClick={onExportQuote} className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export Quote
         </Button>
       </div>
 
-      {/* PDF Preview Container */}
-      <div className="bg-white border border-gray-200 shadow-lg p-8 space-y-8">
-
-        {/* Company Header */}
-        <div className="text-center border-b pb-6">
-          <h1 className="text-2xl font-bold text-blue-600 mb-2">MESQUITE FINANCIAL</h1>
-          <p className="text-gray-600 mb-4">Leasing and Financial Services</p>
-          <h2 className="text-xl font-bold text-gray-800">FINANCING QUOTE</h2>
-          <p className="text-sm text-gray-500 mt-2">Quote Generated: {formatDate(new Date())}</p>
-        </div>
-
-        {/* Client Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2">
-            Client Information
-          </h3>
-          <div className="bg-gray-50 p-4 rounded">
-            <p className="text-gray-700">
-              <span className="font-medium">Project Name:</span> {loanName}
-            </p>
-          </div>
-        </div>
-
-        {/* Asset and Financing Details */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2">
-            Asset and Financing Details
-          </h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="bg-gray-50 rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-blue-600 text-white">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-medium">Concept</th>
-                    <th className="text-right py-3 px-4 font-medium">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  <tr className="bg-white">
-                    <td className="py-3 px-4">Asset Cost</td>
-                    <td className="py-3 px-4 text-right font-medium">{formatCurrency(validatedInputs.asset_cost_sans_iva)}</td>
-                  </tr>
-                  <tr className="bg-gray-50">
-                    <td className="py-3 px-4">Down Payment</td>
-                    <td className="py-3 px-4 text-right font-medium">{formatCurrency(validatedInputs.asset_cost_sans_iva - validatedInputs.loan_amount)}</td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="py-3 px-4">Financed Amount</td>
-                    <td className="py-3 px-4 text-right font-medium">{formatCurrency(validatedInputs.loan_amount)}</td>
-                  </tr>
-                  <tr className="bg-gray-50">
-                    <td className="py-3 px-4">Annual Interest Rate</td>
-                    <td className="py-3 px-4 text-right font-medium">{validatedInputs.annual_interest_rate.toFixed(2)}%</td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="py-3 px-4">Term</td>
-                    <td className="py-3 px-4 text-right font-medium">{validatedInputs.lease_term_months} months</td>
-                  </tr>
-                  <tr className="bg-gray-50">
-                    <td className="py-3 px-4">Start Date</td>
-                    <td className="py-3 px-4 text-right font-medium">{formatDate(startDate)}</td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="py-3 px-4">Maturity Date</td>
-                    <td className="py-3 px-4 text-right font-medium">{formatDate(endDate)}</td>
-                  </tr>
-                </tbody>
-              </table>
+      {/* Main Summary */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Proposal Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center space-y-2">
+              <div className="text-3xl font-bold text-blue-600">
+                {formatCurrency(monthly_rent_with_vat)}
+              </div>
+              <div className="text-sm text-muted-foreground">Monthly Rent (with VAT)</div>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="text-3xl font-bold text-green-600">
+                {formatCurrency(initial_payment_with_vat)}
+              </div>
+              <div className="text-sm text-muted-foreground">Initial Payment (with VAT)</div>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="text-3xl font-bold text-purple-600">
+                {validatedInputs.lease_term_months} months
+              </div>
+              <div className="text-sm text-muted-foreground">Contract Term</div>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Payment Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2">
-            Payment Information
-          </h3>
-          <div className="bg-gray-50 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-green-600 text-white">
-                <tr>
-                  <th className="text-left py-3 px-4 font-medium">Payment Details</th>
-                  <th className="text-right py-3 px-4 font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                <tr className="bg-white">
-                  <td className="py-3 px-4">Monthly Payment</td>
-                  <td className="py-3 px-4 text-right font-medium">{formatCurrency(results.monthly_payment)}</td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="py-3 px-4">Total Interest</td>
-                  <td className="py-3 px-4 text-right font-medium">{formatCurrency(results.total_interest_cost)}</td>
-                </tr>
-                <tr className="bg-white">
-                  <td className="py-3 px-4">Total Amount to Pay</td>
-                  <td className="py-3 px-4 text-right font-medium">{formatCurrency(results.monthly_payment * validatedInputs.lease_term_months)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Terms and Conditions */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2">
-            Terms and Conditions
-          </h3>
-          <div className="bg-gray-50 p-4 rounded text-sm space-y-2">
-            <p>• This quote is valid for 30 days from the date of issue.</p>
-            <p>• Interest rate is subject to credit approval and may vary.</p>
-            <p>• All payments must be made on the due date to avoid late fees.</p>
-            <p>• Early payment options are available without penalties.</p>
-            <p>• This quote does not constitute a commitment to lend.</p>
-            <p>• Final terms may vary based on credit evaluation and documentation.</p>
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2">
-            Contact Information
-          </h3>
-          <div className="bg-blue-50 p-4 rounded space-y-2">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-600" />
-              <span className="font-medium">MESQUITE FINANCIAL</span>
+      {/* Payment Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Initial Payment Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Opening Commission:</span>
+              <span className="font-medium">
+                {formatCurrency(results.initial_admin_commission)} + VAT
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-blue-600" />
-              <span>info@mesquitefinancial.com</span>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Processing Costs:</span>
+              <span className="font-medium">
+                {formatCurrency(validatedInputs.delivery_costs)} + VAT
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-blue-600" />
-              <span>+1 (555) 123-4567</span>
+            <div className="flex justify-between items-center border-t pt-2">
+              <span className="text-sm">Subtotal (taxable):</span>
+              <span className="font-medium">
+                {formatCurrency((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0))}
+              </span>
             </div>
-          </div>
-        </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">VAT (16%):</span>
+              <span className="font-medium">
+                {formatCurrency(((results.initial_admin_commission || 0) + (validatedInputs.delivery_costs || 0)) * vat_rate)}
+              </span>
+            </div>
+            <div className="border-t pt-2 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm flex items-center gap-1">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                  Security Deposit:
+                </span>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                  {formatCurrency(results.initial_security_deposit)}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                * The security deposit is returned at the end of the contract
+              </p>
+            </div>
+            <div className="border-t pt-2">
+              <div className="flex justify-between items-center font-bold text-lg">
+                <span>Total Initial Payment:</span>
+                <span className="text-green-600">
+                  {formatCurrency(initial_payment_with_vat)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Footer */}
-        <div className="border-t pt-6 text-center text-xs text-gray-500 space-y-1">
-          <p>This document is computer-generated and does not require a signature.</p>
-          <p>© {new Date().getFullYear()} Mesquite Financial. All rights reserved.</p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Monthly Rent Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Asset Amortization:</span>
+              <span className="font-medium">
+                {formatCurrency(results.base_rent_amortization)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Financial Margin:</span>
+              <span className="font-medium">
+                {formatCurrency(results.lessor_monthly_profit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Administrative Fee:</span>
+              <span className="font-medium">
+                {formatCurrency(validatedInputs.fixed_monthly_fee)}
+              </span>
+            </div>
+            <div className="border-t pt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Subtotal:</span>
+                <span className="font-medium">
+                  {formatCurrency(results.total_monthly_rent_sans_iva)}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">VAT (16%):</span>
+              <span className="font-medium">
+                {formatCurrency(results.total_monthly_rent_sans_iva * vat_rate)}
+              </span>
+            </div>
+            <div className="border-t pt-2">
+              <div className="flex justify-between items-center font-bold text-lg">
+                <span>Monthly Rent:</span>
+                <span className="text-blue-600">
+                  {formatCurrency(monthly_rent_with_vat)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Action Footer */}
-      <div className="text-center pt-4">
-        <Button 
-          onClick={handleExportQuote} 
-          size="lg" 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-        >
-          <Download className="h-5 w-5 mr-2" />
-          Generate and Download PDF
-        </Button>
-      </div>
+      {/* Contract Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Contract Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {formatCurrency(validatedInputs.asset_cost_sans_iva)}
+              </div>
+              <div className="text-sm text-muted-foreground">Asset Value</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {formatCurrency(total_contract_value)}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Contract Value</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {formatCurrency(results.residual_value_amount)}
+              </div>
+              <div className="text-sm text-muted-foreground">Estimated Residual Value</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {formatPercentage(validatedInputs.lessor_profit_margin_pct)}
+              </div>
+              <div className="text-sm text-muted-foreground">Applied Margin</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Terms and Conditions */}
+      <Card className="bg-gray-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Main Terms and Conditions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <h4 className="font-semibold">Payment Conditions:</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Initial payment upon delivery</li>
+                <li>• Monthly rents payable in advance</li>
+                <li>• Deposit return at contract end</li>
+                <li>• All payments include VAT where applicable</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold">Client Responsibilities:</h4>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Preventive vehicle maintenance</li>
+                <li>• Valid third-party liability insurance</li>
+                <li>• Compliance with all tax obligations</li>
+                <li>• Return in agreed conditions</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

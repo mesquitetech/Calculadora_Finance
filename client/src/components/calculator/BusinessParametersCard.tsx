@@ -4,26 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Settings, DollarSign, Percent, Calendar, Truck, Building2 } from "lucide-react";
+import { Settings, DollarSign, Percent, Calendar, Truck } from "lucide-react";
 
 export interface BusinessParameters {
-  // Existing basic variables (to maintain compatibility)
+  // Existing basic variables
   assetCost: number;
   otherExpenses: number;
   monthlyExpenses: number;
-  lessorProfitMarginPct: number; // Keep for backward compatibility
-  adminCommissionPct: number;
-  securityDepositMonths: number;
-  deliveryCosts: number;
-  discountRate: number;
   
-  // Simplified leasing variables
-  profitMarginPesos: number; // Desired profit margin in pesos (replaces percentage)
-  fixedMonthlyFee: number; // Monthly administration expenses
-  residualValueRate: number; // Residual value percentage
+  // New variables for pure leasing
+  lessorProfitMarginPct: number; // Operator profit margin (%)
+  fixedMonthlyFee: number; // Fixed administrative fee
+  adminCommissionPct: number; // Opening commission (%)
+  securityDepositMonths: number; // Security deposit months
+  deliveryCosts: number; // Processing and delivery costs
+  residualValueRate: number; // Residual value (%)
+  discountRate: number; // Discount rate for NPV (%)
 }
 
 interface BusinessParametersCardProps {
@@ -55,113 +53,253 @@ export function BusinessParametersCard({
     setBusinessParams(prev => ({ ...prev, monthlyExpenses: value }));
   };
 
-  const handleProfitMarginPesosChange = (values: number[]) => {
-    setBusinessParams(prev => ({ ...prev, profitMarginPesos: values[0] }));
+  const handleLessorProfitMarginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, lessorProfitMarginPct: value }));
   };
 
   const handleFixedMonthlyFeeChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }));
   };
 
-  const calculatedLoanAmount = loanAmount || 0;
+  const handleAdminCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, adminCommissionPct: value }));
+  };
+
+  const handleSecurityDepositChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, securityDepositMonths: value }));
+  };
+
+  const handleDeliveryCostsChange = (value: number) => {
+    setBusinessParams(prev => ({ ...prev, deliveryCosts: value }));
+  };
+
+  const handleResidualValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, residualValueRate: value }));
+  };
+
+  const handleDiscountRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setBusinessParams(prev => ({ ...prev, discountRate: value }));
+  };
 
   return (
     <Card className="col-span-1">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Financial Data (Internal for the Lessor)
+          <Settings className="h-5 w-5" />
+          Leasing Parameters
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         
-        {/* Calculated Loan Amount Display */}
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="font-medium">Loan Amount to Investors:</span>
-            <span className="text-2xl font-bold text-blue-700">
-              ${calculatedLoanAmount.toLocaleString()}
-            </span>
+        {/* Section: Asset Information */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-blue-600" />
+            <h3 className="font-semibold text-sm">Asset Information</h3>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Capital to be financed internally (Car Value - Initial Payment)
-          </p>
+          
+          <div className="form-group">
+            <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
+            <CurrencyInput
+              id="asset-cost"
+              name="asset-cost"
+              value={businessParams.assetCost}
+              onChange={handleAssetCostChange}
+              min={0}
+              max={100000000}
+              disabled={isCalculating}
+              className={assetCostError ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {assetCostError && (
+              <p className="text-xs text-red-500 mt-1">Asset cost cannot be less than loan amount</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="form-group">
+              <Label htmlFor="residual-value">Residual Value (%)</Label>
+              <div className="relative">
+                <Input
+                  id="residual-value"
+                  type="number"
+                  value={businessParams.residualValueRate}
+                  onChange={handleResidualValueChange}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  disabled={isCalculating}
+                  className="pr-8"
+                />
+                <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <Label htmlFor="discount-rate">Discount Rate (%)</Label>
+              <div className="relative">
+                <Input
+                  id="discount-rate"
+                  type="number"
+                  value={businessParams.discountRate}
+                  onChange={handleDiscountRateChange}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  disabled={isCalculating}
+                  className="pr-8"
+                />
+                <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="form-group">
-              <Label htmlFor="profit-margin-pesos">Desired Financial Profit Margin (USD)</Label>
-              <div className="space-y-3">
-                <Slider
-                  value={[businessParams.profitMarginPesos || 0]}
-                  min={0}
-                  max={10000}
-                  step={100}
-                  onValueChange={handleProfitMarginPesosChange}
-                  className="w-full"
-                  disabled={isCalculating}
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>$0</span>
-                  <span className="font-medium text-blue-600">
-                    ${(businessParams.profitMarginPesos || 0).toLocaleString()}
-                  </span>
-                  <span>$10,000</span>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                How much you want to earn from the rate difference (e.g., $500).
-              </p>
-            </div>
+        <Separator />
 
-            <div className="form-group">
-              <Label htmlFor="monthly-admin-fee">Monthly Administration Expenses (USD)</Label>
-              <CurrencyInput
-                id="monthly-admin-fee"
-                name="monthly-admin-fee"
-                value={businessParams.fixedMonthlyFee}
-                onChange={handleFixedMonthlyFeeChange}
+        {/* Section: Profitability Structure */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Percent className="h-4 w-4 text-green-600" />
+            <h3 className="font-semibold text-sm">Profitability Structure</h3>
+          </div>
+          
+          <div className="form-group">
+            <Label htmlFor="lessor-margin">Profit Margin (%)</Label>
+            <div className="relative">
+              <Input
+                id="lessor-margin"
+                type="number"
+                value={businessParams.lessorProfitMarginPct}
+                onChange={handleLessorProfitMarginChange}
                 min={0}
-                max={10000}
+                max={100}
+                step={0.1}
+                disabled={isCalculating}
+                className="pr-8"
+              />
+              <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <Label htmlFor="fixed-fee">Monthly Administrative Fee</Label>
+            <CurrencyInput
+              id="fixed-fee"
+              name="fixed-fee"
+              value={businessParams.fixedMonthlyFee}
+              onChange={handleFixedMonthlyFeeChange}
+              min={0}
+              max={10000}
+              disabled={isCalculating}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Section: Initial Payment */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-purple-600" />
+            <h3 className="font-semibold text-sm">Initial Payment Configuration</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="form-group">
+              <Label htmlFor="admin-commission">Opening Commission (%)</Label>
+              <div className="relative">
+                <Input
+                  id="admin-commission"
+                  type="number"
+                  value={businessParams.adminCommissionPct}
+                  onChange={handleAdminCommissionChange}
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  disabled={isCalculating}
+                  className="pr-8"
+                />
+                <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <Label htmlFor="security-deposit">Deposit (months)</Label>
+              <Input
+                id="security-deposit"
+                type="number"
+                value={businessParams.securityDepositMonths}
+                onChange={handleSecurityDepositChange}
+                min={0}
+                max={12}
+                step={1}
                 disabled={isCalculating}
               />
-              <p className="text-sm text-muted-foreground">
-                Your second layer of utility, administrative costs.
-              </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {/* Summary Box */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-medium mb-3">Financial Summary</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Loan Amount:</span>
-                  <span className="font-bold">${calculatedLoanAmount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Residual Value:</span>
-                  <span className="font-medium">{businessParams.residualValueRate}%</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-medium mb-3 text-green-800">Profit Configuration</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Profit Margin:</span>
-                  <span className="font-bold text-green-700">${(businessParams.profitMarginPesos || 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Monthly Admin:</span>
-                  <span className="font-medium">${businessParams.fixedMonthlyFee.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
+          <div className="form-group">
+            <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
+            <CurrencyInput
+              id="delivery-costs"
+              name="delivery-costs"
+              value={businessParams.deliveryCosts}
+              onChange={handleDeliveryCostsChange}
+              min={0}
+              max={50000}
+              disabled={isCalculating}
+            />
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Section: Operating Expenses */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Truck className="h-4 w-4 text-orange-600" />
+            <h3 className="font-semibold text-sm">Operating Expenses</h3>
+          </div>
+          
+          <div className="form-group">
+            <Label htmlFor="other-expenses">Other Initial Expenses</Label>
+            <CurrencyInput
+              id="other-expenses"
+              name="other-expenses"
+              value={businessParams.otherExpenses}
+              onChange={handleOtherExpensesChange}
+              min={0}
+              max={1000000}
+              disabled={isCalculating}
+            />
+            <p className="text-xs text-muted-foreground mt-1">Additional one-time expenses (setup, etc.)</p>
+          </div>
+
+          <div className="form-group">
+            <Label htmlFor="monthly-expenses">Monthly Expenses</Label>
+            <CurrencyInput
+              id="monthly-expenses"
+              name="monthly-expenses"
+              value={businessParams.monthlyExpenses}
+              onChange={handleMonthlyExpensesChange}
+              min={0}
+              max={1000000}
+              disabled={isCalculating}
+            />
+            <p className="text-xs text-muted-foreground mt-1">Insurance, maintenance, recurring operating expenses</p>
+          </div>
+        </div>
+
+        {/* Configuration Indicator */}
+        <div className="pt-2">
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            Pure Leasing Configuration Complete
+          </Badge>
         </div>
       </CardContent>
     </Card>

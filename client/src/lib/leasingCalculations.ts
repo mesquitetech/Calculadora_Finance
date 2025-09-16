@@ -462,14 +462,3 @@ export function formatMonths(months: number): string {
     return `${years} ${years === 1 ? 'year' : 'years'} and ${remainingMonths} months`;
   }
 }
-
-export function formatDate(date: Date): string {
-  if (!date || isNaN(date.getTime())) {
-    return 'N/A';
-  }
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}

@@ -1,237 +1,212 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Calculator, 
-  BarChart3,
-  PieChart,
-  Target
-} from "lucide-react";
+import { TrendingUp, Calculator, DollarSign, Clock, Target, BarChart } from "lucide-react";
 
 export function RenterMetricsExplainedTab() {
+  
+  const metrics = [
+    {
+      name: "Net Present Value (NPV)",
+      icon: <DollarSign className="h-6 w-6" />,
+      definition: "The present value of all future cash flows minus the initial investment.",
+      importance: "NPV shows whether an investment will add value to your portfolio. A positive NPV means the investment is expected to generate more money than it costs.",
+      interpretation: [
+        "NPV > 0: Investment is profitable and should be considered",
+        "NPV = 0: Investment breaks even with the required rate of return",
+        "NPV < 0: Investment may destroy value and should be avoided"
+      ],
+      calculation: "NPV = Sum of (Cash Flow / (1 + Discount Rate)^Period) - Initial Investment"
+    },
+    {
+      name: "Internal Rate of Return (IRR)",
+      icon: <TrendingUp className="h-6 w-6" />,
+      definition: "The discount rate that makes the NPV of an investment equal to zero.",
+      importance: "IRR represents the annual rate of return you can expect from the investment. It's useful for comparing different investment opportunities.",
+      interpretation: [
+        "IRR > Required Return: Investment is attractive",
+        "IRR = Required Return: Investment meets minimum requirements",
+        "IRR < Required Return: Investment should be rejected"
+      ],
+      calculation: "The rate where: 0 = Sum of (Cash Flow / (1 + IRR)^Period) - Initial Investment"
+    },
+    {
+      name: "Payback Period",
+      icon: <Clock className="h-6 w-6" />,
+      definition: "The time it takes to recover the initial investment through cash flows.",
+      importance: "This metric shows how quickly you'll get your money back. Shorter payback periods are generally preferred as they reduce risk.",
+      interpretation: [
+        "Shorter Period: Lower risk, faster capital recovery",
+        "Longer Period: Higher risk, but potentially higher returns",
+        "Compare with industry standards and personal risk tolerance"
+      ],
+      calculation: "Payback Period = Initial Investment / Average Annual Cash Flow"
+    },
+    {
+      name: "Return on Investment (ROI)",
+      icon: <Target className="h-6 w-6" />,
+      definition: "The percentage return relative to the initial investment over the entire investment period.",
+      importance: "ROI provides a simple percentage that shows total profitability. It's easy to understand and compare across different investments.",
+      interpretation: [
+        "Higher ROI: More profitable investment",
+        "Compare with other investment opportunities",
+        "Consider time factor - longer investments may justify lower ROI"
+      ],
+      calculation: "ROI = ((Total Return - Initial Investment) / Initial Investment) × 100%"
+    },
+    {
+      name: "Cash Flow",
+      icon: <BarChart className="h-6 w-6" />,
+      definition: "The net amount of money coming in and going out of the investment each period.",
+      importance: "Positive cash flow means the investment pays for itself and generates additional income. Consistent cash flow provides ongoing returns.",
+      interpretation: [
+        "Positive Cash Flow: Investment generates ongoing income",
+        "Negative Cash Flow: Investment requires additional funding",
+        "Growing Cash Flow: Investment performance is improving"
+      ],
+      calculation: "Cash Flow = Revenue - (Loan Payment + Operating Expenses)"
+    },
+    {
+      name: "Break-Even Point",
+      icon: <Calculator className="h-6 w-6" />,
+      definition: "The revenue level where total income equals total expenses, resulting in zero profit or loss.",
+      importance: "Understanding your break-even point helps you set minimum rent requirements and assess risk. Operating above break-even ensures profitability.",
+      interpretation: [
+        "Revenue > Break-Even: Investment is profitable",
+        "Revenue = Break-Even: Investment covers all costs",
+        "Revenue < Break-Even: Investment operates at a loss"
+      ],
+      calculation: "Break-Even Revenue = Fixed Costs + Variable Costs"
+    }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">Financial Metrics Explained</h2>
-        <p className="text-muted-foreground">
-          Understanding key financial indicators for rental and leasing operations
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* NPV Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <DollarSign className="h-5 w-5 text-green-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Net Present Value (NPV)</CardTitle>
-              <Badge variant="secondary" className="mt-1">Profitability Indicator</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              NPV calculates the present value of all future cash flows minus the initial investment.
-            </p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-green-600">Positive NPV:</span>
-                <span>Profitable investment</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-red-600">Negative NPV:</span>
-                <span>Loss-making investment</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-yellow-600">Zero NPV:</span>
-                <span>Break-even point</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* IRR Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Internal Rate of Return (IRR)</CardTitle>
-              <Badge variant="secondary" className="mt-1">Return Rate</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              IRR is the discount rate that makes NPV equal to zero. It represents the annualized return rate.
-            </p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>High IRR (>15%):</span>
-                <span className="text-green-600">Excellent return</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Medium IRR (8-15%):</span>
-                <span className="text-yellow-600">Good return</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Low IRR (&lt;8%):</span>
-                <span className="text-red-600">Poor return</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Cash Flow Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <BarChart3 className="h-5 w-5 text-purple-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Cash Flow Analysis</CardTitle>
-              <Badge variant="secondary" className="mt-1">Liquidity Indicator</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              Monthly cash flow shows the net income after all expenses and loan payments.
-            </p>
-            <div className="space-y-2">
-              <div className="text-sm">
-                <strong>Formula:</strong> Revenue - Loan Payment - Operating Expenses
-              </div>
-              <Separator />
-              <div className="flex justify-between text-sm">
-                <span className="text-green-600">Positive Cash Flow:</span>
-                <span>Surplus funds</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-red-600">Negative Cash Flow:</span>
-                <span>Additional funding needed</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ROI Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <Target className="h-5 w-5 text-orange-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Return on Investment (ROI)</CardTitle>
-              <Badge variant="secondary" className="mt-1">Efficiency Metric</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              ROI measures the efficiency of an investment relative to its cost.
-            </p>
-            <div className="space-y-2">
-              <div className="text-sm">
-                <strong>Formula:</strong> (Total Return - Investment Cost) / Investment Cost × 100%
-              </div>
-              <Separator />
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>ROI > 20%:</span>
-                  <span className="text-green-600">Excellent</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>ROI 10-20%:</span>
-                  <span className="text-yellow-600">Good</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>ROI < 10%:</span>
-                  <span className="text-red-600">Poor</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Payback Period Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <Calculator className="h-5 w-5 text-indigo-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Payback Period</CardTitle>
-              <Badge variant="secondary" className="mt-1">Risk Indicator</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              Time required to recover the initial investment through cash flows.
-            </p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Short Payback (<2 years):</span>
-                <span className="text-green-600">Low risk</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Medium Payback (2-4 years):</span>
-                <span className="text-yellow-600">Moderate risk</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Long Payback (>4 years):</span>
-                <span className="text-red-600">High risk</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Break-even Analysis Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center space-y-0 pb-3">
-            <PieChart className="h-5 w-5 text-teal-600 mr-2" />
-            <div>
-              <CardTitle className="text-lg">Break-even Analysis</CardTitle>
-              <Badge variant="secondary" className="mt-1">Cost Coverage</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              Revenue level needed to cover all costs without profit or loss.
-            </p>
-            <div className="space-y-2">
-              <div className="text-sm">
-                <strong>Break-even Revenue:</strong> Fixed Costs + Variable Costs
-              </div>
-              <Separator />
-              <div className="text-sm space-y-1">
-                <div>• Fixed Costs: Loan payments, insurance, taxes</div>
-                <div>• Variable Costs: Maintenance, utilities, repairs</div>
-                <div>• Safety Margin: Typically 10-20% above break-even</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Best Practices Section */}
-      <Card className="mt-8">
+    <div className="space-y-6 p-6">
+      
+      {/* Introduction */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Best Practices for Financial Analysis</CardTitle>
+          <CardTitle className="text-xl">Understanding Financial Metrics</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            These financial metrics help you evaluate the attractiveness and risk of your real estate investment. 
+            Each metric provides a different perspective on profitability and should be considered together for a complete analysis.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-semibold text-green-700 mb-2">✓ Do's</h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Use conservative revenue estimates</li>
-                <li>• Include a contingency fund (5-10%)</li>
-                <li>• Regular monitoring of actual vs projected</li>
-                <li>• Consider market fluctuations</li>
-                <li>• Update calculations quarterly</li>
+      </Card>
+
+      {/* Metrics Cards */}
+      <div className="space-y-6">
+        {metrics.map((metric, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                  {metric.icon}
+                </div>
+                {metric.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              
+              {/* Definition */}
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                  Definition
+                </h4>
+                <p className="text-sm">{metric.definition}</p>
+              </div>
+
+              {/* Why It's Important */}
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                  Why It's Important
+                </h4>
+                <p className="text-sm">{metric.importance}</p>
+              </div>
+
+              {/* How to Interpret */}
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                  How to Interpret
+                </h4>
+                <ul className="text-sm space-y-1">
+                  {metric.interpretation.map((point, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Calculation */}
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                  How It's Calculated
+                </h4>
+                <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                  <code className="text-sm font-mono">{metric.calculation}</code>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Best Practices */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Best Practices for Financial Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-green-600">Do's</h4>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Use multiple metrics together for comprehensive analysis</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Compare with industry benchmarks and similar properties</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Consider sensitivity analysis by adjusting revenue assumptions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Account for all expenses including maintenance and vacancy</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">✓</span>
+                  <span>Use realistic discount rates based on your cost of capital</span>
+                </li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-semibold text-red-700 mb-2">✗ Don'ts</h4>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Ignore inflation effects</li>
-                <li>• Overlook tax implications</li>
-                <li>• Use overly optimistic projections</li>
-                <li>• Neglect maintenance costs</li>
-                <li>• Ignore market competition</li>
+            <div className="space-y-3">
+              <h4 className="font-semibold text-red-600">Don'ts</h4>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>Rely on a single metric to make investment decisions</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>Ignore market conditions and local economic factors</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>Assume revenue will remain constant over time</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>Forget to factor in taxes and depreciation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-600 font-bold">✗</span>
+                  <span>Overlook the time value of money in long-term investments</span>
+                </li>
               </ul>
             </div>
           </div>
