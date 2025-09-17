@@ -632,6 +632,15 @@ export default function Home() {
                 </div>
 
                 <div className="form-group">
+                  <Label>Start Date <span className="text-destructive">*</span></Label>
+                  <DatePicker
+                    date={loanParams.startDate}
+                    setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
+                    disabled={isCalculating}
+                  />
+                </div>
+
+                <div className="form-group">
                   <Label htmlFor="asset-cost">Asset Cost (including VAT) <span className="text-destructive">*</span></Label>
                   <CurrencyInput
                     id="asset-cost"
@@ -646,33 +655,17 @@ export default function Home() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Total asset value including VAT</p>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <Label>Start Date <span className="text-destructive">*</span></Label>
-                <DatePicker
-                  date={loanParams.startDate}
-                  setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
-                  disabled={isCalculating}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Down Payment Section */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
                 <div className="form-group">
                   <div className="flex justify-between items-center mb-2">
                     <Label htmlFor="down-payment">Down Payment</Label>
-                    <div className="flex border rounded-md p-1">
+                    <div className="flex border rounded-md p-1 scale-75">
                       <button
                         type="button"
                         onClick={() => setDownPaymentMode('amount')}
                         className={`px-2 py-1 text-xs rounded-sm ${downPaymentMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
                       >
-                        Amount
+                        $
                       </button>
                       <button
                         type="button"
@@ -728,15 +721,9 @@ export default function Home() {
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
                     </div>
                   )}
-                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <p>Financing Amount: {formatCurrency(businessParams.assetCost - businessParams.downPayment)}</p>
-                    {downPaymentMode === 'amount' && businessParams.assetCost > 0 && (
-                      <p>Percentage: {((businessParams.downPayment / businessParams.assetCost) * 100).toFixed(2)}%</p>
-                    )}
-                    {downPaymentMode === 'percentage' && (
-                      <p>Amount: {formatCurrency((parseFloat(downPaymentPercentage) / 100) * businessParams.assetCost)}</p>
-                    )}
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Financing: {formatCurrency(businessParams.assetCost - businessParams.downPayment)}
+                  </p>
                 </div>
               </div>
             </div>
