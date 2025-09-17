@@ -766,34 +766,6 @@ export default function Home() {
                   disabled={isCalculating}
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-group">
-                  <Label htmlFor="other-expenses">Other Initial Expenses</Label>
-                  <CurrencyInput
-                    id="other-expenses"
-                    value={businessParams.otherExpenses}
-                    onChange={(value) => setBusinessParams(prev => ({ ...prev, otherExpenses: value }))}
-                    min={0}
-                    max={1000000}
-                    disabled={isCalculating}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Additional one-time expenses (setup, etc.)</p>
-                </div>
-
-                <div className="form-group">
-                  <Label htmlFor="monthly-expenses">Monthly Expenses</Label>
-                  <CurrencyInput
-                    id="monthly-expenses"
-                    value={businessParams.monthlyExpenses}
-                    onChange={(value) => setBusinessParams(prev => ({ ...prev, monthlyExpenses: value }))}
-                    min={0}
-                    max={1000000}
-                    disabled={isCalculating}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Insurance, maintenance, recurring operating expenses</p>
-                </div>
-              </div>
             </div>
           </div>
         );
