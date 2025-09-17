@@ -763,7 +763,7 @@ export default function Home() {
                     value={businessParams.fixedMonthlyFee}
                     onChange={(value) => setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }))}
                     min={0}
-                    max={10000}
+                    max={100000}
                     disabled={isCalculating}
                   />
                 </div>
