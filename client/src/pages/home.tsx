@@ -42,6 +42,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import * as userService from "@/services/userService"; // Import userService
 
 type WizardStep = 'asset-leasing' | 'financing-investors' | 'review-calculate';
 
@@ -57,10 +58,21 @@ export default function Home() {
 
   // Renter configuration state
   const [renterConfig, setRenterConfig] = useState<RenterConfig>({
-    discountRate: 6.0,
+    discountRate: 4,
     residualValueRate: 20,
-    adminCommissionPct: 1.0
+    adminCommissionPct: 2
   });
+
+  // Sync renterConfig changes with businessParams
+  const handleRenterConfigChange = (config: RenterConfig) => {
+    setRenterConfig(config);
+    setBusinessParams(prev => ({
+      ...prev,
+      adminCommissionPct: config.adminCommissionPct,
+      residualValueRate: config.residualValueRate,
+      discountRate: config.discountRate
+    }));
+  };
 
   // Generate or get session ID
   const [sessionId] = useState(() => {
@@ -101,6 +113,12 @@ export default function Home() {
               discountRate: prev.discountRate, // Keep original, will be overridden by renterConfig
               downPayment: data.businessParams.downPayment !== undefined ? data.businessParams.downPayment : prev.downPayment,
             }));
+            // Sync renterConfig with loaded businessParams if available
+            setRenterConfig({
+              discountRate: data.businessParams.discountRate !== undefined ? data.businessParams.discountRate : renterConfig.discountRate,
+              residualValueRate: data.businessParams.residualValueRate !== undefined ? data.businessParams.residualValueRate : renterConfig.residualValueRate,
+              adminCommissionPct: data.businessParams.adminCommissionPct !== undefined ? data.businessParams.adminCommissionPct : renterConfig.adminCommissionPct
+            });
           }
           if (data.renterConfig) {
             setRenterConfig(data.renterConfig);
@@ -129,6 +147,12 @@ export default function Home() {
           residualValueRate: prev.residualValueRate, // Keep original, controlled by renterConfig
           discountRate: prev.discountRate, // Keep original, controlled by renterConfig
           downPayment: parsed.downPayment !== undefined ? parsed.downPayment : prev.downPayment,
+        }));
+        // Sync renterConfig with loaded businessParams if available
+        setRenterConfig(prev => ({
+          discountRate: parsed.discountRate !== undefined ? parsed.discountRate : prev.discountRate,
+          residualValueRate: parsed.residualValueRate !== undefined ? parsed.residualValueRate : prev.residualValueRate,
+          adminCommissionPct: parsed.adminCommissionPct !== undefined ? parsed.adminCommissionPct : prev.adminCommissionPct
         }));
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
@@ -162,16 +186,16 @@ export default function Home() {
   ]);
 
   const [businessParams, setBusinessParams] = useState<BusinessParameters>({
-    assetCost: 150000, // Igual al loan amount
-    otherExpenses: 5000, // Gastos iniciales adicionales
-    monthlyExpenses: 0, // Gastos operativos mensuales
-    lessorProfitMarginPct: 18.0, // 18% margen de ganancia
-    fixedMonthlyFee: 250.0, // Cuota administrativa fija
-    adminCommissionPct: 1.0, // 1% comisión por apertura (will be overridden by renterConfig)
-    deliveryCosts: 7500.0, // Costos de trámites y entrega
-    residualValueRate: 20.0, // 20% valor residual (will be overridden by renterConfig)
-    discountRate: 6.0, // 6% tasa de descuento (will be overridden by renterConfig)
-    downPayment: 0, // Down payment amount
+    assetCost: 200000,
+    otherExpenses: 0,
+    monthlyExpenses: 0,
+    lessorProfitMarginPct: 15,
+    fixedMonthlyFee: 0,
+    adminCommissionPct: 2, // This will be synced with renterConfig
+    deliveryCosts: 0,
+    residualValueRate: 20, // This will be synced with renterConfig
+    discountRate: 6, // This will be synced with renterConfig
+    downPayment: 0
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -331,7 +355,7 @@ export default function Home() {
         discountRate: renterConfig.discountRate,
         adminCommissionPct: renterConfig.adminCommissionPct
       };
-      
+
       const response = await apiRequest("POST", "/api/calculate", {
         loanParams: { ...loanParams, totalAmount: businessParams.assetCost - businessParams.downPayment }, // Use calculated financing amount
         investors,
@@ -769,7 +793,7 @@ export default function Home() {
                 </div>
               </div>
 
-              
+
 
               <div className="form-group">
                 <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
@@ -1325,14 +1349,14 @@ export default function Home() {
                   lease_term_months: loanParams.termMonths,
                   lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
                   fixed_monthly_fee: businessParams.fixedMonthlyFee,
-                  admin_commission_pct: businessParams.adminCommissionPct,
+                  admin_commission_pct: renterConfig.adminCommissionPct, // Use renterConfig value
                   security_deposit_months: businessParams.securityDepositMonths,
                   delivery_costs: businessParams.deliveryCosts,
                   loan_amount: businessParams.assetCost - businessParams.downPayment, // Use financing amount
                   annual_interest_rate: loanParams.interestRate,
                   monthly_operational_expenses: businessParams.monthlyExpenses,
-                  residual_value_rate: businessParams.residualValueRate,
-                  discount_rate: businessParams.discountRate,
+                  residual_value_rate: renterConfig.residualValueRate, // Use renterConfig value
+                  discount_rate: renterConfig.discountRate, // Use renterConfig value
                 }}
                 startDate={loanParams.startDate}
                 onExportQuote={() => {
@@ -1377,7 +1401,7 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               <RenterConfigModal
                 config={renterConfig}
-                onConfigChange={setRenterConfig}
+                onConfigChange={handleRenterConfigChange}
               />
             </div>
 
