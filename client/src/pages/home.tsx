@@ -200,9 +200,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Check if asset cost is valid (not less than loan amount)
-    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
-
     const isButtonEnabled =
       validations.isLoanNameValid &&
       validations.isTermValid &&
@@ -210,7 +207,7 @@ export default function Home() {
       loanParams.termMonths > 0 &&
       investors.length >= 1 &&
       investors.every(investor => investor.name.trim() !== "") &&
-      assetCostValid;
+      businessParams.assetCost >= 1000;
 
     setInputsValid(isButtonEnabled);
   }, [loanParams, investors, validations, businessParams.assetCost]);
@@ -265,22 +262,16 @@ export default function Home() {
 
   }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, handleValidationChange]);
 
-  // Recalculate amounts when totalRequired changes (loan amount changes)
+  // Recalculate amounts when asset cost changes (which is now the loan amount)
   useEffect(() => {
-    if (loanParams.totalAmount > 0) {
+    if (businessParams.assetCost > 0) {
       const updatedInvestors = investors.map(investor => ({
         ...investor,
-        investmentAmount: (investor.percentage / 100) * loanParams.totalAmount
+        investmentAmount: (investor.percentage / 100) * businessParams.assetCost
       }));
       setInvestors(updatedInvestors);
-
-      // Sync asset cost with loan amount
-      setBusinessParams(prev => ({
-        ...prev,
-        assetCost: loanParams.totalAmount
-      }));
     }
-  }, [loanParams.totalAmount]);
+  }, [businessParams.assetCost]);
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -291,12 +282,12 @@ export default function Home() {
     setTotalInvestment(total);
 
     // Clear error if investments match required amount
-    if (Math.abs(total - loanParams.totalAmount) < 0.01) {
+    if (Math.abs(total - businessParams.assetCost) < 0.01) {
       setInvestorError(null);
     } else if (investors.length > 0) {
-      setInvestorError("Total investment amount must match the required loan amount.");
+      setInvestorError("Total investment amount must match the required asset cost.");
     }
-  }, [investors, loanParams.totalAmount]);
+  }, [investors, businessParams.assetCost]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
@@ -372,10 +363,10 @@ export default function Home() {
       0
     );
 
-    if (Math.abs(totalInvestment - loanParams.totalAmount) >= 0.01) {
+    if (Math.abs(totalInvestment - businessParams.assetCost) >= 0.01) {
       toast({
         title: "Amount Mismatch",
-        description: "Total investment amount must exactly match the loan amount.",
+        description: "Total investment amount must exactly match the asset cost.",
         variant: "destructive",
       });
       return;
@@ -472,13 +463,12 @@ export default function Home() {
   // Validation for each step
   const isStep1Valid = () => {
     const isLoanNameValid = loanParams.loanName.length >= 3 && loanParams.loanName.length < 60;
-    const assetCostValid = businessParams.assetCost >= loanParams.totalAmount;
-    return isLoanNameValid && loanParams.totalAmount >= 1000 && assetCostValid;
+    return isLoanNameValid && businessParams.assetCost >= 1000;
   };
 
   const isStep2Valid = () => {
     const isLoanDetailsValid = loanParams.interestRate > 0 && loanParams.termMonths > 0 && !termError;
-    const investmentDifference = Math.abs(totalInvestment - loanParams.totalAmount);
+    const investmentDifference = Math.abs(totalInvestment - businessParams.assetCost);
     const isInvestorsValid = investors.length >= 1 && 
                             investors.every(investor => investor.name.trim() !== "") &&
                             investmentDifference < 0.01;
@@ -513,8 +503,8 @@ export default function Home() {
       investors.map(investor => {
         if (investor.id === id) {
           const updated = { ...investor, [field]: value };
-          if (field === 'investmentAmount' && loanParams.totalAmount > 0) {
-            updated.percentage = (Number(value) / loanParams.totalAmount) * 100;
+          if (field === 'investmentAmount' && businessParams.assetCost > 0) {
+            updated.percentage = (Number(value) / businessParams.assetCost) * 100;
           }
           return updated;
         }
@@ -540,7 +530,7 @@ export default function Home() {
         setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
       }
 
-      const amount = (percentage / 100) * loanParams.totalAmount;
+      const amount = (percentage / 100) * businessParams.assetCost;
       setInvestors(
         investors.map(investor => 
           investor.id === id ? { ...investor, investmentAmount: amount, percentage: percentage } : investor
@@ -578,9 +568,9 @@ export default function Home() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group">
-                  <Label htmlFor="loan-name">Loan Name <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="leasing-name">Leasing Name <span className="text-destructive">*</span></Label>
                   <Input
-                    id="loan-name"
+                    id="leasing-name"
                     type="text"
                     value={loanParams.loanName}
                     onChange={(e) => setLoanParams(prev => ({ ...prev, loanName: e.target.value }))}
@@ -592,17 +582,20 @@ export default function Home() {
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="total-amount">Total Loan Amount <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="asset-cost">Asset Cost (including VAT) <span className="text-destructive">*</span></Label>
                   <CurrencyInput
-                    id="total-amount"
-                    value={loanParams.totalAmount}
-                    onChange={(value) => setLoanParams(prev => ({ ...prev, totalAmount: value }))}
+                    id="asset-cost"
+                    value={businessParams.assetCost}
+                    onChange={(value) => {
+                      setBusinessParams(prev => ({ ...prev, assetCost: value }));
+                      setLoanParams(prev => ({ ...prev, totalAmount: value }));
+                    }}
                     min={1000}
                     max={100000000}
                     disabled={isCalculating}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Minimum: $1,000 Maximum: $100,000,000</p>
+                  <p className="text-xs text-muted-foreground mt-1">This will be used as the financing amount</p>
                 </div>
               </div>
 
@@ -613,70 +606,6 @@ export default function Home() {
                   setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
                   disabled={isCalculating}
                 />
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Asset Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-blue-600" />
-                <h3 className="font-semibold text-sm">Asset Information</h3>
-              </div>
-
-              <div className="form-group">
-                <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
-                <CurrencyInput
-                  id="asset-cost"
-                  value={businessParams.assetCost}
-                  onChange={(value) => setBusinessParams(prev => ({ ...prev, assetCost: value }))}
-                  min={0}
-                  max={100000000}
-                  disabled={isCalculating}
-                  className={businessParams.assetCost < loanParams.totalAmount ? "border-red-500 focus-visible:ring-red-500" : ""}
-                />
-                {businessParams.assetCost < loanParams.totalAmount && (
-                  <p className="text-xs text-red-500 mt-1">Asset cost cannot be less than loan amount</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
-                  <Label htmlFor="residual-value">Residual Value (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="residual-value"
-                      type="number"
-                      value={businessParams.residualValueRate}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, residualValueRate: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <Label htmlFor="discount-rate">Discount Rate (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="discount-rate"
-                      type="number"
-                      value={businessParams.discountRate}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, discountRate: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -944,7 +873,7 @@ export default function Home() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total Investment:</span>
                     <span className={`font-bold ${
-                      Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
+                      Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
                     }`}>
                       {formatCurrency(totalInvestment)}
                     </span>
@@ -952,14 +881,14 @@ export default function Home() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Required:</span>
                     <span className="font-bold text-gray-900">
-                      {formatCurrency(loanParams.totalAmount)}
+                      {formatCurrency(businessParams.assetCost)}
                     </span>
                   </div>
-                  {Math.abs(loanParams.totalAmount - totalInvestment) >= 0.01 && (
+                  {Math.abs(businessParams.assetCost - totalInvestment) >= 0.01 && (
                     <div className="flex justify-between items-center pt-1 border-t">
                       <span className="font-medium text-orange-600">Difference:</span>
                       <span className="font-bold text-orange-600">
-                        {(loanParams.totalAmount - totalInvestment) > 0 ? "+" : ""}{formatCurrency(loanParams.totalAmount - totalInvestment)}
+                        {(businessParams.assetCost - totalInvestment) > 0 ? "+" : ""}{formatCurrency(businessParams.assetCost - totalInvestment)}
                       </span>
                     </div>
                   )}
@@ -992,12 +921,12 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Loan Name:</span>
+                    <span className="text-sm">Leasing Name:</span>
                     <span className="text-sm font-medium">{loanParams.loanName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Amount:</span>
-                    <span className="text-sm font-medium">{formatCurrency(loanParams.totalAmount)}</span>
+                    <span className="text-sm">Asset Cost:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Start Date:</span>
@@ -1008,20 +937,20 @@ export default function Home() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Asset Information</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Leasing Parameters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Asset Cost:</span>
-                    <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Residual Value:</span>
-                    <span className="text-sm font-medium">{businessParams.residualValueRate}%</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-sm">Profit Margin:</span>
                     <span className="text-sm font-medium">{businessParams.lessorProfitMarginPct}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Monthly Fee:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.fixedMonthlyFee)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Opening Commission:</span>
+                    <span className="text-sm font-medium">{businessParams.adminCommissionPct}%</span>
                   </div>
                 </CardContent>
               </Card>
@@ -1061,8 +990,8 @@ export default function Home() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Match Status:</span>
-                    <Badge variant={Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "default" : "destructive"}>
-                      {Math.abs(loanParams.totalAmount - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
+                    <Badge variant={Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "default" : "destructive"}>
+                      {Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -1081,7 +1010,7 @@ export default function Home() {
                       <span className="text-sm font-medium">{investor.name}</span>
                       <div className="text-right">
                         <div className="text-sm font-medium">{formatCurrency(investor.investmentAmount)}</div>
-                        <div className="text-xs text-muted-foreground">{investor.percentage.toFixed(2)}%</div>
+                        <div className="text-xs text-muted-foreground">{((investor.investmentAmount / businessParams.assetCost) * 100).toFixed(2)}%</div>
                       </div>
                     </div>
                   ))}
