@@ -87,6 +87,7 @@ export default function Home() {
           }
           if (data.businessParams) {
             // Only update if the saved values are meaningful (not 0 or undefined)
+            // Note: residualValueRate and discountRate are now controlled by renterConfig
             setBusinessParams(prev => ({
               assetCost: data.businessParams.assetCost > 0 ? data.businessParams.assetCost : prev.assetCost,
               otherExpenses: data.businessParams.otherExpenses !== undefined ? data.businessParams.otherExpenses : prev.otherExpenses,
@@ -96,8 +97,8 @@ export default function Home() {
               adminCommissionPct: data.businessParams.adminCommissionPct > 0 ? data.businessParams.adminCommissionPct : prev.adminCommissionPct,
               securityDepositMonths: data.businessParams.securityDepositMonths > 0 ? data.businessParams.securityDepositMonths : prev.securityDepositMonths,
               deliveryCosts: data.businessParams.deliveryCosts > 0 ? data.businessParams.deliveryCosts : prev.deliveryCosts,
-              residualValueRate: data.businessParams.residualValueRate > 0 ? data.businessParams.residualValueRate : prev.residualValueRate,
-              discountRate: data.businessParams.discountRate > 0 ? data.businessParams.discountRate : prev.discountRate,
+              residualValueRate: prev.residualValueRate, // Keep original, will be overridden by renterConfig
+              discountRate: prev.discountRate, // Keep original, will be overridden by renterConfig
               downPayment: data.businessParams.downPayment !== undefined ? data.businessParams.downPayment : prev.downPayment,
             }));
           }
@@ -116,6 +117,7 @@ export default function Home() {
       try {
         const parsed = JSON.parse(savedBusinessParams);
         // Only apply saved values if they are meaningful (not 0 or empty)
+        // Note: residualValueRate and discountRate are now controlled by renterConfig
         setBusinessParams(prev => ({
           assetCost: parsed.assetCost > 0 ? parsed.assetCost : prev.assetCost,
           otherExpenses: parsed.otherExpenses !== undefined ? parsed.otherExpenses : prev.otherExpenses,
@@ -125,8 +127,8 @@ export default function Home() {
           adminCommissionPct: parsed.adminCommissionPct > 0 ? parsed.adminCommissionPct : prev.adminCommissionPct,
           securityDepositMonths: parsed.securityDepositMonths > 0 ? parsed.securityDepositMonths : prev.securityDepositMonths,
           deliveryCosts: parsed.deliveryCosts > 0 ? parsed.deliveryCosts : prev.deliveryCosts,
-          residualValueRate: parsed.residualValueRate > 0 ? parsed.residualValueRate : prev.residualValueRate,
-          discountRate: parsed.discountRate > 0 ? parsed.discountRate : prev.discountRate,
+          residualValueRate: prev.residualValueRate, // Keep original, controlled by renterConfig
+          discountRate: prev.discountRate, // Keep original, controlled by renterConfig
           downPayment: parsed.downPayment !== undefined ? parsed.downPayment : prev.downPayment,
         }));
       } catch (error) {
@@ -169,8 +171,8 @@ export default function Home() {
     adminCommissionPct: 1.0, // 1% comisión por apertura
     securityDepositMonths: 1, // 1 mes de depósito
     deliveryCosts: 7500.0, // Costos de trámites y entrega
-    residualValueRate: 20.0, // 20% valor residual
-    discountRate: 6.0, // 6% tasa de descuento
+    residualValueRate: 20.0, // 20% valor residual (will be overridden by renterConfig)
+    discountRate: 6.0, // 6% tasa de descuento (will be overridden by renterConfig)
     downPayment: 0, // Down payment amount
   });
 
@@ -236,6 +238,21 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('businessParams', JSON.stringify(businessParams));
   }, [businessParams]);
+
+  // Save renterConfig changes to server
+  useEffect(() => {
+    const saveRenterConfig = async () => {
+      try {
+        await apiRequest('PUT', `/api/user-settings/${sessionId}`, {
+          renterConfig
+        });
+      } catch (error) {
+        console.error('Error saving renter config:', error);
+      }
+    };
+
+    saveRenterConfig();
+  }, [renterConfig, sessionId]);
 
   // Validation effects for wizard
   useEffect(() => {
@@ -309,10 +326,17 @@ export default function Home() {
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
+      // Merge businessParams with renterConfig for calculations
+      const calculationBusinessParams = {
+        ...businessParams,
+        residualValueRate: renterConfig.residualValueRate,
+        discountRate: renterConfig.discountRate
+      };
+      
       const response = await apiRequest("POST", "/api/calculate", {
         loanParams: { ...loanParams, totalAmount: businessParams.assetCost - businessParams.downPayment }, // Use calculated financing amount
         investors,
-        businessParams,
+        businessParams: calculationBusinessParams,
         paymentFrequency: loanParams.paymentFrequency,
       });
       const data = await response.json();
@@ -1401,12 +1425,10 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex items-center space-x-4">
-              {activeMainTab === 'renter-operator' && (
-                <RenterConfigModal
-                  config={renterConfig}
-                  onConfigChange={setRenterConfig}
-                />
-              )}
+              <RenterConfigModal
+                config={renterConfig}
+                onConfigChange={setRenterConfig}
+              />
             </div>
 
           </div>

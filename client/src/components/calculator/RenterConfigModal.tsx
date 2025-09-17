@@ -43,7 +43,7 @@ export function RenterConfigModal({ config, onConfigChange }: RenterConfigModalP
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Advanced Renter Parameters</DialogTitle>
+          <DialogTitle>Advanced Parameters</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
