@@ -98,6 +98,7 @@ export default function Home() {
               deliveryCosts: data.businessParams.deliveryCosts > 0 ? data.businessParams.deliveryCosts : prev.deliveryCosts,
               residualValueRate: data.businessParams.residualValueRate > 0 ? data.businessParams.residualValueRate : prev.residualValueRate,
               discountRate: data.businessParams.discountRate > 0 ? data.businessParams.discountRate : prev.discountRate,
+              downPayment: data.businessParams.downPayment !== undefined ? data.businessParams.downPayment : prev.downPayment,
             }));
           }
           if (data.renterConfig) {
@@ -126,6 +127,7 @@ export default function Home() {
           deliveryCosts: parsed.deliveryCosts > 0 ? parsed.deliveryCosts : prev.deliveryCosts,
           residualValueRate: parsed.residualValueRate > 0 ? parsed.residualValueRate : prev.residualValueRate,
           discountRate: parsed.discountRate > 0 ? parsed.discountRate : prev.discountRate,
+          downPayment: parsed.downPayment !== undefined ? parsed.downPayment : prev.downPayment,
         }));
       } catch (error) {
         console.error('Error parsing saved business parameters:', error);
@@ -169,6 +171,7 @@ export default function Home() {
     deliveryCosts: 7500.0, // Costos de trámites y entrega
     residualValueRate: 20.0, // 20% valor residual
     discountRate: 6.0, // 6% tasa de descuento
+    downPayment: 0, // Down payment amount
   });
 
   const [calculationResults, setCalculationResults] = useState<{
@@ -194,6 +197,10 @@ export default function Home() {
   const [investorError, setInvestorError] = useState<string | null>(null);
   const [inputMode, setInputMode] = useState<'amount' | 'percentage'>('percentage');
   const [percentageInputs, setPercentageInputs] = useState<{[key: number]: string}>({});
+
+  // New state for down payment input mode and percentage value
+  const [downPaymentMode, setDownPaymentMode] = useState<'amount' | 'percentage'>('amount');
+  const [downPaymentPercentage, setDownPaymentPercentage] = useState<string>('0.00');
 
   const handleValidationChange = useCallback((newValidations: { isLoanNameValid: boolean; isTermValid: boolean }) => {
     setValidations(newValidations);
@@ -262,16 +269,27 @@ export default function Home() {
 
   }, [loanParams.loanName, loanParams.termMonths, loanParams.paymentFrequency, handleValidationChange]);
 
-  // Recalculate amounts when asset cost changes (which is now the loan amount)
+  // Recalculate amounts when asset cost or down payment changes
   useEffect(() => {
+    const financingAmount = businessParams.assetCost - businessParams.downPayment;
+    setLoanParams(prev => ({ ...prev, totalAmount: financingAmount }));
+
     if (businessParams.assetCost > 0) {
       const updatedInvestors = investors.map(investor => ({
         ...investor,
-        investmentAmount: (investor.percentage / 100) * businessParams.assetCost
+        investmentAmount: (investor.percentage / 100) * financingAmount,
       }));
       setInvestors(updatedInvestors);
     }
-  }, [businessParams.assetCost]);
+
+    // Update downPaymentPercentage if assetCost changes
+    if (businessParams.assetCost > 0) {
+      setDownPaymentPercentage(((businessParams.downPayment / businessParams.assetCost) * 100).toFixed(2));
+    } else {
+      setDownPaymentPercentage('0.00');
+    }
+
+  }, [businessParams.assetCost, businessParams.downPayment]);
 
   // Calculate total investment whenever investors change
   useEffect(() => {
@@ -282,17 +300,17 @@ export default function Home() {
     setTotalInvestment(total);
 
     // Clear error if investments match required amount
-    if (Math.abs(total - businessParams.assetCost) < 0.01) {
+    if (Math.abs(total - (businessParams.assetCost - businessParams.downPayment)) < 0.01) {
       setInvestorError(null);
     } else if (investors.length > 0) {
-      setInvestorError("Total investment amount must match the required asset cost.");
+      setInvestorError("Total investment amount must match the financing amount.");
     }
-  }, [investors, businessParams.assetCost]);
+  }, [investors, businessParams.assetCost, businessParams.downPayment]);
 
   const calculateMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/calculate", {
-        loanParams,
+        loanParams: { ...loanParams, totalAmount: businessParams.assetCost - businessParams.downPayment }, // Use calculated financing amount
         investors,
         businessParams,
         paymentFrequency: loanParams.paymentFrequency,
@@ -358,15 +376,16 @@ export default function Home() {
   });
 
   const handleCalculate = () => {
+    const financingAmount = businessParams.assetCost - businessParams.downPayment;
     const totalInvestment = investors.reduce(
       (sum, investor) => sum + investor.investmentAmount,
       0
     );
 
-    if (Math.abs(totalInvestment - businessParams.assetCost) >= 0.01) {
+    if (Math.abs(totalInvestment - financingAmount) >= 0.01) {
       toast({
         title: "Amount Mismatch",
-        description: "Total investment amount must exactly match the asset cost.",
+        description: "Total investment amount must exactly match the financing amount.",
         variant: "destructive",
       });
       return;
@@ -402,7 +421,7 @@ export default function Home() {
 
     try {
       const doc = generateProjectSummaryReport(
-        loanParams.totalAmount,
+        businessParams.assetCost - businessParams.downPayment, // Use financing amount here
         loanParams.interestRate,
         loanParams.termMonths,
         loanParams.startDate,
@@ -468,8 +487,9 @@ export default function Home() {
 
   const isStep2Valid = () => {
     const isLoanDetailsValid = loanParams.interestRate > 0 && loanParams.termMonths > 0 && !termError;
-    const investmentDifference = Math.abs(totalInvestment - businessParams.assetCost);
-    const isInvestorsValid = investors.length >= 1 && 
+    const financingAmount = businessParams.assetCost - businessParams.downPayment;
+    const investmentDifference = Math.abs(totalInvestment - financingAmount);
+    const isInvestorsValid = investors.length >= 1 &&
                             investors.every(investor => investor.name.trim() !== "") &&
                             investmentDifference < 0.01;
     return isLoanDetailsValid && isInvestorsValid;
@@ -482,10 +502,13 @@ export default function Home() {
       : 1;
 
     const newInvestorNumber = investors.length + 1;
+    const financingAmount = businessParams.assetCost - businessParams.downPayment;
+    const defaultInvestmentAmount = financingAmount / (investors.length + 1);
+    const defaultPercentage = (defaultInvestmentAmount / financingAmount) * 100;
 
     setInvestors([
       ...investors,
-      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: 0, percentage: 0 }
+      { id: newId, name: `Investor ${newInvestorNumber}`, investmentAmount: defaultInvestmentAmount, percentage: defaultPercentage }
     ]);
   };
 
@@ -503,8 +526,11 @@ export default function Home() {
       investors.map(investor => {
         if (investor.id === id) {
           const updated = { ...investor, [field]: value };
-          if (field === 'investmentAmount' && businessParams.assetCost > 0) {
-            updated.percentage = (Number(value) / businessParams.assetCost) * 100;
+          const financingAmount = businessParams.assetCost - businessParams.downPayment;
+          if (field === 'investmentAmount' && financingAmount > 0) {
+            updated.percentage = (Number(value) / financingAmount) * 100;
+          } else if (field === 'percentage' && financingAmount > 0) {
+            updated.investmentAmount = (Number(value) / 100) * financingAmount;
           }
           return updated;
         }
@@ -521,21 +547,21 @@ export default function Home() {
     const value = percentageInputs[id];
     if (value !== undefined) {
       let percentage = parseFloat(value) || 0;
+      const financingAmount = businessParams.assetCost - businessParams.downPayment;
 
       if (percentage < 0) {
         percentage = 0;
-        setPercentageInputs(prev => ({ ...prev, [id]: '0' }));
       } else if (percentage > 100) {
         percentage = 100;
-        setPercentageInputs(prev => ({ ...prev, [id]: '100' }));
       }
 
-      const amount = (percentage / 100) * businessParams.assetCost;
+      const amount = (percentage / 100) * financingAmount;
       setInvestors(
-        investors.map(investor => 
+        investors.map(investor =>
           investor.id === id ? { ...investor, investmentAmount: amount, percentage: percentage } : investor
         )
       );
+      setPercentageInputs(prev => ({ ...prev, [id]: percentage.toFixed(2) })); // Update input value to the clamped percentage
     }
   };
 
@@ -543,7 +569,8 @@ export default function Home() {
     if (percentageInputs[investor.id] !== undefined) {
       return percentageInputs[investor.id];
     }
-    return investor.percentage.toFixed(2);
+    // Ensure percentage is not NaN and is displayed with 2 decimal places
+    return isNaN(investor.percentage) ? '0.00' : investor.percentage.toFixed(2);
   };
 
     const handleExportReport = () => {
@@ -588,14 +615,13 @@ export default function Home() {
                     value={businessParams.assetCost}
                     onChange={(value) => {
                       setBusinessParams(prev => ({ ...prev, assetCost: value }));
-                      setLoanParams(prev => ({ ...prev, totalAmount: value }));
                     }}
                     min={1000}
                     max={100000000}
                     disabled={isCalculating}
                     required
                   />
-                  <p className="text-xs text-muted-foreground mt-1">This will be used as the financing amount</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total asset value including VAT</p>
                 </div>
               </div>
 
@@ -606,6 +632,89 @@ export default function Home() {
                   setDate={(date) => date && setLoanParams(prev => ({ ...prev, startDate: date }))}
                   disabled={isCalculating}
                 />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Down Payment Section */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="form-group">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label htmlFor="down-payment">Down Payment</Label>
+                    <div className="flex border rounded-md p-1">
+                      <button
+                        type="button"
+                        onClick={() => setDownPaymentMode('amount')}
+                        className={`px-2 py-1 text-xs rounded-sm ${downPaymentMode === 'amount' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                      >
+                        Amount
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDownPaymentMode('percentage')}
+                        className={`px-2 py-1 text-xs rounded-sm ${downPaymentMode === 'percentage' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}
+                      >
+                        %
+                      </button>
+                    </div>
+                  </div>
+                  {downPaymentMode === 'amount' ? (
+                    <CurrencyInput
+                      id="down-payment"
+                      value={businessParams.downPayment}
+                      onChange={(value) => {
+                        const maxDownPayment = businessParams.assetCost * 0.8; // Max 80% down payment
+                        const clampedValue = Math.min(value, maxDownPayment);
+                        setBusinessParams(prev => ({ ...prev, downPayment: clampedValue }));
+                        if (businessParams.assetCost > 0) {
+                          setDownPaymentPercentage(((clampedValue / businessParams.assetCost) * 100).toFixed(2));
+                        }
+                      }}
+                      min={0}
+                      max={businessParams.assetCost * 0.8}
+                      disabled={isCalculating}
+                    />
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        id="down-payment-pct"
+                        type="number"
+                        value={downPaymentPercentage}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || (!isNaN(parseFloat(value)) && parseFloat(value) >= 0 && parseFloat(value) <= 80)) {
+                            setDownPaymentPercentage(value);
+                          }
+                        }}
+                        onBlur={() => {
+                          let percentage = parseFloat(downPaymentPercentage) || 0;
+                          if (percentage < 0) percentage = 0;
+                          if (percentage > 80) percentage = 80;
+                          setDownPaymentPercentage(percentage.toFixed(2));
+                          const amount = (percentage / 100) * businessParams.assetCost;
+                          setBusinessParams(prev => ({ ...prev, downPayment: amount }));
+                        }}
+                        min={0}
+                        max={80}
+                        step={0.01}
+                        disabled={isCalculating}
+                        className="pr-8"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                    <p>Financing Amount: {formatCurrency(businessParams.assetCost - businessParams.downPayment)}</p>
+                    {downPaymentMode === 'amount' && businessParams.assetCost > 0 && (
+                      <p>Percentage: {((businessParams.downPayment / businessParams.assetCost) * 100).toFixed(2)}%</p>
+                    )}
+                    {downPaymentMode === 'percentage' && (
+                      <p>Amount: {formatCurrency((parseFloat(downPaymentPercentage) / 100) * businessParams.assetCost)}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -795,8 +904,8 @@ export default function Home() {
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {investors.map((investor, index) => (
-                  <div 
-                    key={investor.id} 
+                  <div
+                    key={investor.id}
                     className="investor-entry rounded-lg p-3 border"
                   >
                     <div className="flex justify-between items-center mb-2">
@@ -873,22 +982,22 @@ export default function Home() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Total Investment:</span>
                     <span className={`font-bold ${
-                      Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
+                      Math.abs(businessParams.assetCost - businessParams.downPayment - totalInvestment) < 0.01 ? "text-green-600" : "text-gray-900"
                     }`}>
                       {formatCurrency(totalInvestment)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Required:</span>
+                    <span className="font-medium">Required (Financing Amount):</span>
                     <span className="font-bold text-gray-900">
-                      {formatCurrency(businessParams.assetCost)}
+                      {formatCurrency(businessParams.assetCost - businessParams.downPayment)}
                     </span>
                   </div>
-                  {Math.abs(businessParams.assetCost - totalInvestment) >= 0.01 && (
+                  {Math.abs(businessParams.assetCost - businessParams.downPayment - totalInvestment) >= 0.01 && (
                     <div className="flex justify-between items-center pt-1 border-t">
                       <span className="font-medium text-orange-600">Difference:</span>
                       <span className="font-bold text-orange-600">
-                        {(businessParams.assetCost - totalInvestment) > 0 ? "+" : ""}{formatCurrency(businessParams.assetCost - totalInvestment)}
+                        {(businessParams.assetCost - businessParams.downPayment - totalInvestment) > 0 ? "+" : ""}{formatCurrency(businessParams.assetCost - businessParams.downPayment - totalInvestment)}
                       </span>
                     </div>
                   )}
@@ -929,6 +1038,14 @@ export default function Home() {
                     <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost)}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-sm">Down Payment:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.downPayment)} ({((businessParams.downPayment / businessParams.assetCost) * 100).toFixed(2)}%)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Financing Amount:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.assetCost - businessParams.downPayment)}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-sm">Start Date:</span>
                     <span className="text-sm font-medium">{loanParams.startDate.toLocaleDateString()}</span>
                   </div>
@@ -952,6 +1069,14 @@ export default function Home() {
                     <span className="text-sm">Opening Commission:</span>
                     <span className="text-sm font-medium">{businessParams.adminCommissionPct}%</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Deposit Months:</span>
+                    <span className="text-sm font-medium">{businessParams.securityDepositMonths}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Delivery Costs:</span>
+                    <span className="text-sm font-medium">{formatCurrency(businessParams.deliveryCosts)}</span>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -969,8 +1094,8 @@ export default function Home() {
                     <span className="text-sm font-medium">{loanParams.termMonths} months</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Monthly Fee:</span>
-                    <span className="text-sm font-medium">{formatCurrency(businessParams.fixedMonthlyFee)}</span>
+                    <span className="text-sm">Payment Frequency:</span>
+                    <span className="text-sm font-medium capitalize">{loanParams.paymentFrequency}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -990,8 +1115,8 @@ export default function Home() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Match Status:</span>
-                    <Badge variant={Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "default" : "destructive"}>
-                      {Math.abs(businessParams.assetCost - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
+                    <Badge variant={Math.abs(businessParams.assetCost - businessParams.downPayment - totalInvestment) < 0.01 ? "default" : "destructive"}>
+                      {Math.abs(businessParams.assetCost - businessParams.downPayment - totalInvestment) < 0.01 ? "Match" : "Mismatch"}
                     </Badge>
                   </div>
                 </CardContent>
@@ -1010,7 +1135,7 @@ export default function Home() {
                       <span className="text-sm font-medium">{investor.name}</span>
                       <div className="text-right">
                         <div className="text-sm font-medium">{formatCurrency(investor.investmentAmount)}</div>
-                        <div className="text-xs text-muted-foreground">{((investor.investmentAmount / businessParams.assetCost) * 100).toFixed(2)}%</div>
+                        <div className="text-xs text-muted-foreground">{((investor.investmentAmount / (businessParams.assetCost - businessParams.downPayment)) * 100).toFixed(2)}%</div>
                       </div>
                     </div>
                   ))}
@@ -1229,7 +1354,7 @@ export default function Home() {
                   admin_commission_pct: businessParams.adminCommissionPct,
                   security_deposit_months: businessParams.securityDepositMonths,
                   delivery_costs: businessParams.deliveryCosts,
-                  loan_amount: loanParams.totalAmount,
+                  loan_amount: businessParams.assetCost - businessParams.downPayment, // Use financing amount
                   annual_interest_rate: loanParams.interestRate,
                   monthly_operational_expenses: businessParams.monthlyExpenses,
                   residual_value_rate: businessParams.residualValueRate,
@@ -1283,12 +1408,12 @@ export default function Home() {
                 />
               )}
             </div>
-            
+
           </div>
         </div>
 
-        <TabNavigation 
-          activeMainTab={activeMainTab} 
+        <TabNavigation
+          activeMainTab={activeMainTab}
           setActiveMainTab={setActiveMainTab}
           activeLenderSubTab={activeLenderSubTab}
           setActiveLenderSubTab={setActiveLenderSubTab}

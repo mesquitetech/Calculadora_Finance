@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,8 @@ export interface BusinessParameters {
   assetCost: number;
   otherExpenses: number;
   monthlyExpenses: number;
-  
+  downPayment: number; // Down payment as percentage or fixed amount
+
   // New variables for pure leasing
   lessorProfitMarginPct: number; // Operator profit margin (%)
   fixedMonthlyFee: number; // Fixed administrative fee
@@ -37,10 +37,10 @@ export function BusinessParametersCard({
   isCalculating,
   loanAmount
 }: BusinessParametersCardProps) {
-  
+
   // Check if asset cost is less than loan amount
   const assetCostError = loanAmount && businessParams.assetCost >= 0 && businessParams.assetCost < loanAmount;
-  
+
   const handleAssetCostChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, assetCost: value }));
   };
@@ -86,6 +86,11 @@ export function BusinessParametersCard({
     setBusinessParams(prev => ({ ...prev, discountRate: value }));
   };
 
+  // Handler for down payment change
+  const handleDownPaymentChange = (value: number) => {
+    setBusinessParams(prev => ({ ...prev, downPayment: value }));
+  };
+
   return (
     <Card className="col-span-1">
       <CardHeader>
@@ -95,14 +100,14 @@ export function BusinessParametersCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        
+
         {/* Section: Asset Information */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-blue-600" />
             <h3 className="font-semibold text-sm">Asset Information</h3>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
             <CurrencyInput
@@ -138,7 +143,7 @@ export function BusinessParametersCard({
                 <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-            
+
             <div className="form-group">
               <Label htmlFor="discount-rate">Discount Rate (%)</Label>
               <div className="relative">
@@ -167,7 +172,7 @@ export function BusinessParametersCard({
             <Percent className="h-4 w-4 text-green-600" />
             <h3 className="font-semibold text-sm">Profitability Structure</h3>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="lessor-margin">Profit Margin (%)</Label>
             <div className="relative">
@@ -208,7 +213,24 @@ export function BusinessParametersCard({
             <Calendar className="h-4 w-4 text-purple-600" />
             <h3 className="font-semibold text-sm">Initial Payment Configuration</h3>
           </div>
-          
+
+          <div className="form-group">
+            <Label htmlFor="down-payment">Down Payment</Label>
+            <div className="relative">
+              <CurrencyInput
+                id="down-payment"
+                name="down-payment"
+                value={businessParams.downPayment}
+                onChange={handleDownPaymentChange}
+                min={0}
+                max={businessParams.assetCost}
+                disabled={isCalculating}
+              />
+              <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Enter as a percentage or a fixed amount.</p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="form-group">
               <Label htmlFor="admin-commission">Opening Commission (%)</Label>
@@ -227,7 +249,7 @@ export function BusinessParametersCard({
                 <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-            
+
             <div className="form-group">
               <Label htmlFor="security-deposit">Deposit (months)</Label>
               <Input
@@ -265,7 +287,7 @@ export function BusinessParametersCard({
             <Truck className="h-4 w-4 text-orange-600" />
             <h3 className="font-semibold text-sm">Operating Expenses</h3>
           </div>
-          
+
           <div className="form-group">
             <Label htmlFor="other-expenses">Other Initial Expenses</Label>
             <CurrencyInput
