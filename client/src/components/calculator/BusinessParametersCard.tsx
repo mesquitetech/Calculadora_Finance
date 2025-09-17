@@ -17,8 +17,7 @@ export interface BusinessParameters {
   // New variables for pure leasing
   lessorProfitMarginPct: number; // Operator profit margin (%)
   fixedMonthlyFee: number; // Fixed administrative fee
-  adminCommissionPct: number; // Opening commission (%)
-  securityDepositMonths: number; // Security deposit months
+  adminCommissionPct: number; // Opening commission (%) - controlled by renterConfig
   deliveryCosts: number; // Processing and delivery costs
   residualValueRate: number; // Residual value (%)
   discountRate: number; // Discount rate for NPV (%)
@@ -62,15 +61,7 @@ export function BusinessParametersCard({
     setBusinessParams(prev => ({ ...prev, fixedMonthlyFee: value }));
   };
 
-  const handleAdminCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
-    setBusinessParams(prev => ({ ...prev, adminCommissionPct: value }));
-  };
-
-  const handleSecurityDepositChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setBusinessParams(prev => ({ ...prev, securityDepositMonths: value }));
-  };
+  
 
   const handleDeliveryCostsChange = (value: number) => {
     setBusinessParams(prev => ({ ...prev, deliveryCosts: value }));
@@ -231,39 +222,7 @@ export function BusinessParametersCard({
             <p className="text-xs text-muted-foreground mt-1">Enter as a percentage or a fixed amount.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="form-group">
-              <Label htmlFor="admin-commission">Opening Commission (%)</Label>
-              <div className="relative">
-                <Input
-                  id="admin-commission"
-                  type="number"
-                  value={businessParams.adminCommissionPct}
-                  onChange={handleAdminCommissionChange}
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  disabled={isCalculating}
-                  className="pr-8"
-                />
-                <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="security-deposit">Deposit (months)</Label>
-              <Input
-                id="security-deposit"
-                type="number"
-                value={businessParams.securityDepositMonths}
-                onChange={handleSecurityDepositChange}
-                min={0}
-                max={12}
-                step={1}
-                disabled={isCalculating}
-              />
-            </div>
-          </div>
+          
 
           <div className="form-group">
             <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>

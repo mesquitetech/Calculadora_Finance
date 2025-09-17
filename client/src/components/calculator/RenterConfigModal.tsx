@@ -8,6 +8,7 @@ import { Settings } from "lucide-react";
 export interface RenterConfig {
   discountRate: number;
   residualValueRate: number;
+  adminCommissionPct: number;
 }
 
 interface RenterConfigModalProps {
@@ -89,6 +90,29 @@ export function RenterConfigModal({ config, onConfigChange }: RenterConfigModalP
             </div>
             <p className="text-xs text-muted-foreground">
               Percentage of asset cost retained at end of loan term
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="admin-commission">Opening Commission (%)</Label>
+            <div className="relative">
+              <Input
+                id="admin-commission"
+                type="number"
+                value={tempConfig.adminCommissionPct}
+                onChange={(e) => setTempConfig({
+                  ...tempConfig,
+                  adminCommissionPct: Number(e.target.value) || 0
+                })}
+                min={0}
+                max={10}
+                step={0.1}
+                className="pr-8"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Commission percentage on asset cost for opening
             </p>
           </div>
 

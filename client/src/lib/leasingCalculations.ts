@@ -17,7 +17,6 @@ export interface LeasingInputs {
 
   // Initial payment variables
   admin_commission_pct: number; // Opening commission on the asset cost
-  security_deposit_months: number; // Months of base rent as a security deposit
   delivery_costs: number; // Delivery costs
   other_initial_expenses: number; // NEW: For management, plates, paperwork, etc.
 
@@ -40,7 +39,6 @@ export interface LeasingResults {
 
   // Initial Payment Results
   initial_admin_commission: number;
-  initial_security_deposit: number;
   initial_payment_sans_iva: number;
 
   // Results for the Operator
@@ -140,27 +138,17 @@ export function calculateInitialAdminCommission(
   return asset_cost_sans_iva * (admin_commission_pct / 100);
 }
 
-/**
- * 2.2 Calculates the security deposit.
- * Formula: base_rent_with_margin * security_deposit_months
- */
-export function calculateInitialSecurityDeposit(
-  base_rent_with_margin: number,
-  security_deposit_months: number
-): number {
-  return base_rent_with_margin * security_deposit_months;
-}
+
 
 /**
  * 2.3 Calculates the total initial payment without VAT.
- * Formula: initial_admin_commission + initial_security_deposit + delivery_costs
+ * Formula: initial_admin_commission + delivery_costs
  */
 export function calculateInitialPaymentSansIva(
   initial_admin_commission: number,
-  initial_security_deposit: number,
   delivery_costs: number
 ): number {
-  return initial_admin_commission + initial_security_deposit + delivery_costs;
+  return initial_admin_commission + delivery_costs;
 }
 
 // ============= MODULE 3: LOAN CALCULATIONS =============
@@ -251,7 +239,6 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
   const base_rent_with_margin = calculateBaseRentWithMargin(base_rent_amortization, lessor_monthly_profit);
   const total_monthly_rent = calculateTotalMonthlyRentSansIva(base_rent_with_margin, inputs.fixed_monthly_fee);
   const initial_admin_commission = calculateInitialAdminCommission(asset_cost_sans_iva, inputs.admin_commission_pct);
-  const initial_security_deposit = calculateInitialSecurityDeposit(base_rent_with_margin, inputs.security_deposit_months);
   const monthly_loan_payment = calculateLoanMonthlyPayment(loan_amount, inputs.annual_interest_rate, lease_term_months);
   const residual_value = asset_cost_sans_iva * (residual_value_rate / 100);
   const monthly_discount_rate = discount_rate > 0 ? discount_rate / 100 / 12 : 0;
@@ -262,7 +249,7 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
 
   // ===== MONTH 0: Initial Investment (CORRECTED) =====
   // INFLOW: Money the operator receives to start (loan + initial customer payments).
-  const initial_inflow = loan_amount + initial_admin_commission + initial_security_deposit;
+  const initial_inflow = loan_amount + initial_admin_commission;
   // OUTFLOW: Money the operator spends (asset purchase WITHOUT VAT + initial expenses).
   const initial_outflow = asset_cost_sans_iva + delivery_costs + other_initial_expenses;
   const initial_net_flow = initial_inflow - initial_outflow;
@@ -307,15 +294,13 @@ export function generateProjectCashFlow(inputs: LeasingInputs, start_date: Date)
   }
 
   // ===== FINAL MONTH: Final Flows (CORRECTED) =====
-  // Add residual value (inflow) and return security deposit (outflow).
+  // Add residual value (inflow).
   const final_month_entry = cash_flow[lease_term_months];
   if (final_month_entry) {
     const final_inflow_adjustment = residual_value;
-    const final_outflow_adjustment = initial_security_deposit;
-    const final_net_adjustment = final_inflow_adjustment - final_outflow_adjustment;
+    const final_net_adjustment = final_inflow_adjustment;
 
     final_month_entry.cash_inflow += final_inflow_adjustment;
-    final_month_entry.cash_outflow += final_outflow_adjustment;
     final_month_entry.net_cash_flow += final_net_adjustment;
     final_month_entry.cumulative_cash_flow += final_net_adjustment;
 
@@ -386,8 +371,7 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
 
   // Module 2: Initial Payment Calculations
   const initial_admin_commission = calculateInitialAdminCommission(inputs.asset_cost_sans_iva, inputs.admin_commission_pct);
-  const initial_security_deposit = calculateInitialSecurityDeposit(base_rent_with_margin, inputs.security_deposit_months);
-  const initial_payment_sans_iva = calculateInitialPaymentSansIva(initial_admin_commission, initial_security_deposit, inputs.delivery_costs);
+  const initial_payment_sans_iva = calculateInitialPaymentSansIva(initial_admin_commission, inputs.delivery_costs);
 
   // Module 3: Loan Calculations
   const monthly_loan_payment = calculateLoanMonthlyPayment(inputs.loan_amount, inputs.annual_interest_rate, inputs.lease_term_months);
@@ -412,7 +396,6 @@ export function calculateLeasingFinancials(inputs: LeasingInputs, start_date: Da
     base_rent_with_margin,
     total_monthly_rent_sans_iva,
     initial_admin_commission,
-    initial_security_deposit,
     initial_payment_sans_iva,
     monthly_loan_payment,
     net_monthly_cash_flow,

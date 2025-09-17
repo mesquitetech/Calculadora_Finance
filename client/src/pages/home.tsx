@@ -58,7 +58,8 @@ export default function Home() {
   // Renter configuration state
   const [renterConfig, setRenterConfig] = useState<RenterConfig>({
     discountRate: 6.0,
-    residualValueRate: 20
+    residualValueRate: 20,
+    adminCommissionPct: 1.0
   });
 
   // Generate or get session ID
@@ -94,8 +95,7 @@ export default function Home() {
               monthlyExpenses: data.businessParams.monthlyExpenses !== undefined ? data.businessParams.monthlyExpenses : prev.monthlyExpenses,
               lessorProfitMarginPct: data.businessParams.lessorProfitMarginPct > 0 ? data.businessParams.lessorProfitMarginPct : prev.lessorProfitMarginPct,
               fixedMonthlyFee: data.businessParams.fixedMonthlyFee > 0 ? data.businessParams.fixedMonthlyFee : prev.fixedMonthlyFee,
-              adminCommissionPct: data.businessParams.adminCommissionPct > 0 ? data.businessParams.adminCommissionPct : prev.adminCommissionPct,
-              securityDepositMonths: data.businessParams.securityDepositMonths > 0 ? data.businessParams.securityDepositMonths : prev.securityDepositMonths,
+              adminCommissionPct: prev.adminCommissionPct, // Keep original, controlled by renterConfig
               deliveryCosts: data.businessParams.deliveryCosts > 0 ? data.businessParams.deliveryCosts : prev.deliveryCosts,
               residualValueRate: prev.residualValueRate, // Keep original, will be overridden by renterConfig
               discountRate: prev.discountRate, // Keep original, will be overridden by renterConfig
@@ -124,8 +124,7 @@ export default function Home() {
           monthlyExpenses: parsed.monthlyExpenses !== undefined ? parsed.monthlyExpenses : prev.monthlyExpenses,
           lessorProfitMarginPct: parsed.lessorProfitMarginPct > 0 ? parsed.lessorProfitMarginPct : prev.lessorProfitMarginPct,
           fixedMonthlyFee: parsed.fixedMonthlyFee > 0 ? parsed.fixedMonthlyFee : prev.fixedMonthlyFee,
-          adminCommissionPct: parsed.adminCommissionPct > 0 ? parsed.adminCommissionPct : prev.adminCommissionPct,
-          securityDepositMonths: parsed.securityDepositMonths > 0 ? parsed.securityDepositMonths : prev.securityDepositMonths,
+          adminCommissionPct: prev.adminCommissionPct, // Keep original, controlled by renterConfig
           deliveryCosts: parsed.deliveryCosts > 0 ? parsed.deliveryCosts : prev.deliveryCosts,
           residualValueRate: prev.residualValueRate, // Keep original, controlled by renterConfig
           discountRate: prev.discountRate, // Keep original, controlled by renterConfig
@@ -168,8 +167,7 @@ export default function Home() {
     monthlyExpenses: 0, // Gastos operativos mensuales
     lessorProfitMarginPct: 18.0, // 18% margen de ganancia
     fixedMonthlyFee: 250.0, // Cuota administrativa fija
-    adminCommissionPct: 1.0, // 1% comisión por apertura
-    securityDepositMonths: 1, // 1 mes de depósito
+    adminCommissionPct: 1.0, // 1% comisión por apertura (will be overridden by renterConfig)
     deliveryCosts: 7500.0, // Costos de trámites y entrega
     residualValueRate: 20.0, // 20% valor residual (will be overridden by renterConfig)
     discountRate: 6.0, // 6% tasa de descuento (will be overridden by renterConfig)
@@ -330,7 +328,8 @@ export default function Home() {
       const calculationBusinessParams = {
         ...businessParams,
         residualValueRate: renterConfig.residualValueRate,
-        discountRate: renterConfig.discountRate
+        discountRate: renterConfig.discountRate,
+        adminCommissionPct: renterConfig.adminCommissionPct
       };
       
       const response = await apiRequest("POST", "/api/calculate", {
@@ -783,39 +782,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
-                  <Label htmlFor="admin-commission">Opening Commission (%)</Label>
-                  <div className="relative">
-                    <Input
-                      id="admin-commission"
-                      type="number"
-                      value={businessParams.adminCommissionPct}
-                      onChange={(e) => setBusinessParams(prev => ({ ...prev, adminCommissionPct: parseFloat(e.target.value) || 0 }))}
-                      min={0}
-                      max={10}
-                      step={0.1}
-                      disabled={isCalculating}
-                      className="pr-8"
-                    />
-                    <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <Label htmlFor="security-deposit">Deposit (months)</Label>
-                  <Input
-                    id="security-deposit"
-                    type="number"
-                    value={businessParams.securityDepositMonths}
-                    onChange={(e) => setBusinessParams(prev => ({ ...prev, securityDepositMonths: parseInt(e.target.value) || 0 }))}
-                    min={0}
-                    max={12}
-                    step={1}
-                    disabled={isCalculating}
-                  />
-                </div>
-              </div>
+              
 
               <div className="form-group">
                 <Label htmlFor="delivery-costs">Processing and Delivery Costs</Label>
@@ -1091,11 +1058,7 @@ export default function Home() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Opening Commission:</span>
-                    <span className="text-sm font-medium">{businessParams.adminCommissionPct}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Deposit Months:</span>
-                    <span className="text-sm font-medium">{businessParams.securityDepositMonths}</span>
+                    <span className="text-sm font-medium">{renterConfig.adminCommissionPct}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Delivery Costs:</span>
