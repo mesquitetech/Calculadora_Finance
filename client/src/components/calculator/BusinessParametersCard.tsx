@@ -100,7 +100,7 @@ export function BusinessParametersCard({
           </div>
 
           <div className="form-group">
-            <Label htmlFor="asset-cost">Asset Cost (without VAT)</Label>
+            <Label htmlFor="asset-cost">Asset Cost (with VAT included)</Label>
             <CurrencyInput
               id="asset-cost"
               name="asset-cost"

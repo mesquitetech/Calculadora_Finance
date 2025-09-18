@@ -98,8 +98,9 @@ export function OperatorDashboardTab({
   const IVA_RATE = 0.16;
   
   // Cálculos básicos del activo
-  const asset_cost_sans_iva = businessParams.assetCost;
-  const asset_cost_with_iva = asset_cost_sans_iva * (1 + IVA_RATE);
+  // businessParams.assetCost YA INCLUYE IVA
+  const asset_cost_with_iva = businessParams.assetCost;
+  const asset_cost_sans_iva = asset_cost_with_iva / (1 + IVA_RATE);
   
   // Cálculos de anticipo y financiamiento
   const anticipo_percentage = (businessParams.downPayment / businessParams.assetCost) * 100;
@@ -143,7 +144,7 @@ export function OperatorDashboardTab({
   
   // Convert to LeasingInputs format for compatibility
   const leasingInputs: LeasingInputs = {
-    asset_cost_sans_iva: businessParams.assetCost,
+    asset_cost_sans_iva: asset_cost_sans_iva,
     lease_term_months: loanParams.termMonths,
     lessor_profit_margin_pct: businessParams.lessorProfitMarginPct,
     fixed_monthly_fee: businessParams.fixedMonthlyFee,
