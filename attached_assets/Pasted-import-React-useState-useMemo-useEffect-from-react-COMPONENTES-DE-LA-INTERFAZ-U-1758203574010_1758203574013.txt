@@ -1,0 +1,452 @@
+import React, { useState, useMemo, useEffect } from 'react';
+
+// --- COMPONENTES DE LA INTERFAZ (UI Components) ---
+
+const Card = ({ children, className }) => (
+  <div className={`bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children, className }) => (
+  <div className={`p-6 border-b border-gray-200 dark:border-gray-700 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className }) => (
+  <h2 className={`text-xl font-bold text-gray-900 dark:text-white ${className}`}>{children}</h2>
+);
+
+const CardDescription = ({ children, className }) => (
+  <p className={`text-sm text-gray-500 dark:text-gray-400 mt-1 ${className}`}>{children}</p>
+);
+
+const CardContent = ({ children, className }) => (
+  <div className={`p-6 ${className}`}>{children}</div>
+);
+
+const Label = ({ children, htmlFor, className }) => (
+  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ${className}`}>
+    {children}
+  </label>
+);
+
+const Input = (props) => (
+  <input {...props} className={`block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${props.className}`} />
+);
+
+const Button = ({ children, onClick, disabled, variant = 'primary', className }) => {
+  const baseClasses = "inline-flex items-center justify-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2";
+  const variantClasses = {
+    primary: "border-transparent text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300",
+    secondary: "border-gray-300 text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:border-gray-600 focus:ring-blue-500"
+  };
+  return (
+    <button onClick={onClick} disabled={disabled} className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
+      {children}
+    </button>
+  );
+};
+
+const Stepper = ({ currentStep }) => {
+    const steps = ['Financiamiento', 'Arrendamiento', 'Resultados'];
+    return (
+        <div className="flex items-center justify-center mb-12">
+            {steps.map((step, index) => (
+                <React.Fragment key={step}>
+                    <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${index <= currentStep ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                            {index < currentStep ? '✔' : index + 1}
+                        </div>
+                        <p className={`mt-2 text-sm font-medium ${index <= currentStep ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>{step}</p>
+                    </div>
+                    {index < steps.length - 1 && (
+                        <div className={`flex-1 h-1 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                    )}
+                </React.Fragment>
+            ))}
+        </div>
+    );
+};
+
+// --- LÓGICA DE CÁLCULO (Calculation Logic) ---
+
+const formatCurrency = (value) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+
+function calculateLoanPayment(principal, annualRate, termMonths) {
+    if (annualRate === 0 || termMonths === 0) return principal / (termMonths || 1);
+    const monthlyRate = annualRate / 100 / 12;
+    const n = termMonths;
+    return principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+}
+
+function calculateAndGenerateAll(financiamiento, arrendamiento) {
+    const ivaRate = 0.16;
+    const asset_cost_sans_iva = arrendamiento.asset_cost_with_iva / (1 + ivaRate);
+    
+    // --- Amortización Inversionista ---
+    const investorSchedule = [];
+    investorSchedule.push({
+        'Período': 0, 'Pago': 0, 'Interés': 0, 'Capital': 0, 'Saldo': financiamiento.loan_amount,
+    });
+    const monthlyLoanPayment = calculateLoanPayment(financiamiento.loan_amount, financiamiento.annual_interest_rate, financiamiento.lease_term_months);
+    let remainingBalance = financiamiento.loan_amount;
+    for (let i = 1; i <= financiamiento.lease_term_months; i++) {
+        const interest = remainingBalance * (financiamiento.annual_interest_rate / 100 / 12);
+        const principal = monthlyLoanPayment - interest;
+        remainingBalance -= principal;
+        investorSchedule.push({
+            'Período': i, 'Pago': monthlyLoanPayment, 'Interés': interest, 'Capital': principal, 'Saldo': remainingBalance > 0 ? remainingBalance : 0,
+        });
+    }
+
+    // --- Lógica de cálculo de Renta actualizada ---
+    const annual_profit_target = asset_cost_sans_iva * (arrendamiento.lessor_profit_margin_pct / 100);
+    const lessor_monthly_profit = annual_profit_target / 12;
+
+    const anticipo_sin_iva_calc = asset_cost_sans_iva * (arrendamiento.anticipo_percentage / 100);
+    const residual_value_amount_calc = asset_cost_sans_iva * (arrendamiento.residual_value_percentage / 100);
+    const amount_to_amortize = asset_cost_sans_iva - anticipo_sin_iva_calc - residual_value_amount_calc;
+    const base_rent_amortization = financiamiento.lease_term_months > 0 ? amount_to_amortize / financiamiento.lease_term_months : 0;
+
+    const base_rent_with_margin = base_rent_amortization + lessor_monthly_profit;
+    
+    // --- Amortización Arrendatario ---
+    const lesseeSchedule = [];
+    lesseeSchedule.push({
+        'Período': 0, 'Pagos': 0, 'Intereses (Margen)': 0, 'Capital': 0, 'Deuda Pendiente': amount_to_amortize,
+    });
+    let outstandingDebt = amount_to_amortize;
+    for (let i = 1; i <= financiamiento.lease_term_months; i++) {
+        outstandingDebt -= base_rent_amortization;
+        lesseeSchedule.push({
+            'Período': i, 'Pagos': base_rent_with_margin, 'Intereses (Margen)': lessor_monthly_profit, 'Capital': base_rent_amortization, 'Deuda Pendiente': outstandingDebt > 0 ? outstandingDebt : 0,
+        });
+    }
+
+    // --- Cotización y Resumen Financiero ---
+    const total_monthly_rent_sans_iva = base_rent_with_margin + arrendamiento.fixed_monthly_fee;
+    const initial_admin_commission = asset_cost_sans_iva * (arrendamiento.admin_commission_pct / 100);
+    
+    // --- Resumen Financiero estilo PDF ---
+    const anticipo_con_iva = arrendamiento.asset_cost_with_iva * (arrendamiento.anticipo_percentage / 100);
+    const monto_total_financiado = arrendamiento.asset_cost_with_iva - anticipo_con_iva;
+
+    const anticipo_sin_iva = asset_cost_sans_iva * (arrendamiento.anticipo_percentage / 100);
+    const subtotal_pago_inicial = anticipo_sin_iva + arrendamiento.seguro_anual + initial_admin_commission;
+    const iva_pago_inicial = (anticipo_sin_iva + arrendamiento.seguro_anual + initial_admin_commission) * ivaRate;
+    const total_pago_inicial = subtotal_pago_inicial + iva_pago_inicial;
+
+    const financialSummary = {
+        conceptos_financiados: {
+            valor_unidad: arrendamiento.asset_cost_with_iva,
+            anticipo: anticipo_con_iva,
+            monto_total_financiado: monto_total_financiado,
+        },
+        pago_inicial: {
+            anticipo: anticipo_sin_iva,
+            seguro: arrendamiento.seguro_anual,
+            comision: initial_admin_commission,
+            subtotal: subtotal_pago_inicial,
+            iva: iva_pago_inicial,
+            total: total_pago_inicial,
+        },
+        renta_mensual: {
+            renta_basica: base_rent_with_margin,
+            gastos_admin: arrendamiento.fixed_monthly_fee,
+            total_sin_iva: total_monthly_rent_sans_iva,
+        },
+        valor_residual: {
+            valor_residual: residual_value_amount_calc
+        }
+    };
+    
+    const operatorAnalysis = {
+        monthly_margin: (total_monthly_rent_sans_iva - monthlyLoanPayment),
+        admin_fee: arrendamiento.fixed_monthly_fee,
+    };
+    
+    return { schedules: { investorSchedule, lesseeSchedule }, operatorAnalysis, financialSummary };
+}
+
+
+// --- PÁGINAS DEL ASISTENTE (Wizard Pages) ---
+
+const FinanciamientoPage = ({ params, setParams }) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setParams(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  };
+
+  return (
+    <Card className="max-w-2xl mx-auto animate-fade-in">
+      <CardHeader>
+        <CardTitle>Paso 1: Parámetros del Financiamiento (Inversionista)</CardTitle>
+        <CardDescription>Define los términos del préstamo que la entidad inversionista otorga al operador.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="loan_amount">Monto del Préstamo (Capital)</Label>
+          <div className="p-3 bg-gray-100 dark:bg-gray-700/50 rounded-md border border-gray-300 dark:border-gray-600">
+              {formatCurrency(params.loan_amount)}
+          </div>
+           <p className="text-xs text-gray-500 mt-1">Este monto es igual al Costo del Activo (sin IVA) definido en el siguiente paso.</p>
+        </div>
+        <div>
+          <Label htmlFor="annual_interest_rate">Tasa de Interés Anual (%) para Inversionistas</Label>
+          <Input type="number" name="annual_interest_rate" id="annual_interest_rate" value={params.annual_interest_rate} onChange={handleChange} />
+        </div>
+        <div>
+          <Label htmlFor="lease_term_months">Plazo del Contrato (Meses)</Label>
+          <Input type="number" name="lease_term_months" id="lease_term_months" value={params.lease_term_months} onChange={handleChange} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const ArrendamientoPage = ({ params, setParams }) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setParams(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+  };
+  
+  return (
+    <Card className="max-w-2xl mx-auto animate-fade-in">
+      <CardHeader>
+        <CardTitle>Paso 2: Parámetros del Arrendamiento (Operador y Cliente)</CardTitle>
+        <CardDescription>Configura los detalles del activo y la rentabilidad para el operador.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="asset_cost_with_iva">Valor del Auto (CON IVA)</Label>
+          <Input type="number" name="asset_cost_with_iva" id="asset_cost_with_iva" value={params.asset_cost_with_iva} onChange={handleChange} />
+        </div>
+        <div>
+          <Label htmlFor="anticipo_percentage">Porcentaje de Anticipo (%)</Label>
+          <Input type="number" name="anticipo_percentage" id="anticipo_percentage" value={params.anticipo_percentage} onChange={handleChange} />
+        </div>
+         <div>
+          <Label htmlFor="seguro_anual">Costo del Seguro del Primer Año (sin IVA)</Label>
+          <Input type="number" name="seguro_anual" id="seguro_anual" value={params.seguro_anual} onChange={handleChange} />
+        </div>
+        <div>
+          <Label htmlFor="lessor_profit_margin_pct">Margen de Ganancia Anual del Operador (%)</Label>
+          <Input type="number" name="lessor_profit_margin_pct" id="lessor_profit_margin_pct" value={params.lessor_profit_margin_pct} onChange={handleChange} />
+        </div>
+        <div>
+          <Label htmlFor="residual_value_percentage">Valor Residual (%)</Label>
+          <Input type="number" name="residual_value_percentage" id="residual_value_percentage" value={params.residual_value_percentage} onChange={handleChange} />
+        </div>
+        <div>
+          <Label htmlFor="admin_commission_pct">Comisión por Apertura (%)</Label>
+          <Input type="number" name="admin_commission_pct" id="admin_commission_pct" value={params.admin_commission_pct} onChange={handleChange} />
+        </div>
+         <div>
+          <Label htmlFor="fixed_monthly_fee">Gastos de Administración Mensuales</Label>
+          <Input type="number" name="fixed_monthly_fee" id="fixed_monthly_fee" value={params.fixed_monthly_fee} onChange={handleChange} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const AmortizationTable = ({ title, description, data }) => {
+    if (!data || data.length === 0) return null;
+    const headers = Object.keys(data[0]);
+
+    return (
+        <Card className="h-full flex flex-col">
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-auto">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            {headers.map(header => <th key={header} className="px-4 py-2 font-medium">{header}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.map((row, index) => (
+                            <tr key={index} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                {headers.map(header => (
+                                    <td key={`${header}-${index}`} className="px-4 py-2">
+                                        {header === 'Período' ? row[header] : (typeof row[header] === 'number' ? formatCurrency(row[header]) : row[header])}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </CardContent>
+        </Card>
+    );
+};
+
+const FinancialSummaryCard = ({ summary }) => {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Resumen Financiero (Estilo Cotización)</CardTitle>
+                <CardDescription>Desglose de la operación financiera completa.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <h3 className="font-semibold text-base border-b pb-2">Conceptos Financiados</h3>
+                    <div className="flex justify-between"><span>Valor de la Unidad:</span> <span className="font-medium">{formatCurrency(summary.conceptos_financiados.valor_unidad)}</span></div>
+                    <div className="flex justify-between"><span>(-) Anticipo:</span> <span className="font-medium">{formatCurrency(summary.conceptos_financiados.anticipo)}</span></div>
+                    <div className="flex justify-between font-bold pt-2 border-t"><span>Monto Financiado:</span> <span className="text-blue-600 dark:text-blue-400">{formatCurrency(summary.conceptos_financiados.monto_total_financiado)}</span></div>
+                </div>
+                <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                     <h3 className="font-semibold text-base border-b pb-2">Pago Inicial</h3>
+                    <div className="flex justify-between"><span>Anticipo (sin IVA):</span> <span className="font-medium">{formatCurrency(summary.pago_inicial.anticipo)}</span></div>
+                    <div className="flex justify-between"><span>Seguro primer año:</span> <span className="font-medium">{formatCurrency(summary.pago_inicial.seguro)}</span></div>
+                    <div className="flex justify-between"><span>Comisión por apertura:</span> <span className="font-medium">{formatCurrency(summary.pago_inicial.comision)}</span></div>
+                    <div className="flex justify-between border-t pt-1"><span>Subtotal:</span> <span className="font-medium">{formatCurrency(summary.pago_inicial.subtotal)}</span></div>
+                     <div className="flex justify-between"><span>IVA:</span> <span className="font-medium">{formatCurrency(summary.pago_inicial.iva)}</span></div>
+                    <div className="flex justify-between font-bold pt-2 border-t"><span>Total Pago Inicial:</span> <span className="text-blue-600 dark:text-blue-400">{formatCurrency(summary.pago_inicial.total)}</span></div>
+                </div>
+                 <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <h3 className="font-semibold text-base border-b pb-2">Renta Mensual y Residual</h3>
+                    <div className="flex justify-between"><span>Renta básica:</span> <span className="font-medium">{formatCurrency(summary.renta_mensual.renta_basica)}</span></div>
+                    <div className="flex justify-between"><span>Gastos administración:</span> <span className="font-medium">{formatCurrency(summary.renta_mensual.gastos_admin)}</span></div>
+                    <div className="flex justify-between font-bold pt-2 border-t"><span>Total Mensual (s/IVA):</span> <span>{formatCurrency(summary.renta_mensual.total_sin_iva)}</span></div>
+                    <hr className="my-4 dark:border-gray-600"/>
+                     <div className="flex justify-between font-bold"><span>Valor Residual (s/IVA):</span> <span>{formatCurrency(summary.valor_residual.valor_residual)}</span></div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+const ResultsPage = ({ results, onReset }) => {
+  const { schedules, operatorAnalysis, financialSummary } = results;
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+        <FinancialSummaryCard summary={financialSummary} />
+        
+        <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+                <CardTitle>Análisis del Operador</CardTitle>
+                <CardDescription>Ganancia neta mensual para la empresa operadora.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+                 <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Margen de Ganancia Mensual (Flujo Neto)</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(operatorAnalysis.monthly_margin)}</p>
+                </div>
+            </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8" style={{maxHeight: '600px'}}>
+            <AmortizationTable title="Perspectiva Arrendatario (Cliente)" description="Amortización del costo del activo." data={schedules.lesseeSchedule} />
+            <AmortizationTable title="Perspectiva Inversionista (Préstamo)" description="Amortización del préstamo interno." data={schedules.investorSchedule} />
+        </div>
+        
+        <div className="p-6 text-center mt-8">
+            <Button onClick={onReset} variant="secondary">Crear Nueva Cotización</Button>
+        </div>
+    </div>
+  );
+};
+
+
+// --- COMPONENTE PRINCIPAL (Main App Component) ---
+
+export default function App() {
+  const [step, setStep] = useState(0);
+  
+  // Datos pre-cargados del PDF para coincidir con la cotización
+  const [financiamientoParams, setFinanciamientoParams] = useState({
+    loan_amount: 1303448.28, // 1,512,000 / 1.16
+    annual_interest_rate: 14.75,
+    lease_term_months: 48,
+  });
+
+  const [arrendamientoParams, setArrendamientoParams] = useState({
+    asset_cost_with_iva: 1512000.00,
+    anticipo_percentage: 15, 
+    seguro_anual: 32758.62,
+    lessor_profit_margin_pct: 1.085,
+    residual_value_percentage: 15, 
+    admin_commission_pct: 1.7,
+    fixed_monthly_fee: 18168.60,
+  });
+  
+  const [results, setResults] = useState(null);
+
+  useEffect(() => {
+    const assetCostWithIVA = arrendamientoParams.asset_cost_with_iva || 0;
+    const assetCostSansIva = assetCostWithIVA / 1.16;
+
+    setFinanciamientoParams(prev => ({
+      ...prev,
+      loan_amount: assetCostSansIva,
+    }));
+  }, [arrendamientoParams.asset_cost_with_iva]);
+
+
+  const handleNext = () => setStep(s => s + 1);
+  const handleBack = () => setStep(s => s - 1);
+  
+  const handleCalculate = () => {
+    const allCalculations = calculateAndGenerateAll(financiamientoParams, arrendamientoParams);
+    setResults(allCalculations);
+    setStep(2);
+  };
+  
+  const handleReset = () => {
+      setStep(0);
+      setResults(null);
+  }
+
+  const isNextDisabled = useMemo(() => {
+    if (step === 0) {
+      return !financiamientoParams.loan_amount || !financiamientoParams.annual_interest_rate || !financiamientoParams.lease_term_months;
+    }
+    if (step === 1) {
+      return !arrendamientoParams.asset_cost_with_iva;
+    }
+    return false;
+  }, [step, financiamientoParams, arrendamientoParams]);
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans text-gray-800 dark:text-gray-300">
+      <div className="container mx-auto p-4 sm:p-8">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-800 dark:text-white">Calculadora de Arrendamiento</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">Modelo de Negocio: Inversionista y Operador</p>
+        </header>
+        
+        <Stepper currentStep={step} />
+
+        {step === 0 && <FinanciamientoPage params={financiamientoParams} setParams={setFinanciamientoParams} />}
+        {step === 1 && <ArrendamientoPage params={arrendamientoParams} setParams={setArrendamientoParams} />}
+        {step === 2 && results && <ResultsPage results={results} onReset={handleReset}/>}
+
+        {step < 2 && (
+          <div className="flex justify-between max-w-2xl mx-auto mt-8">
+            <Button onClick={handleBack} disabled={step === 0} variant="secondary">
+              Atrás
+            </Button>
+            {step === 0 && (
+              <Button onClick={handleNext} disabled={isNextDisabled}>
+                Siguiente
+              </Button>
+            )}
+            {step === 1 && (
+              <Button onClick={handleCalculate} disabled={isNextDisabled}>
+                Calcular Cotización
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
