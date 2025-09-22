@@ -39,7 +39,9 @@ import {
   BarChart,
   Bar,
   PieChart as RechartsPieChart,
-  Cell
+  Cell,
+  Pie
+  
 } from "recharts";
 import { formatCurrency, formatPercentage } from "@/lib/finance";
 
@@ -186,7 +188,7 @@ export function OperatorDashboardTab({
         : calculations.monthlyOperatingMargin;
       
       cumulativeCashFlow += monthlyFlow;
-      
+     
       cashFlowData.push({
         month,
         flujoMensual: monthlyFlow,
@@ -194,20 +196,30 @@ export function OperatorDashboardTab({
         breakeven: cumulativeCashFlow >= 0 ? cumulativeCashFlow : 0
       });
     }
-    
+
+ 
+     const total = 
+       calculations.baseRent + 
+       businessParams.fixedMonthlyFee + 
+       (calculations.openingCommission / loanParams.termMonths);
+
     // Distribución de ingresos
     const incomeDistribution = [
-      { name: 'Renta Base', value: calculations.baseRent, color: '#0088FE' },
-      { name: 'Gastos Admin', value: businessParams.fixedMonthlyFee, color: '#00C49F' },
-      { name: 'Comisión Inicial', value: calculations.openingCommission / loanParams.termMonths, color: '#FFBB28' }
+      { name: 'Renta Base', value: calculations.baseRent, percentage: (calculations.baseRent / total) * 100, color: '#0088FE' },
+      { name: 'Gastos Admin', value: businessParams.fixedMonthlyFee, percentage: (businessParams.fixedMonthlyFee / total) * 100, color: '#00C49F' },
+      { name: 'Comisión Inicial', value: calculations.openingCommission / loanParams.termMonths, percentage: ((calculations.openingCommission / loanParams.termMonths) / total) * 100, color: '#FFBB28' }
     ];
-    
+    //Calculo de porcentajes
+    {/*const total_cost = monthlyPayment + businessParams.monthlyExpenses + (businessParams.otherExpenses / loanParams.termMonths)
+    const pago_percen = Number(((monthlyPayment*100)/(total_cost)).toFixed(2))
+    const gastos_percen = Number((businessParams.monthlyExpenses*100)/ total_cost).toFixed(2)
+    const otros_percen = Number((businessParams.otherExpenses / loanParams.termMonths)*100 / total_cost).toFixed(2)
     // Distribución de costos
     const costDistribution = [
-      { name: 'Pago Inversionistas', value: monthlyPayment, color: '#FF8042' },
-      { name: 'Gastos Operativos', value: businessParams.monthlyExpenses, color: '#8884D8' },
-      { name: 'Otros Gastos', value: businessParams.otherExpenses / loanParams.termMonths, color: '#82CA9D' }
-    ];
+      { name: 'Pago Inversionistas', value: monthlyPayment, percentage:pago_percen, color: '#FF8042' },
+      { name: 'Gastos Operativos', value: businessParams.monthlyExpenses, percentage:gastos_percen, color: '#8884D8' },
+      { name: 'Otros Gastos', value: businessParams.otherExpenses / loanParams.termMonths,percentage:otros_percen, color: '#82CA9D' }
+    ];*/}
     
     // Proyección anual
     const annualData = [];
@@ -230,7 +242,7 @@ export function OperatorDashboardTab({
     return {
       cashFlowData,
       incomeDistribution,
-      costDistribution,
+      //costDistribution,
       annualData
     };
   }, [calculations, loanParams, monthlyPayment, businessParams]);
@@ -504,37 +516,60 @@ export function OperatorDashboardTab({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Distribución de Ingresos</CardTitle>
+                <CardTitle>Distribución de Ingresos en %</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <RechartsPieChart data={chartData.incomeDistribution}>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <RechartsPieChart >
+                    <Pie
+                      data={chartData.incomeDistribution}
+                      dataKey="percentage"   // 👈 ahora usa porcentaje
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({value }) => `${value.toFixed(2)}%`} // 👈 etiquetas con %
+                    >
+                      {chartData.incomeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+
+                    <Tooltip formatter={(value: number) => `${value.toFixed(2)}%`} />
                     <Legend />
-                    {chartData.incomeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
                   </RechartsPieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card>
+            {/*<Card>
               <CardHeader>
                 <CardTitle>Distribución de Costos</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart data={chartData.costDistribution}>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Pie
+                      data={chartData.costDistribution}
+                      dataKey="percentage"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      fill="#8884d8"
+                      label
+                    >
+                      {chartData.costDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                      </Pie>
+                    <Tooltip formatter={(value: number) => `${value}%`} />
                     <Legend />
-                    {chartData.costDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                   
                   </RechartsPieChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </Card>*/}
           </div>
         </TabsContent>
 
